@@ -1,0 +1,55 @@
+# 在项目根目录创建.gitignore文件
+# filepath: d:\Project\ae_tool_power_enhance\.gitignore
+
+# Build results
+Debug/
+Release/
+build/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+
+# IDE files
+.vscode/
+.settings/
+*.launch
+*.ioc~
+
+# HAL Library (if using as submodule)
+#Drivers/STM32F4xx_HAL_Driver/
+
+# User specific files
+*.user
+*.tmp
+*.temp
+
+# Log files
+*.log
+
+# Backup files
+*~
+*.bak
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# MDK-ARM specific
+RTE/
+*.uvguix.*
+*.uvoptx
+*.uvprojx
+
+#history
+*.history/
+history/
+
+# CMake files
+config_default/CMakeFiles/
+
+#idea
+.idea/
