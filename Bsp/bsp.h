@@ -52,5 +52,6 @@ extern uint8_t hw_version[4];
 
 // func
 void bsp_init();
-
+void bsp_CCP_Init(void);
+void bsp_led_pwm_init(void);
 #endif // BSP_H

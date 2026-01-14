@@ -11,6 +11,7 @@
 #include "bsp_dwt.h"
 #include "bsp_calibration.h"
 #include "bsp_power.h"
+#include "calibration_utils.h"
 // I2C总线1设备结构体，配置I2C句柄和MCP4728器件地址
 i2c_dev_t i2c_bus_1 = {
     .handle = &hi2c1,

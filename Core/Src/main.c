@@ -48,14 +48,21 @@ int main(void)
   MX_I2C2_Init();
   MX_SPI1_Init();
   MX_CRC_Init();
-  //MX_TIM2_Init();
-  TIM1_PWM_Init(100, 200);//T = (arr + 1) * (psc + 1) / Fclk
+  
+  
   
   MX_SPI3_Init();
   MX_USART1_UART_Init();
   
   bsp_init();
-  while(1);
+  
+  
+  while(1){
+      HAL_Delay(100);
+      enableTim1CaptureCompareInterrupt();
+      HAL_Delay(5000);
+      disableTim1CaptureCompareInterrupt();
+  };
   // test_gtb_task();
   osKernelInitialize(); /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init();
@@ -122,7 +129,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  RA_POWEREX_ERROR("Error Handler Entered.");
+  //RA_POWEREX_ERROR("Error Handler Entered.");
   while (1)
   {
   }

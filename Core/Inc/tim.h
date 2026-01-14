@@ -35,15 +35,24 @@ extern "C" {
 /* USER CODE BEGIN Private defines */
 #define LED_PWM_IN_CHANNEL TIM_CHANNEL_2
 /* USER CODE END Private defines */
-void TIM1_PWM_Init(uint16_t arr, uint16_t psc);
-void TIM1_Set_Duty(uint8_t duty);
+void TIM1_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void TIM1_Generate_N_Pulses(uint16_t num_pulses);
+void TIM1_CCP_Init(void);
+void enableTim1CaptureCompareInterrupt(void);
+void disableTim1CaptureCompareInterrupt(void);
+void enableTim1PWMOutput(void);
+void disableTim1PWMOutput(void);
 /* USER CODE BEGIN EFP */
 /* USER CODE BEGIN Prototypes */
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern __IO uint32_t            uwIC2Value;
+/* Duty Cycle Value */
+extern __IO uint32_t            uwDutyCycle;
+/* Frequency Value */
+extern __IO uint32_t            uwFrequency;
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

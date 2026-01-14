@@ -90,6 +90,8 @@ extern volatile int spi_rx_tx_flag;
 extern volatile int spi_tx_flag;
 
 extern volatile uint8_t i2c1_rx_ready_flag;
+
+extern TIM_HandleTypeDef    htim8;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -118,7 +120,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  while(1);
   /* USER CODE END HardFault_IRQn 0 */
   RA_POWEREX_DEBUG("HardFault_Handler\r\n");
   //先判断是MSP还是PSP，再打印 SP偏移6*4 字节处的PC值
@@ -221,6 +223,16 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+}
+/**
+  * @brief  This function handles TIM interrupt request.
+  * @param  None
+  * @retval None
+  */
+void TIM1_CC_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&htim1);
+
 }
 /**
  * @brief This function handles EXTI line1 interrupt.

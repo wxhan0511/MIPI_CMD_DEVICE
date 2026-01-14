@@ -33,7 +33,7 @@ static void bsp_init_power_control(void);
 static void bsp_init_interrupts(void);
 static void bsp_oe_set(uint8_t dir);
 static void ra_xb_Power_Init(void);
-static void bsp_led_pwm_init(void);
+
 /**
  * @brief Firmware name stored in specific section
  * @note Used for firmware identification and version management
@@ -80,7 +80,7 @@ void bsp_init()
     // HAL_Delay(100);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     /* Print system version information */
-    bsp_print_version_info();
+   // bsp_print_version_info();
     
     // bsp_test_spi_flash();  //for test flash
     //calibration_load(); //If the calibration value does not exist, write the default value
@@ -95,6 +95,14 @@ void bsp_init()
     //bsp_dac_init(&dac_dev);
     HAL_I2C_EnableListen_IT(&hi2c1);
     bsp_led_pwm_init();
+    enableTim1PWMOutput();
+    HAL_Delay(10);
+    disableTim1PWMOutput();
+    bsp_CCP_Init();
+    enableTim1CaptureCompareInterrupt();
+    HAL_Delay(10);
+    disableTim1CaptureCompareInterrupt();
+    
     //MX_USB_OTG_HS_PCD_Init();
     //MX_USB_DEVICE_Init();
     //use i2c2
@@ -104,16 +112,15 @@ void bsp_init()
 
 void bsp_led_pwm_init(void)
 {
-    TIM1_PWM_Init(7200,100);
-    __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 50);
+    TIM1_PWM_Init(2,150,1);//arr,psc f=168MHz/(arry*psc)   最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM1_Generate_N_Pulses(11000);
 
-    TIM1_Generate_N_Pulses(11);
-    HAL_TIM_PWM_Start(&htim1,LED_PWM_IN_CHANNEL);
-    if (HAL_TIM_Base_Start_IT(&htim1) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    RA_POWEREX_INFO("------------- bsp led pwm init finish -------------\r\n");
+   // RA_POWEREX_INFO("------------- bsp led pwm init finish -------------\r\n");
+}
+void bsp_CCP_Init(void)
+{
+    TIM1_CCP_Init();
+    RA_POWEREX_INFO("------------- bsp tim1 ccp init finish -------------\r\n");
 }
 /**
  * @brief Initialize power control GPIOs and enable power rails
