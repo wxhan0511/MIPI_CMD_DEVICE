@@ -71,34 +71,34 @@ void MX_USB_DEVICE_Init(void)
 #if (USBD_USE_HS == 1)
   if (USBD_Init(&hUsbDevice, &USBD_Desc, DEVICE_HS) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #else
   if (USBD_Init(&hUsbDevice, &USBD_Desc, DEVICE_FS) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
   if (USBD_RegisterClass(&hUsbDevice, &USBD_COMPOSITE) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #if (USBD_USE_CDC_ACM == 1)
   if (USBD_CDC_ACM_RegisterInterface(&hUsbDevice, &USBD_CDC_ACM_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_CDC_RNDIS == 1)
   if (USBD_CDC_RNDIS_RegisterInterface(&hUsbDevice, &USBD_CDC_RNDIS_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_CDC_ECM == 1)
   if (USBD_CDC_ECM_RegisterInterface(&hUsbDevice, &USBD_CDC_ECM_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_HID_MOUSE == 1)
@@ -108,48 +108,48 @@ void MX_USB_DEVICE_Init(void)
 #if (USBD_USE_HID_CUSTOM == 1)
   if (USBD_CUSTOM_HID_RegisterInterface(&hUsbDevice, &USBD_CustomHID_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_UAC_MIC == 1)
   if (USBD_AUDIO_MIC_RegisterInterface(&hUsbDevice, &USBD_AUDIO_MIC_fops_FS) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_UAC_SPKR == 1)
   if (USBD_AUDIO_SPKR_RegisterInterface(&hUsbDevice, &USBD_AUDIO_SPKR_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_UVC == 1)
   if (USBD_VIDEO_RegisterInterface(&hUsbDevice, &USBD_VIDEO_fops_FS) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_MSC == 1)
   if (USBD_MSC_RegisterStorage(&hUsbDevice, &USBD_Storage_Interface_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_DFU == 1)
   if (USBD_DFU_RegisterMedia(&hUsbDevice, &USBD_DFU_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
 #if (USBD_USE_PRNTR == 1)
   if (USBD_PRNT_RegisterInterface(&hUsbDevice, &USBD_PRNT_fops) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 #endif
   if (USBD_Start(&hUsbDevice) != USBD_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 
   /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */

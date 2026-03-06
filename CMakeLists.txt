@@ -56,10 +56,11 @@ include_directories(Middlewares/Third_Party/AL94_USB_Composite/COMPOSITE/Class/C
 include_directories(Middlewares/Third_Party/AL94_USB_Composite/COMPOSITE/Class/HID_CUSTOM/Inc Middlewares/Third_Party/AL94_USB_Composite/COMPOSITE/Target)
 include_directories(Composite)
 include_directories(Bsp Task utils gtb/inc driver/inc)
+include_directories(GUI/widget GUI/lvgl GUI/lvgl/porting GUI/lvgl/src)
 include_directories(${CMAKE_SOURCE_DIR}/inc ${CMAKE_SOURCE_DIR}/src)
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx)
 
-file(GLOB_RECURSE SOURCES "Core/*.*" "Composite/*.*" "Middlewares/*.*" "Drivers/*.*" "Bsp/*.*" "Task/*.*" "utils/*.*" "gtb/*.*" "driver/*.*")
+file(GLOB_RECURSE SOURCES "Core/*.*" "Composite/*.*" "Middlewares/*.*" "Drivers/*.*" "Bsp/*.*" "Task/*.*" "utils/*.*" "gtb/*.*" "driver/*.*" "GUI/*.*")
 
 
 add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)

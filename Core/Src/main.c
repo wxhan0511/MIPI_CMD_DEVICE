@@ -23,17 +23,19 @@
 #include "delay.h"
 #include "gtb_task.h"
 #include "crc.h"
+#include "fsmc.h"
+#include "bsp_mcp4728_ctl.h" 
+//5.0前期测试
+#include "widget_main.h"
 
-/* User-defined variables -----------------------------------------------------*/
-uint8_t get_data_fs[64] = {0};  // USB接收缓存
-uint8_t send_data_fs[64] = {0}; // USB发送缓存
-uint8_t USB_Received_Count = 0; // USB接收数据计数
-extern TIM_HandleTypeDef htim1;
+
+
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 
+static void test_fun(void);
 /**
  * @brief  The application entry point.
  * @retval int
@@ -41,28 +43,25 @@ void MX_FREERTOS_Init(void);
 int main(void)
 {
   HAL_Init();
-  SystemClock_Config();
+  SystemClock_Config(); // sysclk=168M,pclk1=42M,pclk2=84M
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_I2C1_Init();
-  MX_I2C2_Init();
-  MX_SPI1_Init();
+  MX_I2C1_Init(); // PB6 PB7
+  MX_I2C2_Init(); // PB10 PB11
   MX_CRC_Init();
-  
-  
-  
-  MX_SPI3_Init();
-  MX_USART1_UART_Init();
-  
+  MX_FSMC_Init();
+  MX_DAC_Init();
+  MX_SPI1_Init(); //***ADS1256***
+  MX_SPI2_Init();//***M SPI***
+  MX_SPI3_Init();//***FLASH***
+  MX_USART3_UART_Init();
   bsp_init();
-  
-  
-  while(1){
-      HAL_Delay(100);
-      enableTim1CaptureCompareInterrupt();
-      HAL_Delay(5000);
-      disableTim1CaptureCompareInterrupt();
-  };
+  // while(1){
+  //     HAL_Delay(100);
+  //     enableTim1CaptureCompareInterrupt();
+  //     HAL_Delay(5000);
+  //     disableTim1CaptureCompareInterrupt();
+  // };
   // test_gtb_task();
   osKernelInitialize(); /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init();
@@ -72,10 +71,6 @@ int main(void)
   }
 }
 
-/**
- * @brief System Clock Configuration
- * @retval None
- */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -101,7 +96,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLQ = 7; // 336(VCO)/PLLQ=48
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
@@ -109,31 +104,23 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2; // PCLK1:AHB1 PCLK2:AHB2  HFCLK:AHB
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;                                                            // 168
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;                                                                   // 168
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;//42M                                                                   // 42  TIM3
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;//84M                                                                    // 84
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;                                                                    // 42M                                                                   // 42  TIM3
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;                                                                    // 84M                                                                    // 84
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSI, RCC_MCODIV_1);
 }
 
-
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void)
+void Error_Handler(const char *FileName, int LineNumber)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
+
   __disable_irq();
-  //RA_POWEREX_ERROR("Error Handler Entered.");
+  printf("Error Handler Entered , File: %s, Line: %d!\r\n", FileName, LineNumber);
   while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+    ;
 }
 
 #ifdef USE_FULL_ASSERT
@@ -152,3 +139,5 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+

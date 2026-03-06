@@ -2,34 +2,12 @@
 #define __BSP_SPI_BUS_H
 
 
-#define SPIx_CLK_ENABLE()			__HAL_RCC_SPI4_CLK_ENABLE()
-
-#define SPIx_SCK_CLK_ENABLE()		__HAL_RCC_GPIOE_CLK_ENABLE()
-#define SPIx_SCK_GPIO				GPIOE
-#define SPIx_SCK_PIN				GPIO_PIN_2
-#define SPIx_SCK_AF					GPIO_AF5_SPI4
-
-#define SPIx_MISO_CLK_ENABLE()		__HAL_RCC_GPIOE_CLK_ENABLE()
-#define SPIx_MISO_GPIO				GPIOE
-#define SPIx_MISO_PIN 				GPIO_PIN_5
-#define SPIx_MISO_AF				GPIO_AF5_SPI4
-
-#define SPIx_MOSI_CLK_ENABLE()		__HAL_RCC_GPIOE_CLK_ENABLE()
-#define SPIx_MOSI_GPIO				GPIOE
-#define SPIx_MOSI_PIN 				GPIO_PIN_6
-#define SPIx_MOSI_AF				GPIO_AF5_SPI4
-
-#define SPIx_CS_CLK_ENABLE()		__HAL_RCC_GPIOE_CLK_ENABLE()
-#define SPIx_CS_GPIO				GPIOE
-#define SPIx_CS_PIN 				GPIO_PIN_4
-
-
 #define	SPI_BUFFER_SIZE		(4 * 1024)				/*  */
 #define Flash_TotalSize   (32 * 1024 * 1024)
 #define Flash_SectorSize  (4 * 1024)
 
-#define SF_CS_H()					GPIOC->BSRR = GPIO_PIN_9
-#define SF_CS_L()					GPIOC->BSRR = ((uint32_t)GPIO_PIN_9 << 16U)
+#define SF_CS_H()					GPIOC->BSRR = GPIO_PIN_12
+#define SF_CS_L()					GPIOC->BSRR = ((uint32_t)GPIO_PIN_12 << 16U)
 
 
 #define CMD_AAI       0xAD

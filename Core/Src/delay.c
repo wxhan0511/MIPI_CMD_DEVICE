@@ -15,7 +15,7 @@
 //     htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 //     if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
 //     {
-//         Error_Handler();
+//         Error_Handler(__FILE__, __LINE__);
 //     }
 // }
 

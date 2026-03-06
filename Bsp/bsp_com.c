@@ -29,7 +29,7 @@
 //     if (HAL_I2C_EnableListen_IT(&hi2c1) != HAL_OK)
 //     {
 //         printf("meter spi init error \r\n");
-//         Error_Handler();
+//         Error_Handler(__FILE__, __LINE__);
 //     }
 //     while (meter_com_flag == 1) {}
 //     meter_com_flag = 0;
@@ -41,7 +41,7 @@
 //     if (ret != HAL_OK)
 //     {
 //         printf("meter spi rx tx error %d\r\n", ret);
-//         Error_Handler();
+//         Error_Handler(__FILE__, __LINE__);
 //     }
 //     if(wait_flag == 0)
 //     {

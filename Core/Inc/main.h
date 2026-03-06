@@ -31,6 +31,7 @@ extern "C" {
 #include "config.h"
 #include "cmsis_os2.h"
 #include "stdint.h"
+#include <string.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -52,7 +53,7 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
+void Error_Handler(const char* FileName, int LineNumber);
 
 /* USER CODE BEGIN EFP */
 

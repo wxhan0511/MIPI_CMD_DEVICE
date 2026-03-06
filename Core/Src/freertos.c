@@ -24,6 +24,11 @@
 #include "gtb_task.h"
 #include "led_task.h"
 #include "power_task.h"
+/*lvgl*/
+#include "widget_main.h"
+#include "lv_port_disp_template.h"
+#include "widget_func.h"
+
 /* Private function prototypes -----------------------------------------------*/
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -46,10 +51,10 @@ void MX_FREERTOS_Init(void)
   //master_rx_task_init();
 
   //power_task_init();
+  widget_main_task_init(); //LVGL UI task
+
+
 }
-
-
-
 
 /* USER CODE END Application */
 

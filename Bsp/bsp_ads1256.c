@@ -3,87 +3,25 @@
 //
 
 #include "bsp_ads1256.h"
+#include "bsp_ads1256_ctl.h"
+#include "bsp.h"
+#include "bsp_dwt.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tgmath.h>
 
-#include "bsp.h"
-#include "bsp_dwt.h"
+
 #include "main.h"
 
-float raw_data_queue[RAW_DATA_QUEUE_SIZE] __attribute__((section(".raw_data_queue"))) __attribute__((aligned(4))); // align 4B , size 4092
-uint8_t raw_data_index_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
-volatile uint16_t raw_data_queue_head = 0;
-double raw_data = 0;
-/**
- * @brief push data value and index into the ring buffer,index 8~15 for ic power board , 0-7 for h/m interface board
- * @param value data value to be pushed
- * @param index data index to be pushed
- */
-void raw_data_queue_push(float value, uint8_t index)
-{
 
-    raw_data_queue[raw_data_queue_head] = value;
-    raw_data_index_queue[raw_data_queue_head] = index;
-    raw_data_queue_head = (raw_data_queue_head + 1) % RAW_DATA_QUEUE_SIZE;
-}
-/**
- * @brief get the index value from the ring buffer
- * @param index
- * @return
- */
-uint8_t raw_data_queue_get_index(uint16_t index)
-{
-    if (0 <= index && index < RAW_DATA_INDEX_QUEUE_SIZE)
-    {
-        return raw_data_index_queue[index];
-    }
-    else if (index < 0)
-    {
-        return raw_data_index_queue[RAW_DATA_INDEX_QUEUE_SIZE + index];
-    }
-    else
-    {
-        return 0;
-    }
-}
 
-/**
- * @brief 获取环形队列中的数据
- * @param index 索引位置
- * @return 队列中指定索引位置的数据
- */
-float raw_data_queue_get_data(uint16_t index)
-{
-    if (0 <= index && index < RAW_DATA_QUEUE_SIZE)
-    {
-        return raw_data_queue[index];
-    }
-    else if (index < 0)
-    {
-        return raw_data_queue[RAW_DATA_QUEUE_SIZE + index];
-    }
-    else
-    {
-        return 0.0f;
-    }
-}
-
-#define ADC_DEBUG 1
-
-#define AVG_CNT 1
-
-#define ADC_RATIO (0.596)
-
-#define SINGLE_VOL_CHANGE_GEAR 0
-
-ads1256_dev_t dev_h_m_interface_board = {
-    .cs_group = ADC_SPI_CS2_GPIO_Port,
-    .cs_pin = ADC_SPI_CS2_Pin,
-    .drdy_group = ADC_DRDY2_GPIO_Port,
-    .drdy_pin = ADC_DRDY2_Pin,
+ads1256_dev_t dev_vol = {
+    .cs_group = ADC_SPI_CS1_GPIO_Port,
+    .cs_pin = ADC_SPI_CS1_Pin,
+    .drdy_group = ADC_DRDY1_GPIO_Port,
+    .drdy_pin = ADC_DRDY1_Pin,
     .cs_control = HAL_GPIO_WritePin,
     .read_reg = bsp_ads1256_read_reg,
     .write_reg = bsp_ads1256_write_reg,
@@ -97,7 +35,7 @@ ads1256_dev_t dev_h_m_interface_board = {
     .sample_cnt = 0,
 };
 
-ads1256_dev_t dev_ic_power_board = {
+ads1256_dev_t dev_cur = {
     .cs_group = ADC_SPI_CS1_GPIO_Port,
     .cs_pin = ADC_SPI_CS1_Pin,
     .drdy_group = ADC_DRDY1_GPIO_Port,
@@ -243,12 +181,7 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
     GPIO_InitStruct.Pin = ADC_DRDY1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(ADC_DRDY1_GPIO_Port, &GPIO_InitStruct); // human machine interface board ads1256 DRDY
-
-    GPIO_InitStruct.Pin = ADC_DRDY2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(ADC_DRDY2_GPIO_Port, &GPIO_InitStruct); // ic power board ads1256DRDY
+    HAL_GPIO_Init(ADC_DRDY1_GPIO_Port, &GPIO_InitStruct);
 
     // ADC_Reset PA0
     HAL_GPIO_WritePin(ADC_RESET_GPIO_Port, ADC_RESET_Pin, GPIO_PIN_SET);
@@ -262,11 +195,11 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
     bsp_ads1256_wait_drdy(handle);
     // read ads1256 reg status
     handle->read_reg(handle, REG_STATUS, &data[0], 5);
-    RA_POWEREX_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
-    RA_POWEREX_DEBUG("ADS1256 REG_MUX:0x%02X\r\n", data[1]);
-    RA_POWEREX_DEBUG("ADS1256 REG_ADCON:0x%02X\r\n", data[2]);
-    RA_POWEREX_DEBUG("ADS1256 REG_DRATE:0x%02X\r\n", data[3]);
-    RA_POWEREX_DEBUG("ADS1256 REG_IO:0x%02X\r\n", data[4]);
+    ADS1256_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
+    ADS1256_DEBUG("ADS1256 REG_MUX:0x%02X\r\n", data[1]);
+    ADS1256_DEBUG("ADS1256 REG_ADCON:0x%02X\r\n", data[2]);
+    ADS1256_DEBUG("ADS1256 REG_DRATE:0x%02X\r\n", data[3]);
+    ADS1256_DEBUG("ADS1256 REG_IO:0x%02X\r\n", data[4]);
     handle->cs_control(handle->cs_group, handle->cs_pin, 0);
 
     handle->write_byte(handle, CMD_SELFCAL);
@@ -286,12 +219,12 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
     data[4] = 0x00;
     handle->write_reg(handle, 0x00, data, 5);
     handle->read_reg(handle, REG_STATUS, &data[0], 5);
-    RA_POWEREX_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
-    RA_POWEREX_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
-    RA_POWEREX_DEBUG("ADS1256 REG_MUX:0x%02X\r\n", data[1]);
-    RA_POWEREX_DEBUG("ADS1256 REG_ADCON:0x%02X\r\n", data[2]);
-    RA_POWEREX_DEBUG("ADS1256 REG_DRATE:0x%02X\r\n", data[3]);
-    RA_POWEREX_DEBUG("ADS1256 REG_IO:0x%02X\r\n", data[4]);
+    ADS1256_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
+    ADS1256_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
+    ADS1256_DEBUG("ADS1256 REG_MUX:0x%02X\r\n", data[1]);
+    ADS1256_DEBUG("ADS1256 REG_ADCON:0x%02X\r\n", data[2]);
+    ADS1256_DEBUG("ADS1256 REG_DRATE:0x%02X\r\n", data[3]);
+    ADS1256_DEBUG("ADS1256 REG_IO:0x%02X\r\n", data[4]);
     bsp_delay_ms(100);
 }
 /**
@@ -485,13 +418,9 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
             // printf("channel %d raw data %f \r\n",handle->last_channel,raw_data);
             if (raw_data != 0.0)
             {
-                if (handle == &dev_h_m_interface_board)
+                if (handle == &dev_vol)
                 {
                     raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
-                }
-                else if (handle == &dev_ic_power_board)
-                {
-                    raw_data_queue_push(raw_data, handle->last_channel + 8); // push data and index(corresponding channel) to ring queue
                 }
             }
             // AD_DATA_DEBUG("channel %d raw data %f \r\n",handle->last_channel,raw_data);

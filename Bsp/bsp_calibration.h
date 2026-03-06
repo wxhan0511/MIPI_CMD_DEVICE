@@ -20,6 +20,82 @@
 #define CALIBRATION_SECTOR_SIZE     4096        // 扇区大小 4KB
 
 
+typedef struct
+{
+    // VSN校准参数
+    float vsn_set_offset;          
+    float vsn_set_gain;
+    // ELVSS校准参数
+    float elvss_set_offset;         
+    float elvss_set_gain;
+    // VCC校准参数
+    float vcc_set_offset;          
+    float vcc_set_gain;  
+    // IOVCC校准参数
+    float iovcc_set_offset;          
+    float iovcc_set_gain;  
+    // VSP校准参数
+    float vsp_set_offset;          
+    float vsp_set_gain;           
+    // AVDD校准参数
+    float avdd_set_offset;       
+    float avdd_set_gain; 
+    // VDD校准参数
+    float vdd_set_offset;       
+    float vdd_set_gain; 
+    // ELVDD校准参数
+    float elvdd_set_offset;       
+    float elvdd_set_gain;
+    //限流参考电压校准参数
+    float vcc_ref_offset;
+    float vcc_ref_gain;
+    float iovcc_ref_offset;
+    float iovcc_ref_gain;
+    float vsp_ref_offset;
+    float vsp_ref_gain;
+    float vsn_ref_offset;
+    float vsn_ref_gain;
+
+    float avdd_ref_offset;
+    float avdd_ref_gain;
+    float vdd_ref_offset;
+    float vdd_ref_gain;
+    float elvdd_ref_offset;
+    float elvdd_ref_gain;
+    float elvss_ref_offset;
+    float elvss_ref_gain;
+
+    float ref_freq_offset;
+    float ref_freq_gain;
+    float v_level_shift_offset;
+    float v_level_shift_gain;
+    float vadj_p_offset;
+    float vadj_p_gain;    
+    float vadj_n_offset;
+    float vadj_n_gain;
+    
+} da_calibration_data_t;
+
+typedef struct
+{
+
+    float ch0_offset[8];
+    float ch0_gain[8];
+    float ch1_offset[8];
+    float ch1_gain[8];
+    float ch2_offset[8];
+    float ch2_gain[8];
+    float ch3_offset;
+    float ch3_gain;
+    float ch4_offset;
+    float ch4_gain;
+    float ch5_offset;
+    float ch5_gain;
+    float ch6_offset;
+    float ch6_gain;
+    float ch7_offset;
+    float ch7_gain;   
+} ad_calibration_data_t;
 
 /**
  * @brief 校准数据结构体
@@ -30,82 +106,35 @@ typedef struct
     uint32_t version;               // 版本号
     uint32_t timestamp;             // 校准时间戳
     
-    // ch0校准参数
-    float ch0_set_v_offset;          // ch0设置电压偏移校准值
-    float ch0_set_v_gain;            // ch0设置电压增益校准值
-    float ch0_read_v_offset;         // ch0读取电压偏移校准值
-    float ch0_read_v_gain;           // ch0读取电压增益校准值
-    float ch0_read_c_offset;         // ch0读取电流偏移校准值
-    float ch0_read_c_gain;           // ch0读取电流增益校准值
-    
-    // ch1校准参数
-    float ch1_set_v_offset;          // ch1设置电压偏移校准值
-    float ch1_set_v_gain;            // ch1设置电压增益校准值
-    float ch1_read_v_offset;         // ch1读取电压偏移校准值
-    float ch1_read_v_gain;           // ch1读取电压增益校准值
-    float ch1_read_c_offset;         // ch1读取电流偏移校准值
-    float ch1_read_c_gain;           // ch1读取电流增益校准值
-
-    // ch2校准参数
-    float ch2_set_v_offset;          // ch2设置电压偏移校准值
-    float ch2_set_v_gain;            // ch2设置电压增益校准值
-    float ch2_read_v_offset;         // ch2读取电压偏移校准值
-    float ch2_read_v_gain;           // ch2读取电压增益校准值
-    float ch2_read_c_offset;         // ch2读取电流偏移校准值
-    float ch2_read_c_gain;           // ch2读取电流增益校准值
-
-    // ch3校准参数
-    float ch3_set_v_offset;          // ch3设置电压偏移校准值
-    float ch3_set_v_gain;            // ch3设置电压增益校准值
-    float ch3_read_v_offset;         // ch3读取电压偏移校准值
-    float ch3_read_v_gain;           // ch3读取电压增益校准值
-    float ch3_read_c_offset;         // ch3读取电流偏移校准值
-    float ch3_read_c_gain;           // ch3读取电流增益校准值
-
-    // ch4校准参数
-    float ch4_set_v_offset;          // ch4设置电压偏移校准值
-    float ch4_set_v_gain;            // ch4设置电压增益校准值
-    float ch4_read_v_offset;         // ch4读取电压偏移校准值
-    float ch4_read_v_gain;           // ch4读取电压增益校准值
-    float ch4_read_c_offset;         // ch4读取电流偏移校准值
-    float ch4_read_c_gain;           // ch4读取电流增益校准值
-
-    //ch5校准参数
-    float ch5_set_v_offset;          // ch5设置电压偏移校准值
-    float ch5_set_v_gain;            // ch5设置电压增益校准值
-    float ch5_read_v_offset;         // ch5读取电压偏移校准值
-    float ch5_read_v_gain;           // ch5读取电压增益校准值
-    float ch5_read_c_offset;         // ch5读取电流偏移校准值
-    float ch5_read_c_gain;           // ch5读取电流增益校准值
-
-    //ch6校准参数
-    float ch6_set_v_offset;          // ch6设置电压偏移校准值
-    float ch6_set_v_gain;            // ch6设置电压增益校准值
-    float ch6_read_v_offset;         // ch6读取电压偏移校准值
-    float ch6_read_v_gain;           // ch6读取电压增益校准值
-    float ch6_read_c_offset;         // ch6读取电流偏移校准值
-    float ch6_read_c_gain;           // ch6读取电流增益校准值
-
-    //ch7校准参数
-    float ch7_set_v_offset;          // ch7设置电压偏移校准值
-    float ch7_set_v_gain;            // ch7设置电压增益校准值
-    float ch7_read_v_offset;         // ch7读取电压偏移校准值
-    float ch7_read_v_gain;           // ch7读取电压增益校准值
-    float ch7_read_c_offset;         // ch7读取电流偏移校准值
-    float ch7_read_c_gain;           // ch7读取电流增益校准值
-
+    float vsn_last_voltage;       
+    float vsp_last_voltage;
+    float iovcc_last_voltage;
+    float vcc_last_voltage; 
     float elvss_last_voltage;       
-    float iovcc_last_voltage;       
     float elvdd_last_voltage;
-    float vcc_last_voltage;
     float vdd_last_voltage;
-    float vsn_last_voltage;
-    float vbat_last_voltage; 
+    float avdd_last_voltage;
+
+    float vcc_ref_last;
+    float iovcc_ref_last;
+    float vsp_ref_last;
+    float vsn_ref_last;
+    float avdd_ref_last;
+    float vdd_ref_last;
+    float elvdd_ref_last;
+    float elvss_ref_last;
+
+    float ref_freq_last;
+    float v_level_shift_last;
+    float vadj_p_last;
+    float vadj_n_last;
+
     da_calibration_data_t da_data;  // DA校准数据
+    ad_calibration_data_t ad_data;  // AD校准数据
     
     uint32_t reserved[4];           // 保留字段（用于扩展）
     uint32_t crc32;                 // CRC32校验值（必须放在最后）
-} __attribute__((packed)) calibration_data_t;
+} calibration_data_t;
 
 /**
  * @brief 校准数据管理器
@@ -114,6 +143,9 @@ typedef struct {
     calibration_data_t data;        // 校准数据
     bool is_loaded;                 // 是否已加载
     bool is_valid;                  // 数据是否有效
+    //填充
+    uint8_t padding[2];             // 字节对齐填充
+
     uint32_t load_attempts;         // 加载尝试次数
     uint32_t save_count;            // 保存次数
     uint32_t last_error;            // 最后一次错误码
@@ -150,17 +182,6 @@ HAL_StatusTypeDef calibration_verify_crc(calibration_data_t *cal_data);
 // Data Access Function
 calibration_data_t* calibration_get_data(void);
 bool calibration_is_valid(void);
-
-// 参数设置函数
-HAL_StatusTypeDef calibration_update_vbat_set(float offset, float gain);
-HAL_StatusTypeDef calibration_update_vbat_read(float offset, float gain);
-HAL_StatusTypeDef calibration_update_vbat_current(float offset, float gain);
-HAL_StatusTypeDef calibration_update_elvdd_set(float offset, float gain);
-HAL_StatusTypeDef calibration_update_elvdd_read(float offset, float gain);
-HAL_StatusTypeDef calibration_update_elvdd_current(float offset, float gain);
-HAL_StatusTypeDef calibration_update_elvss_set(float offset, float gain);
-HAL_StatusTypeDef calibration_update_elvss_read(float offset, float gain);
-HAL_StatusTypeDef calibration_update_elvss_current(float offset, float gain);
 
 // Flash操作函数
 HAL_StatusTypeDef calibration_flash_init(void);

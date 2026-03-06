@@ -23,13 +23,18 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "usbd_cdc_acm_if.h"
+
 #include "bsp_mcp4728.h"
 #include "bsp_ads1256.h"
+#include "bsp_ads1256_ctl.h"
 #include "bsp_power.h"       //powen en or disen
 #include "bsp_calibration.h" //calibration data
+#include "bsp.h" 
+
 #include "calibration_utils.h"
+
 #include "main.h"               //Io defination and debug macro
-#include "bsp.h"                //import version
+               //import version
 #include "power_control.h"
 #include "stm32f4xx_hal_gpio.h" //addr recon
 /*ra xb*/
@@ -209,7 +214,7 @@ static int8_t CDC_TransmitCplt(uint8_t cdc_ch, uint8_t *Buf, uint32_t *Len, uint
 //  if (HAL_UART_DeInit(handle) != HAL_OK)
 //  {
 //    /* Initialization Error */
-//    Error_Handler();
+//    Error_Handler(__FILE__, __LINE__);
 //  }
 //  /* set the Stop bit */
 //  switch (Line_Coding[cdc_ch].format)
@@ -278,14 +283,14 @@ static int8_t CDC_TransmitCplt(uint8_t cdc_ch, uint8_t *Buf, uint32_t *Len, uint
 //  if (HAL_UART_Init(handle) != HAL_OK)
 //  {
 //    /* Initialization Error */
-//    Error_Handler();
+//    Error_Handler(__FILE__, __LINE__);
 //  }
 //
 //  /** rx for uart and tx buffer of usb */
 //  if (HAL_UART_Receive_IT(handle, TX_Buffer[cdc_ch], 1) != HAL_OK)
 //  {
 //    /* Transfer error in reception process */
-//    Error_Handler();
+//    Error_Handler(__FILE__, __LINE__);
 //  }
 //}
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
@@ -317,7 +322,7 @@ static int8_t CDC_Init(uint8_t cdc_ch)
   //  if (HAL_TIM_Base_Start_IT(&htim4) != HAL_OK)
   //  {
   //    /* Starting Error */
-  //    Error_Handler();
+  //    Error_Handler(__FILE__, __LINE__);
   //  }
 
   return (USBD_OK);
@@ -335,7 +340,7 @@ static int8_t CDC_DeInit(uint8_t cdc_ch)
   //  if (HAL_UART_DeInit(CDC_CH_To_UART_Handle(cdc_ch)) != HAL_OK)
   //  {
   //    /* Initialization Error */
-  //    Error_Handler();
+  //    Error_Handler(__FILE__, __LINE__);
   //  }
   return (USBD_OK);
   /* USER CODE END 4 */

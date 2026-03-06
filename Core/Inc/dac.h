@@ -39,7 +39,7 @@ extern DAC_HandleTypeDef hdac;
 /* USER CODE END Private defines */
 
 void MX_DAC_Init(void);
-
+void DAC_SetValue(float value);
 /* USER CODE BEGIN Prototypes */
 
 /* USER CODE END Prototypes */

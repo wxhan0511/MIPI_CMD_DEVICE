@@ -1,6 +1,6 @@
 /**
  * @file       bsp_ads1256.h
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-08-28
@@ -13,16 +13,6 @@
 #define BSP_ADS1256_H
 
 #include <bsp.h>
-
-extern void raw_data_queue_push(float value , uint8_t index);
-extern uint16_t raw_data_queue_get_count(void);
-extern float raw_data_queue_get_data(uint16_t index);
-extern uint8_t raw_data_queue_get_index(uint16_t index);
-
-extern volatile uint16_t raw_data_queue_head;
-extern float latest_sample_data[8];
-#define RAW_DATA_QUEUE_SIZE  (4092 / sizeof(float)) 
-#define RAW_DATA_INDEX_QUEUE_SIZE  4092
 
 typedef enum
 {
@@ -70,36 +60,6 @@ typedef enum
 	GEAR_OK,
 }SAMPLE_GEAR_STATUS;
 
-
-typedef struct {
-    uint8_t header;
-    uint8_t cmd;
-    uint8_t power_name;
-    uint8_t cmd_status;
-	union {
-		uint8_t bytes[12];
-		float float_value[3];
-	} value;
-} power_data_frame;
-
-typedef struct __attribute__((packed)){
-    uint8_t header;
-    uint8_t cmd;
-    uint8_t power_name;
-	union {
-		uint8_t bytes[4];
-		float float_value[1];
-	} value;
-} set_power_data_frame;
-
-
-typedef enum
-{
-	VBAT = 0x00,
-	ELVDD,
-	ELVSS
-} power_name;
-
 typedef enum
 {
 	success = 0x00,
@@ -107,43 +67,6 @@ typedef enum
 	timeout
 } cmd_status;
 
-// ADC通道枚举定义
-typedef enum {
-    ADC_CH_VBAT     = 0,    // ADC0: AD_V_VBAT -  VABT电压
-    ADC_CH_ELVDD    = 1,    // ADC1: AD_V_ELVDD - ELVDD电压
-    ADC_CH_ELVSS    = 2,    // ADC2: AD_V_ELVSS - ELVSS电压
-    ADC_CH_VBAT_I   = 3,    // ADC3: AD_VBAT_I -  VBAT电流
-    ADC_CH_ELVDD_I  = 4,    // ADC4: AD_I_ELVDD - ELVDD电流
-    ADC_CH_VREF     = 5,    // ADC5: 基准电压
-    ADC_CH_ELVSS_I  = 6,    // ADC6: AD_I_ELVSS - ELVSS电流
-    ADC_CH_MAX      = 7     // 最大通道数
-} adc_channel_t;
-
-
-typedef enum {
-    GET_SOFTWARE_ID             = 0x40,
-    GET_HARDWARE_ID             = 0x41,
-    SET_POWER_VOLTAGE           = 0x50,
-    GET_POWER_VOLTAGE           = 0x51,
-    GET_POWER_CURRENT           = 0x52,
-    GET_3CH_POWER_VOLTAGE       = 0x53,
-    GET_3CH_POWER_CURRENT       = 0x54,
-    FACTORY_SETTING             = 0x60,
-    POWER_ON_SEQUENCE_SETTING   = 0x61
-} power_board_cmd_t;
-
-/* The corresponding channel number is also used as a command */
-typedef enum {
-    AD_I_IOVCC          = 0x0,
-    AD_I_VCC            = 0x1,
-    AD_I_ELVDD          = 0x2,
-    AD_I_ELVSS          = 0x3,
-    AD_V_ELVSS          = 0x4,
-    AD_V_VCC            = 0x5,
-    AD_V_ELVDD          = 0x6,
-    AD_V_IOVCC          = 0x7,
-    
-} ra_powername_cmd_t;
 
 typedef struct ads1256_dev
 {
@@ -172,8 +95,8 @@ typedef struct ads1256_dev
 }ads1256_dev_t;
 
 
-extern ads1256_dev_t dev_h_m_interface_board;
-extern ads1256_dev_t dev_ic_power_board;
+extern ads1256_dev_t dev_vol;
+extern ads1256_dev_t dev_cur;
 
 typedef enum
 {
@@ -205,8 +128,6 @@ typedef enum
     SPS_5,
     SPS_2_5
 }ADS1256_SPS;
-
-extern ads1256_dev_t dev_adc;
 
 void bsp_ads1256_init(const ads1256_dev_t *handle);
 

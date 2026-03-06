@@ -25,6 +25,7 @@
 /* USER CODE END 0 */
 
 SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
 extern SPI_HandleTypeDef hspi_tp;
 DMA_HandleTypeDef hdma_spi1_rx;
@@ -32,8 +33,15 @@ DMA_HandleTypeDef hdma_spi1_tx;
 DMA_HandleTypeDef hdma_spi3_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
+volatile uint8_t spi_rx_flag = 0;
+uint8_t spi2_rx_buf[SPI_FRAME_LEN];
+
+/* 中断工作缓冲 */
+static uint8_t s_rx_work[SPI_FRAME_LEN];
+static uint8_t s_tx_work[SPI_FRAME_LEN];
+
 /* SPI1 init function */
-void MX_SPI1_Init(void)
+void MX_SPI1_Init(void)//***ADS1256***
 {
 
   /* USER CODE BEGIN SPI1_Init 0 */
@@ -57,11 +65,42 @@ void MX_SPI1_Init(void)
   hspi1.Init.CRCPolynomial = 10;
   if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/* SPI2 init function */
+void MX_SPI2_Init(void)//***M SPI Slave***
+{
+
+  /* USER CODE BEGIN SPI2_Init 0 */
+
+  /* USER CODE END SPI2_Init 0 */
+
+  /* USER CODE BEGIN SPI2_Init 1 */
+
+  /* USER CODE END SPI2_Init 1 */
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_SLAVE;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_HARD_INPUT;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+  /* USER CODE BEGIN SPI2_Init 2 */
+
+  /* USER CODE END SPI2_Init 2 */
 
 }
 /* SPI3 init function */
@@ -89,7 +128,7 @@ void MX_SPI3_Init(void)
   hspi3.Init.CRCPolynomial = 10;
   if (HAL_SPI_Init(&hspi3) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE BEGIN SPI3_Init 2 */
 
@@ -101,7 +140,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(spiHandle->Instance==SPI1)
+  if(spiHandle->Instance==SPI1) //***ADS1256***
   {
   /* USER CODE BEGIN SPI1_MspInit 0 */
 
@@ -112,10 +151,17 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
     /**SPI1 GPIO Configuration
+    PA1     ------> SPI1_CS
     PA6     ------> SPI1_MISO
     PA7     ------> SPI1_MOSI
     PA5     ------> SPI1_SCK
     */
+    GPIO_InitStruct.Pin =ADC_SPI_CS1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(ADC_SPI_CS1_GPIO_Port, &GPIO_InitStruct);
+
     GPIO_InitStruct.Pin = ADC_SPI_MISO_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -151,7 +197,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi1_rx) != HAL_OK)
     {
-      Error_Handler();
+      Error_Handler(__FILE__, __LINE__);
     }
 
     __HAL_LINKDMA(spiHandle,hdmarx,hdma_spi1_rx);
@@ -169,11 +215,11 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi1_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi1_tx) != HAL_OK)
     {
-      Error_Handler();
+      Error_Handler(__FILE__, __LINE__);
     }
 
     __HAL_LINKDMA(spiHandle,hdmatx,hdma_spi1_tx);
-
+    HAL_GPIO_WritePin(ADC_SPI_CS1_GPIO_Port, ADC_SPI_CS1_Pin, GPIO_PIN_SET);
     /* SPI1 interrupt Init */
     HAL_NVIC_SetPriority(SPI1_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI1_IRQn);
@@ -181,7 +227,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 
   /* USER CODE END SPI1_MspInit 1 */
   }
-  else if(spiHandle->Instance==SPI2)
+  else if(spiHandle->Instance==SPI2)//***M SPI***
   {
     /* USER CODE BEGIN SPI2_MspInit 0 */
 
@@ -192,8 +238,8 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
     /**SPI2 GPIO Configuration
-    PB12    ------> SPI2_CS
-    PB13     ------> SPI2_SCK
+    PC0     ------> SPI2_CS
+    PC1     ------> SPI2_SCK
     PC2     ------> SPI2_MISO
     PC3     ------> SPI2_MOSI
     */
@@ -217,14 +263,14 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
     HAL_GPIO_Init(M_MISO_GPIO_Port, &GPIO_InitStruct);
     /* USER CODE BEGIN SPI2_MspInit 1 */
-    HAL_GPIO_WritePin(M_CS_GPIO_Port, M_CS_Pin, 1);
+    HAL_GPIO_WritePin(M_CS_GPIO_Port, M_CS_Pin, GPIO_PIN_SET);
     //TODO: Add SPI2 DMA initialization if needed
     HAL_NVIC_SetPriority(SPI2_IRQn, 0, 1);
     HAL_NVIC_EnableIRQ(SPI2_IRQn);
 
     /* USER CODE END SPI2_MspInit 1 */
   }
-  else if(spiHandle->Instance==SPI3)
+  else if(spiHandle->Instance==SPI3)//**FLASH*** */
   {
   /* USER CODE BEGIN SPI3_MspInit 0 */
 
@@ -238,26 +284,32 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     PC11     ------> SPI3_MISO
     PC12     ------> SPI3_MOSI
     */
-    GPIO_InitStruct.Pin = TSPI_CLK_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pin = FLASH_CS_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
-    HAL_GPIO_Init(TSPI_CLK_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(FLASH_CS_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = TSPI_MISO_Pin;
+    GPIO_InitStruct.Pin = FLASH_CLK_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
-    HAL_GPIO_Init(TSPI_MISO_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(FLASH_CLK_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = TSPI_MOSI_Pin;
+    GPIO_InitStruct.Pin = FLASH_MISO_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
-    HAL_GPIO_Init(TSPI_MOSI_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(FLASH_MISO_GPIO_Port, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = FLASH_MOSI_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+    HAL_GPIO_Init(FLASH_MOSI_GPIO_Port, &GPIO_InitStruct);
 
     /* SPI3 DMA Init */
     /* SPI3_RX Init */
@@ -273,7 +325,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi3_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi3_rx) != HAL_OK)
     {
-      Error_Handler();
+      Error_Handler(__FILE__, __LINE__);
     }
 
     __HAL_LINKDMA(spiHandle,hdmarx,hdma_spi3_rx);
@@ -291,11 +343,11 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi3_tx) != HAL_OK)
     {
-      Error_Handler();
+      Error_Handler(__FILE__, __LINE__);
     }
 
     __HAL_LINKDMA(spiHandle,hdmatx,hdma_spi3_tx);
-
+    HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
     /* SPI3 interrupt Init */
     HAL_NVIC_SetPriority(SPI3_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
@@ -383,6 +435,45 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
   }
 }
 
-/* USER CODE BEGIN 1 */
+/* 对外：更新下一帧要返回给主机的数据 */
+void SPI2_SlaveFixed_SetTx(const uint8_t *data, uint16_t len)
+{
+    if (data == NULL) return;
+    if (len > SPI_FRAME_LEN) len = SPI_FRAME_LEN;
 
-/* USER CODE END 1 */
+    __disable_irq();
+    memset(s_tx_work, 0, SPI_FRAME_LEN);
+    memcpy(s_tx_work, data, len);
+    __enable_irq();
+}
+
+void SPI2_SlaveFixed_InitAndStart(void)
+{
+    spi_rx_flag = 0;
+    memset((void *)spi2_rx_buf, 0, SPI_FRAME_LEN);
+    memset(s_rx_work, 0, SPI_FRAME_LEN);
+    memset(s_tx_work, 0, SPI_FRAME_LEN);
+
+    // 启动第一帧收发
+    HAL_SPI_TransmitReceive_IT(&hspi2, s_tx_work, s_rx_work, SPI_FRAME_LEN);
+}
+/* 一帧完成：主机这帧发送结束 */
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance != SPI2) return;
+
+    memcpy((void *)spi2_rx_buf, s_rx_work, SPI_FRAME_LEN);
+    spi_rx_flag = 1;  // 关键：主机发完置1
+
+    // 立即挂下一帧
+    HAL_SPI_TransmitReceive_IT(&hspi2, s_tx_work, s_rx_work, SPI_FRAME_LEN);
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance != SPI2) return;
+
+    HAL_SPI_Abort_IT(&hspi2);
+    HAL_SPI_TransmitReceive_IT(&hspi2, s_tx_work, s_rx_work, SPI_FRAME_LEN);
+}
+

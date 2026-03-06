@@ -32,17 +32,24 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-extern SPI_HandleTypeDef hspi1;
-
-extern SPI_HandleTypeDef hspi3;
-
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
 void MX_SPI1_Init(void);
+void MX_SPI2_Init(void);
 void MX_SPI3_Init(void);
+#define SPI_FRAME_LEN 64U 
 
+extern volatile uint8_t spi_rx_flag;
+extern uint8_t spi2_rx_buf[SPI_FRAME_LEN];
+
+extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi3;
+
+void SPI2_SlaveFixed_InitAndStart(void);
+void SPI2_SlaveFixed_SetTx(const uint8_t *data, uint16_t len);
 /* USER CODE BEGIN Prototypes */
 
 /* USER CODE END Prototypes */

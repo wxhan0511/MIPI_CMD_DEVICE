@@ -33,7 +33,7 @@ extern "C" {
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
-#define LED_PWM_IN_CHANNEL TIM_CHANNEL_2
+
 /* USER CODE END Private defines */
 void TIM1_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
@@ -43,6 +43,7 @@ void enableTim1CaptureCompareInterrupt(void);
 void disableTim1CaptureCompareInterrupt(void);
 void enableTim1PWMOutput(void);
 void disableTim1PWMOutput(void);
+void app_delay(uint32_t delay_ms);
 /* USER CODE BEGIN EFP */
 /* USER CODE BEGIN Prototypes */
 extern TIM_HandleTypeDef htim1;

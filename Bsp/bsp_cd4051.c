@@ -1,5 +1,4 @@
 #include "bsp_cd4051.h"
-#include "bsp_latch.h"
 
 /* 锁存器 U1 (Latch 3) 的数据映像 */
 extern uint8_t s_latch3_data; // 默认使 INH=1 (禁止)

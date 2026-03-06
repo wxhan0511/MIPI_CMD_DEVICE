@@ -1,6 +1,6 @@
 /**
  * @file       bsp_i2c_bus.h
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-10-13

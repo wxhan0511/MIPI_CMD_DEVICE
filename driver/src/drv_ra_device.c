@@ -1,6 +1,6 @@
 /**
  * @file       drv_ra_device.c
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-10-30
@@ -65,7 +65,7 @@ BSP_STATUS_T drv_ra_set_power_vol(drv_ra_dev_t *dev,uint8_t power_name,uint8_t p
         case RA_POWER_VSP:
             if((power_value < 24) || (power_value > 84))
             {
-                RA_POWEREX_INFO("The vsp voltage is %d *100*mv and is not set within the range of 24 to 84, error\r\n",power_value);
+                MIPI_CMD_INFO("The vsp voltage is %d *100*mv and is not set within the range of 24 to 84, error\r\n",power_value);
                 return BSP_ERROR;
             }
             else{
@@ -80,7 +80,7 @@ BSP_STATUS_T drv_ra_set_power_vol(drv_ra_dev_t *dev,uint8_t power_name,uint8_t p
         case RA_POWER_VSN:
             if((power_value < 24) || (power_value > 64))
             {
-                RA_POWEREX_INFO("The vsn voltage is %d *100*mv and is not set within the range of 24 to 64, error\r\n",power_value);
+                MIPI_CMD_INFO("The vsn voltage is %d *100*mv and is not set within the range of 24 to 64, error\r\n",power_value);
                 return BSP_ERROR;
             }
             else{
@@ -95,7 +95,7 @@ BSP_STATUS_T drv_ra_set_power_vol(drv_ra_dev_t *dev,uint8_t power_name,uint8_t p
         case RA_POWER_VCI:
             if((power_value < 10) || (power_value > 35))
             {
-                RA_POWEREX_INFO("The vci voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
+                MIPI_CMD_INFO("The vci voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
 
                 return BSP_ERROR;
             }
@@ -109,7 +109,7 @@ BSP_STATUS_T drv_ra_set_power_vol(drv_ra_dev_t *dev,uint8_t power_name,uint8_t p
         case RA_POWER_IOVCC:
             if((power_value < 10) || (power_value > 35))
             {
-                RA_POWEREX_INFO("The iovcc_xb voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
+                MIPI_CMD_INFO("The iovcc_xb voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
                 return BSP_ERROR;
             }
             else{
@@ -123,7 +123,7 @@ BSP_STATUS_T drv_ra_set_power_vol(drv_ra_dev_t *dev,uint8_t power_name,uint8_t p
         case RA_POWER_MVDD:
             if((power_value < 10) || (power_value > 35))
             {
-                RA_POWEREX_INFO("The mvdd voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
+                MIPI_CMD_INFO("The mvdd voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
                 return BSP_ERROR;
             }
             else{
@@ -136,7 +136,7 @@ BSP_STATUS_T drv_ra_set_power_vol(drv_ra_dev_t *dev,uint8_t power_name,uint8_t p
         case RA_POWER_VDDIO:
             if((power_value < 10) || (power_value > 35))
             {
-                RA_POWEREX_INFO("The vddio voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
+                MIPI_CMD_INFO("The vddio voltage is %d *100*mv and is not set within the range of 10 to 35, error\r\n",power_value);
                 return BSP_ERROR;
             }
             else{

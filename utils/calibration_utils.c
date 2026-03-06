@@ -1,6 +1,6 @@
 /**
  * @file       calibration_utils.c
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-10-11
@@ -61,172 +61,37 @@ uint8_t float_to_uint8_round(float value) {
 
 
 /*
-  * @brief Select calibration parameters based on channel and type
-  * @param ch Channel number (0-7)
-  * @param type 0 for set parameters, 1 for read parameters
-  * @param power 0 for voltage, 1 for current
-  * @param offset Pointer to store the selected offset
-  * @param gain Pointer to store the selected gain  
+  * @brief Select calibration parameters based on main_index and sub_index
+  * @param main_index : Channel number (0-7)
+  * @param sub_index : d trigger selection sub index (0-7)
 */
-void sel_cali_param(uint8_t ch, uint8_t type, uint8_t power, float *offset, float *gain)
+void sel_cali_param(uint8_t main_index,uint8_t sub_index, float *offset, float *gain)
 {
-  if (ch > 7 || type > 1 || power > 1)
+  if (main_index > 7 || sub_index > 7 || offset == NULL || gain == NULL)
   {
     *offset = 0.0f;
     *gain = 1.0f;
-    RA_POWEREX_DEBUG("Invalid channel (%d), type (%d) or power(%d) for calibration selection\r\n", ch, type, power);
+    MIPI_CMD_DEBUG("Invalid channel (%d, %d) or NULL pointer(&offset , &gain) for calibration selection\r\n", main_index,sub_index);
     return;
   }
 
   calibration_data_t *cal = &g_calibration_manager.data;
+  *offset= main_index == 0 ? cal->ad_data.ch0_offset[sub_index] :
+          main_index == 1 ? cal->ad_data.ch1_offset[sub_index] :
+          main_index == 2 ? cal->ad_data.ch2_offset[sub_index] :
+          main_index == 3 ? cal->ad_data.ch3_offset:
+            main_index == 4 ? cal->ad_data.ch4_offset:
+            main_index == 5 ? cal->ad_data.ch5_offset:
+          main_index == 6 ? cal->ad_data.ch6_offset:
+                            cal->ad_data.ch7_offset;
 
-  if (type == 0)
-  { // Set parameters
-    switch (ch)
-    {
-    case 0:
-      *offset = cal->ch0_set_v_offset;
-      *gain = cal->ch0_set_v_gain;
-      break;
-    case 1:
-      *offset = cal->ch1_set_v_offset;
-      *gain = cal->ch1_set_v_gain;
-      break;
-    case 2:
-      *offset = cal->ch2_set_v_offset;
-      *gain = cal->ch2_set_v_gain;
-      break;
-    case 3:
-      *offset = cal->ch3_set_v_offset;
-      *gain = cal->ch3_set_v_gain;
-      break;
-    case 4:
-      *offset = cal->ch4_set_v_offset;
-      *gain = cal->ch4_set_v_gain;
-      break;
-    case 5:
-      *offset = cal->ch5_set_v_offset;
-      *gain = cal->ch5_set_v_gain;
-      break;
-    case 6:
-      *offset = cal->ch6_set_v_offset;
-      *gain = cal->ch6_set_v_gain;
-      break;
-    case 7:
-      *offset = cal->ch7_set_v_offset;
-      *gain = cal->ch7_set_v_gain;
-      break;
-    default:
-      *offset = 0.0f;
-      *gain = 1.0f;
-      break;
-    }
-  }
-  else
-  { // Read parameters
-    switch (ch)
-    {
-    case 0:
-      if (power == 0)
-      {
-        *offset = cal->ch0_read_v_offset;
-        *gain = cal->ch0_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch0_read_c_offset;
-        *gain = cal->ch0_read_c_gain;
-      }
-      break;
-    case 1:
-      if (power == 0)
-      {
-        *offset = cal->ch1_read_v_offset;
-        *gain = cal->ch1_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch1_read_c_offset;
-        *gain = cal->ch1_read_c_gain;
-      }
-      break;
-    case 2:
-      if (power == 0)
-      {
-        *offset = cal->ch2_read_v_offset;
-        *gain = cal->ch2_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch2_read_c_offset;
-        *gain = cal->ch2_read_c_gain;
-      }
-      break;
-    case 3:
-      if (power == 0)
-      {
-        *offset = cal->ch3_read_v_offset;
-        *gain = cal->ch3_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch3_read_c_offset;
-        *gain = cal->ch3_read_c_gain;
-      }
-      break;
-    case 4:
-      if (power == 0)
-      {
-        *offset = cal->ch4_read_v_offset;
-        *gain = cal->ch4_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch4_read_c_offset;
-        *gain = cal->ch4_read_c_gain;
-      }
-      break;
-    case 5:
-      if (power == 0)
-      {
-        *offset = cal->ch5_read_v_offset;
-        *gain = cal->ch5_read_v_gain;
-    }
-      else
-      {
-        *offset = cal->ch5_read_c_offset;
-        *gain = cal->ch5_read_c_gain;
-      }
-      break;
-    case 6:
-      if (power == 0)
-      {
-        *offset = cal->ch6_read_v_offset;
-        *gain = cal->ch6_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch6_read_c_offset;
-        *gain = cal->ch6_read_c_gain;
-      }
-      break;
-    case 7:
-      if (power == 0)
-      {
-        *offset = cal->ch7_read_v_offset;
-        *gain = cal->ch7_read_v_gain;
-      }
-      else
-      {
-        *offset = cal->ch7_read_c_offset;
-        *gain = cal->ch7_read_c_gain;
-      }
-      break;
-    default:
-      *offset = 0.0f;
-      *gain = 1.0f;
-      RA_POWEREX_DEBUG("Invalid channel (%d) for calibration selection\r\n", ch);
-      break;
-    }
-  }
+  *gain = main_index == 0 ? cal->ad_data.ch0_gain[sub_index] :
+         main_index == 1 ? cal->ad_data.ch1_gain[sub_index] :
+         main_index == 2 ? cal->ad_data.ch2_gain[sub_index] :
+         main_index == 3 ? cal->ad_data.ch3_gain:
+         main_index == 4 ? cal->ad_data.ch4_gain:
+         main_index == 5 ? cal->ad_data.ch5_gain:
+         main_index == 6 ? cal->ad_data.ch6_gain:
+                           cal->ad_data.ch7_gain;
+
 }

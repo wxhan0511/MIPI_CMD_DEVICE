@@ -1,6 +1,6 @@
 /**
  * @file       debug.h
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-10-10
@@ -31,18 +31,18 @@ extern "C" {
 #endif
 
 /* -------------------- Debug Macros -------------------- */
-#define RA_POWEREX_INFO(fmt, ...)    printf(fmt, ##__VA_ARGS__)
-#define RA_POWEREX_WARN(fmt, ...)    printf(fmt, ##__VA_ARGS__)
-#define RA_POWEREX_ERROR(fmt, ...)   printf( fmt, ##__VA_ARGS__)
-//#define RA_POWEREX_DEBUG_ENABLE 1
-#if RA_POWEREX_DEBUG_ENABLE
-    #define RA_POWEREX_PRINTF(fmt, ...)  printf("[RA_POWEREX] " fmt, ##__VA_ARGS__)
-    #define RA_POWEREX_DEBUG(fmt, ...)   printf("[RA_POWEREX][DEBUG] " fmt, ##__VA_ARGS__)
+#define MIPI_CMD_INFO(fmt, ...)    printf(fmt, ##__VA_ARGS__)
+#define MIPI_CMD_WARN(fmt, ...)    printf(fmt, ##__VA_ARGS__)
+#define MIPI_CMD_ERROR(fmt, ...)   printf( fmt, ##__VA_ARGS__)
+//#define MIPI_CMD_DEBUG_ENABLE 1
+#if MIPI_CMD_DEBUG_ENABLE
+    #define MIPI_CMD_PRINTF(fmt, ...)  printf("[MIPI_CMD] " fmt, ##__VA_ARGS__)
+    #define MIPI_CMD_DEBUG(fmt, ...)   printf("[MIPI_CMD][DEBUG] " fmt, ##__VA_ARGS__)
 #else
-    #define RA_POWEREX_PRINTF(fmt, ...)  do {} while(0)
-    #define RA_POWEREX_DEBUG(fmt, ...)   do {} while(0)
+    #define MIPI_CMD_PRINTF(fmt, ...)  do {} while(0)
+    #define MIPI_CMD_DEBUG(fmt, ...)   do {} while(0)
 #endif
-//#define TIME_DEBUG_ENABLE
+#define TIME_DEBUG_ENABLE
 #ifdef TIME_DEBUG_ENABLE
     #define TIME_DEBUG(fmt, ...)         printf("[TIME DEBUG] " fmt, ##__VA_ARGS__)
     #define TIME_INFO(fmt, ...)          printf("[TIME INFO] " fmt, ##__VA_ARGS__)
@@ -99,5 +99,22 @@ extern "C" {
     #define CDC_INFO(fmt, ...)           do {} while(0)
     #define CDC_ERROR(fmt, ...)          do {} while(0)
 #endif
+#define ADS1256_INFO(fmt, ...)           printf("[ADS1256 INFO] " fmt, ##__VA_ARGS__)
+#define ADS1256_ERROR(fmt, ...)          printf("[ADS1256 ERROR] " fmt, ##__VA_ARGS__)
+// #define ADS1256_DEBUG_ENABLE
+#ifdef ADS1256_DEBUG_ENABLE
+    #define ADS1256_DEBUG(fmt, ...)          printf( fmt, ##__VA_ARGS__)
+#else
+    #define ADS1256_DEBUG(fmt, ...)          do {} while(0)
+#endif
+#define W25Q256JVEQ_INFO(fmt, ...)           printf(fmt, ##__VA_ARGS__)
+#define W25Q256JVEQ_ERROR(fmt, ...)          printf(fmt, ##__VA_ARGS__)
+// #define W25Q256JVEQ_DEBUG_ENABLE
+#ifdef W25Q256JVEQ_DEBUG_ENABLE
+    #define W25Q256JVEQ_DEBUG(fmt, ...)          printf( fmt, ##__VA_ARGS__)
+#else
+    #define W25Q256JVEQ_DEBUG(fmt, ...)          do {} while(0)
+#endif
+
 
 #endif /* __DEBUG_H */

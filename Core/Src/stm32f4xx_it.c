@@ -77,10 +77,11 @@ extern DMA_HandleTypeDef hdma_spi1_tx;
 extern DMA_HandleTypeDef hdma_spi3_rx;
 extern DMA_HandleTypeDef hdma_spi3_tx;
 extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi3;
-extern DMA_HandleTypeDef hdma_usart1_rx;
-extern DMA_HandleTypeDef hdma_usart1_tx;
-extern UART_HandleTypeDef huart1;
+extern DMA_HandleTypeDef hdma_usart3_rx;
+extern DMA_HandleTypeDef hdma_usart3_tx;
+extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim6;
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -122,7 +123,7 @@ void HardFault_Handler(void)
   /* USER CODE BEGIN HardFault_IRQn 0 */
   while(1);
   /* USER CODE END HardFault_IRQn 0 */
-  RA_POWEREX_DEBUG("HardFault_Handler\r\n");
+  MIPI_CMD_DEBUG("HardFault_Handler\r\n");
   //先判断是MSP还是PSP，再打印 SP偏移6*4 字节处的PC值
   uint32_t *sp;
   __ASM volatile(
@@ -131,15 +132,15 @@ void HardFault_Handler(void)
       "MRSEQ %0, MSP \n"
       "MRSNE %0, PSP \n"
       : "=r"(sp));
-  RA_POWEREX_ERROR("PC = 0x%08X\r\n", sp[6]);
+  MIPI_CMD_ERROR("PC = 0x%08X\r\n", sp[6]);
   if (SCB->SHCSR & SCB_SHCSR_MEMFAULTENA_Msk) {
-    RA_POWEREX_ERROR("MemManage\r\n");
+    MIPI_CMD_ERROR("MemManage\r\n");
   }
   if (SCB->SHCSR & SCB_SHCSR_USGFAULTENA_Msk) {
-    RA_POWEREX_ERROR("UsageFault\r\n");
+    MIPI_CMD_ERROR("UsageFault\r\n");
   }
   if (SCB->SHCSR & SCB_SHCSR_BUSFAULTENA_Msk) {
-    RA_POWEREX_ERROR("BusFault\r\n");
+    MIPI_CMD_ERROR("BusFault\r\n");
   }
 
 
@@ -271,7 +272,35 @@ void DMA1_Stream0_IRQHandler(void)
 
   /* USER CODE END DMA1_Stream0_IRQn 1 */
 }
+/* ============================================================================
+ * DMA1 Stream1 global interrupt handler. Handles USART3 RX DMA interrupts.
+ * ============================================================================ */
+/**
+ * @brief This function handles DMA1 stream1 global interrupt.
+ */
+void DMA1_Stream1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream1_IRQn 0 */
 
+  /* USER CODE END DMA1_Stream1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart3_rx);
+  /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream1_IRQn 1 */
+}
+/**
+ * @brief This function handles DMA1 stream4 global interrupt.
+ */
+void DMA1_Stream4_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream4_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart3_tx);
+  /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream4_IRQn 1 */
+}
 /**
  * @brief This function handles DMA1 stream2 global interrupt.
  */
@@ -299,6 +328,8 @@ void DMA1_Stream3_IRQHandler(void)
 
   /* USER CODE END DMA1_Stream3_IRQn 1 */
 }
+
+
 
 /**
  * @brief This function handles DMA1 stream5 global interrupt.
@@ -377,23 +408,44 @@ void SPI2_IRQHandler(void)
   /* USER CODE BEGIN SPI2_IRQn 0 */
 
   /* USER CODE END SPI2_IRQn 0 */
-  HAL_SPI_IRQHandler(&hspi_tp);
+  HAL_SPI_IRQHandler(&hspi2);
   /* USER CODE BEGIN SPI2_IRQn 1 */
 
   /* USER CODE END SPI2_IRQn 1 */
 }
-/**
- * @brief This function handles USART1 global interrupt.
- */
-void USART1_IRQHandler(void)
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-  /* USER CODE BEGIN USART1_IRQn 0 */
+    if(hspi->Instance == SPI2) {
+        spi_rx_flag = 1;
+    }
+}
 
-  /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
-  /* USER CODE BEGIN USART1_IRQn 1 */
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi == &hspi_tp) {
+        // 处理错误
+        // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
+        // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
+        // #define HAL_SPI_ERROR_CRC               (0x00000002U)   /*!< CRC error                              */
+        // #define HAL_SPI_ERROR_OVR               (0x00000004U)   /*!< OVR error                              */
+        // #define HAL_SPI_ERROR_FRE               (0x00000008U)   /*!< FRE error                              */
+        // #define HAL_SPI_ERROR_DMA               (0x00000010U)   /*!< DMA transfer error                     */
+        // #define HAL_SPI_ERROR_FLAG              (0x00000020U)   /*!< Error on RXNE/TXE/BSY Flag             */
+        // #define HAL_SPI_ERROR_ABORT             (0x00000040U)   /*!< Error during SPI Abort procedure       */
+        GTB_INFO("[SPI ERROR] code=%lu\r\n", HAL_SPI_GetError(hspi));
+    }
+}
+/**
+ * @brief This function handles USART3 global interrupt.
+ */
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
 
-  /* USER CODE END USART1_IRQn 1 */
+  /* USER CODE END USART3_IRQn 1 */
 }
 
 /**
@@ -463,7 +515,7 @@ void DMA2_Stream2_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
 
   /* USER CODE END DMA2_Stream2_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_rx);
+  
   /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
 
   /* USER CODE END DMA2_Stream2_IRQn 1 */
@@ -491,7 +543,7 @@ void DMA2_Stream7_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
 
   /* USER CODE END DMA2_Stream7_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+  
   /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
 
   /* USER CODE END DMA2_Stream7_IRQn 1 */
@@ -666,28 +718,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 
 
 
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-    if(hspi->Instance == SPI2) {
-        spi_rx_flag = 1;
-    }
-}
 
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
-{
-    if (hspi == &hspi_tp) {
-        // 处理错误
-        // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
-        // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
-        // #define HAL_SPI_ERROR_CRC               (0x00000002U)   /*!< CRC error                              */
-        // #define HAL_SPI_ERROR_OVR               (0x00000004U)   /*!< OVR error                              */
-        // #define HAL_SPI_ERROR_FRE               (0x00000008U)   /*!< FRE error                              */
-        // #define HAL_SPI_ERROR_DMA               (0x00000010U)   /*!< DMA transfer error                     */
-        // #define HAL_SPI_ERROR_FLAG              (0x00000020U)   /*!< Error on RXNE/TXE/BSY Flag             */
-        // #define HAL_SPI_ERROR_ABORT             (0x00000040U)   /*!< Error during SPI Abort procedure       */
-        GTB_INFO("[SPI ERROR] code=%lu\r\n", HAL_SPI_GetError(hspi));
-    }
-}
 
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)
 {
@@ -743,7 +774,7 @@ void OTG_HS_IRQHandler(void)
 // 电压电流采样回调函数
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if (GPIO_Pin == ADC_DRDY2_Pin)
+  if (GPIO_Pin == ADC_DRDY1_Pin)
   {
 #if BSP_VOL_DEBUG
     if (cnt == 0)
@@ -774,7 +805,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
     cnt += 1;
 #elif BSP_VOL_WORK
-    bsp_ads1256_irq_handle(&dev_h_m_interface_board);
+    bsp_ads1256_irq_handle(&dev_vol);
 #endif
 
 #if BSP_CUR_DEBUG
@@ -808,10 +839,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
     cnt += 1;
 #endif
-  }
-  if(GPIO_Pin == ADC_DRDY1_Pin)
-  {
-      bsp_ads1256_irq_handle(&dev_ic_power_board);
   }
   if (GPIO_Pin == TSPI_INT_IN_Pin)
   {

@@ -123,7 +123,7 @@ void TIM1_CCP_Init(void)
   if(HAL_TIM_IC_Init(&htim1) != HAL_OK)//表明这个定时器主要用于输入捕获功能
   {
     /* Initialization Error */
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   
   /*##-2- Configure the Input Capture channels ###############################*/ 
@@ -137,7 +137,7 @@ void TIM1_CCP_Init(void)
   if(HAL_TIM_IC_ConfigChannel(&htim1, &sConfig, TIM_CHANNEL_1) != HAL_OK)
   {
     /* Configuration Error */
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   
   /* Configure the Input Capture of channel 2 */
@@ -146,7 +146,7 @@ void TIM1_CCP_Init(void)
   if(HAL_TIM_IC_ConfigChannel(&htim1, &sConfig, TIM_CHANNEL_2) != HAL_OK)
   {
     /* Configuration Error */
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /*##-3- Configure the slave mode ###########################################*/
   /* Select the slave Mode: Reset Mode */
@@ -155,7 +155,7 @@ void TIM1_CCP_Init(void)
   if(HAL_TIM_SlaveConfigSynchronization(&htim1, &sSlaveConfig) != HAL_OK)
   {
     /* Configuration Error */
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -166,14 +166,14 @@ void enableTim1CaptureCompareInterrupt(void)
   if(HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2) != HAL_OK)//以中断方式启动通道2的输入捕获
   {
     /* Starting Error */
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   
   /*##-5- Start the Input Capture in interrupt mode ##########################*/
   if(HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1) != HAL_OK)
   {
     /* Starting Error */
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   
   /*##-6- Enable the TIM1 global Interrupt ####################################*/
@@ -190,43 +190,50 @@ void disableTim1CaptureCompareInterrupt(void)
     if(HAL_TIM_IC_Stop_IT(&htim1, TIM_CHANNEL_2) != HAL_OK)
     {
       /* Stopping Error */
-      Error_Handler();
+      Error_Handler(__FILE__, __LINE__);
     }
     
     /*##-9- Stop the Input Capture in interrupt mode ##########################*/
     if(HAL_TIM_IC_Stop_IT(&htim1, TIM_CHANNEL_1) != HAL_OK)
     {
       /* Stopping Error */
-      Error_Handler();
+      Error_Handler(__FILE__, __LINE__);
     }
 }
 
 void enableTim1PWMOutput(void)
 {
-    HAL_TIM_PWM_Start(&htim1,LED_PWM_IN_CHANNEL);
+    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
     if (HAL_TIM_Base_Start_IT(&htim1) != HAL_OK)
     {
-        Error_Handler();
+        Error_Handler(__FILE__, __LINE__);
     }
 }
 void disableTim1PWMOutput(void)
 {
-    HAL_TIM_PWM_Stop(&htim1,LED_PWM_IN_CHANNEL);
+    HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_3);
     if (HAL_TIM_Base_Stop_IT(&htim1) != HAL_OK)
     {
-        Error_Handler();
+        Error_Handler(__FILE__, __LINE__);
     }
 }
 
+void app_delay(uint32_t delay_ms)
+{
+  if(osKernelGetState() != osKernelRunning) {
+    HAL_Delay(delay_ms);
+  } else {
+    osDelay(delay_ms);
+  }
+}
 
 /**
-  * @brief  TIM1 PWM Initialization (Channel 2, PE11 Pin)
+  * @brief  TIM1 PWM Initialization (Channel 4, PE14 Pin)
   * @param  arr: Auto-reload value (determines PWM period)
   * @param  psc: Prescaler (determines the timer clock frequency)
   * @param  pulse: Pulse value (determines PWM duty cycle)
   * @retval None
-  * T = (arr + 1) * (psc + 1) / Fclk
-  * arr,psc f=168MHz/(arry*psc)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);
+  * arr,psc f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);
   */
 void TIM1_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse) {
    /* USER CODE BEGIN TIM1_Init 0 */
@@ -250,35 +257,35 @@ void TIM1_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse) {
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /*当你因为总线速度限制而不得不降低整个 APB1 总线的时钟时（即预分频系数 > 1），系统会自动将供给定时器的时钟频率乘以2。*/
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;//APB2 Bus Clock 84MHZ×2=168MHZ
   if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 10;
+  sConfigOC.Pulse = pulse;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
 
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
@@ -289,14 +296,14 @@ void TIM1_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse) {
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
   if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
 
-  __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, pulse);
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
 
 }
 
@@ -353,9 +360,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
   /* USER CODE END TIM1_MspPostInit 0 */
     __HAL_RCC_GPIOE_CLK_ENABLE();
     /**TIM1 GPIO Configuration
-    PE11     ------> TIM1_CH2
+    PE14     ------> TIM1_CH4
     */
-    GPIO_InitStruct.Pin = LED_PWM_IN_Pin;
+    GPIO_InitStruct.Pin = LED_PWM_IN;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -425,7 +432,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM1)
   {
     // 停止TIM1的PWM输出
-    HAL_TIM_PWM_Stop_IT(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Stop_IT(&htim1, TIM_CHANNEL_3);
     // 停止定时器基础部分 (和中断)
     HAL_TIM_Base_Stop_IT(&htim1);
   }
@@ -491,10 +498,10 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef *htim)
  
   /*##-1- Enable peripherals and GPIO Clocks #################################*/
   /* TIMx Peripheral clock enable */
-  __HAL_RCC_TIM8_CLK_ENABLE();
+  __HAL_RCC_TIM1_CLK_ENABLE();
     
   /* Enable GPIO channels Clock */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   
   /* Configure  (TIMx_Channel) in Alternate function, push-pull and 100MHz speed */
   GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_11;
@@ -508,7 +515,7 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef *htim)
   /* Sets the priority grouping field */
   HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 1);
   
-  /* Enable the TIM2 global Interrupt */
+  /* Enable the TIM1 global Interrupt */
   HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
 }
 

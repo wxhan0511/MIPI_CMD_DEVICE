@@ -15,21 +15,21 @@ extern "C"
 
 #include "stm32f4xx_hal.h"
 
-
+/* ============================================================================
+ * ADS1256 and W25Q256JVEQ SPI Pin Definitions
+ * ============================================================================
 /*For Human Machine Interface ADS1256*/
 #define ADC_DRDY2_Pin GPIO_PIN_1
 #define ADC_DRDY2_GPIO_Port GPIOA
 #define ADC_SPI_CS2_Pin GPIO_PIN_2
 #define ADC_SPI_CS2_GPIO_Port GPIOA
-/*For W25Q256JVEQ*/
-#define FLASH_CS_Pin GPIO_PIN_8
-#define FLASH_CS_GPIO_Port GPIOC
-/*For IC power board ADS1256*/
-#define ADC_DRDY1_Pin GPIO_PIN_11
+
+/*For ADS1256*/
+#define ADC_DRDY1_Pin GPIO_PIN_2
 #define ADC_DRDY1_GPIO_Port GPIOA
-#define ADC_SPI_CS1_Pin GPIO_PIN_12
+#define ADC_SPI_CS1_Pin GPIO_PIN_1
 #define ADC_SPI_CS1_GPIO_Port GPIOA
-/*For ADS1256, IC power board, W25Q256JVEQ*/
+
 #define ADC_RESET_Pin GPIO_PIN_0
 #define ADC_RESET_GPIO_Port GPIOA
 #define ADC_SPI_MOSI_Pin GPIO_PIN_7
@@ -38,60 +38,68 @@ extern "C"
 #define ADC_SPI_MISO_GPIO_Port GPIOA
 #define ADC_SPI_CLK_Pin GPIO_PIN_5
 #define ADC_SPI_CLK_GPIO_Port GPIOA
-
-#define FLASH_MOSI_Pin ADC_SPI_MOSI_Pin
-#define FLASH_MOSI_GPIO_Port ADC_SPI_MOSI_GPIO_Port
-#define FLASH_MISO_Pin ADC_SPI_MISO_Pin
-#define FLASH_MISO_GPIO_Port ADC_SPI_MISO_GPIO_Port
-#define FLASH_CLK_Pin ADC_SPI_CLK_Pin
-#define FLASH_CLK_GPIO_Port ADC_SPI_CLK_GPIO_Port
 /* ============================================================================
- * ADS1256 and W25Q256JVEQ SPI Pin Definitions
- * ============================================================================
- */
-#define LATCH_D1_Pin GPIO_PIN_0
-#define LATCH_D1_GPIO_Port GPIOE
-#define LATCH_D2_Pin GPIO_PIN_1
-#define LATCH_D2_GPIO_Port GPIOE
-#define LATCH_D3_Pin GPIO_PIN_2
-#define LATCH_D3_GPIO_Port GPIOE
-#define LATCH_D4_Pin GPIO_PIN_3
-#define LATCH_D4_GPIO_Port GPIOE
-#define LATCH_D5_Pin GPIO_PIN_4
-#define LATCH_D5_GPIO_Port GPIOE
-#define LATCH_D6_Pin GPIO_PIN_5
-#define LATCH_D6_GPIO_Port GPIOE
-#define LATCH_D7_Pin GPIO_PIN_6
-#define LATCH_D7_GPIO_Port GPIOE
-#define LATCH_D0_Pin GPIO_PIN_12
-#define LATCH_D0_GPIO_Port GPIOE
+ * Flash SPI Pin Definitions
+ * ============================================================================ */
+#define FLASH_MOSI_Pin GPIO_PIN_11
+#define FLASH_MOSI_GPIO_Port GPIOC
+#define FLASH_MISO_Pin GPIO_PIN_10
+#define FLASH_MISO_GPIO_Port GPIOC
+#define FLASH_CLK_Pin GPIO_PIN_13
+#define FLASH_CLK_GPIO_Port GPIOC
+#define FLASH_CS_Pin GPIO_PIN_12
+#define FLASH_CS_GPIO_Port GPIOC
 /* ============================================================================
- * Latch Data Pin Definitions (PE0–PE6, PE12)
- * ============================================================================
- */
-#define LATCH0_CP_Pin GPIO_PIN_8
-#define LATCH0_CP_GPIO_Port GPIOA
-#define LATCH1_CP_Pin GPIO_PIN_0
-#define LATCH1_CP_GPIO_Port GPIOB
-#define LATCH2_CP_Pin GPIO_PIN_1
-#define LATCH2_CP_GPIO_Port GPIOB
+ * Latch Data Pin Definitions
+ * ============================================================================ */
+#define LATCH_0_Pin GPIO_PIN_11
+#define LATCH_0_GPIO_Port GPIOA
+#define LATCH_1_Pin GPIO_PIN_10
+#define LATCH_1_GPIO_Port GPIOA
+#define LATCH_2_Pin GPIO_PIN_9
+#define LATCH_2_GPIO_Port GPIOA
+#define LATCH_3_Pin GPIO_PIN_8
+#define LATCH_3_GPIO_Port GPIOA
+#define LATCH_4_Pin GPIO_PIN_9
+#define LATCH_4_GPIO_Port GPIOC
+#define LATCH_5_Pin GPIO_PIN_8
+#define LATCH_5_GPIO_Port GPIOC
+#define LATCH_6_Pin GPIO_PIN_7
+#define LATCH_6_GPIO_Port GPIOC
+#define LATCH_7_Pin GPIO_PIN_6
+#define LATCH_7_GPIO_Port GPIOC
 /* ============================================================================
- * Latch Clock Pin Definitions
- * ============================================================================
- */
+ * D Trigger Clock Pin Definitions
+ * ============================================================================ */
+#define D_CLK_1_Pin GPIO_PIN_13
+#define D_CLK_1_GPIO_Port GPIOD
+#define D_CLK_2_Pin GPIO_PIN_4
+#define D_CLK_2_GPIO_Port GPIOA
+#define D_CLK_3_Pin GPIO_PIN_12
+#define D_CLK_3_GPIO_Port GPIOD
+#define D_CLK_4_Pin GPIO_PIN_6
+#define D_CLK_4_GPIO_Port GPIOB
+#define D_CLK_5_Pin GPIO_PIN_2
+#define D_CLK_5_GPIO_Port GPIOD
+#define D_CLK_6_Pin GPIO_PIN_8
+#define D_CLK_6_GPIO_Port GPIOB
+#define D_CLK_7_Pin GPIO_PIN_9
+#define D_CLK_7_GPIO_Port GPIOB
+#define D_CLK_8_Pin GPIO_PIN_4
+#define D_CLK_8_GPIO_Port GPIOB
+/* ============================================================================
+ * PWM Pin Definitions
+ * ============================================================================ */
 #define PWM_FUNC_Pin GPIO_PIN_13
 #define PWM_FUNC_GPIO_Port GPIOE
 #define Pulse_FUNC_Pin GPIO_PIN_14
 #define Pulse_FUNC_GPIO_Port GPIOE
-//I = 1000 * D%, PWM frequency range 100~100KHz, recommended 10KHz, duty cycle resolution 0.1%
-#define LED_PWM_IN_Pin GPIO_PIN_11
+
+#define LED_PWM_IN GPIO_PIN_12
 #define LED_PWM_IN_GPIO_Port GPIOE
 /* ============================================================================
- * PWM Related Pin Definitions
- * ============================================================================
- */
-
-/* -------------------- I2C Pin Definitions -------------------- */
+ * I2C Pin Definitions
+ * ============================================================================ */
 #define I2C_SCL_Pin GPIO_PIN_6
 #define I2C_SCL_GPIO_Port GPIOB
 #define I2C_SDA_Pin GPIO_PIN_7
@@ -101,37 +109,35 @@ extern "C"
 #define TP_I2C_SDA_Pin GPIO_PIN_11
 #define TP_I2C_SDA_GPIO_Port GPIOB
 /* ============================================================================
- * I2C Pin Definitions
- * ============================================================================
- */
-#define DAC_LDAC1_Pin GPIO_PIN_0
-#define DAC_LDAC1_GPIO_Port GPIOC
-#define DAC_BSY1_Pin GPIO_PIN_1
-#define DAC_BSY1_GPIO_Port GPIOC
-#define DAC_LDAC3_Pin GPIO_PIN_4
-#define DAC_LDAC3_GPIO_Port GPIOC
-#define DAC_BSY3_Pin GPIO_PIN_5
-#define DAC_BSY3_GPIO_Port GPIOC
-#define DAC_LDAC2_Pin GPIO_PIN_2
-#define DAC_LDAC2_GPIO_Port GPIOC
-#define DAC_BSY2_Pin GPIO_PIN_3
-#define DAC_BSY2_GPIO_Port GPIOC
-/* ============================================================================
  * DAC Pin Definitions
- * ============================================================================
- */
-#define RLY1_Pin GPIO_PIN_5
-#define RLY1_GPIO_Port GPIOCB
-#define RLY2_Pin GPIO_PIN_12
-#define RLY2_GPIO_Port GPIOCA
-#define RLY3_Pin GPIO_PIN_6
-#define RLY3_GPIO_Port GPIOC
-#define RLY4_Pin GPIO_PIN_7
-#define RLY4_GPIO_Port GPIOC
+ * ============================================================================ */
+#define DAC_LDAC1_Pin GPIO_PIN_0
+#define DAC_LDAC1_GPIO_Port GPIOB
+#define DAC_BSY1_Pin GPIO_PIN_1
+#define DAC_BSY1_GPIO_Port GPIOB
+
+#define DAC_LDAC2_Pin GPIO_PIN_5   
+#define DAC_LDAC2_GPIO_Port GPIOB
+#define DAC_BSY2_Pin GPIO_PIN_7
+#define DAC_BSY2_GPIO_Port GPIOB
+
+#define DAC_LDAC3_Pin GPIO_PIN_14
+#define DAC_LDAC3_GPIO_Port GPIOB
+#define DAC_BSY3_Pin GPIO_PIN_15
+#define DAC_BSY3_GPIO_Port GPIOB
+
+#define DAC_LDAC4_Pin GPIO_PIN_3
+#define DAC_LDAC4_GPIO_Port GPIOB
+#define DAC_BSY4_Pin GPIO_PIN_12
+#define DAC_BSY4_GPIO_Port GPIOA
+
+#define DAC_LDAC5_Pin GPIO_PIN_15
+#define DAC_LDAC5_GPIO_Port GPIOA
+#define DAC_BSY5_Pin GPIO_PIN_5
+#define DAC_BSY5_GPIO_Port GPIOC
 /* ============================================================================
- * Relay Pin Definitions
- * ============================================================================
- */
+ * TSPI Pin Definitions
+ * ============================================================================ */
 #define TSPI_INT_IN_Pin GPIO_PIN_8
 #define TSPI_INT_IN_GPIO_Port GPIOC
 #define TSPI_CLK_Pin GPIO_PIN_9
@@ -145,25 +151,23 @@ extern "C"
 #define TP_INT_Pin GPIO_PIN_13
 #define TP_INT_GPIO_Port GPIOC
 /* ============================================================================
- * TSPI Pin Definitions
- * ============================================================================
- */
-#define M_CS_Pin GPIO_PIN_12
-#define M_CS_GPIO_Port GPIOB
-#define M_SCK_Pin GPIO_PIN_13
-#define M_SCK_GPIO_Port GPIOB
-#define M_MISO_Pin GPIO_PIN_14
-#define M_MISO_GPIO_Port GPIOB
-#define M_MOSI_Pin GPIO_PIN_15
-#define M_MOSI_GPIO_Port GPIOB
-#define M_INT_Pin GPIO_PIN_12
-#define M_INT_GPIO_Port GPIOD
-/* ============================================================================
  * M SPI Pin Definitions
- * ============================================================================
- */
-#define LCD_RESET1_Pin GPIO_PIN_6
-#define LCD_RESET1_GPIO_Port GPIOD
+ * ============================================================================ */
+#define M_CS_Pin GPIO_PIN_0
+#define M_CS_GPIO_Port GPIOC
+#define M_SCK_Pin GPIO_PIN_1
+#define M_SCK_GPIO_Port GPIOC
+#define M_MISO_Pin GPIO_PIN_2
+#define M_MISO_GPIO_Port GPIOC
+#define M_MOSI_Pin GPIO_PIN_3
+#define M_MOSI_GPIO_Port GPIOC
+#define M_INT_Pin GPIO_PIN_4
+#define M_INT_GPIO_Port GPIOC
+/* ============================================================================
+ * LCD Related Pin Definitions
+ * ============================================================================ */
+#define LCD_RESET_Pin GPIO_PIN_6
+#define LCD_RESET_GPIO_Port GPIOD
 #define LCD_CS_Pin GPIO_PIN_7
 #define LCD_CS_GPIO_Port GPIOD
 #define LCD_RS_Pin GPIO_PIN_11
@@ -188,30 +192,30 @@ extern "C"
 #define LCD_D6_GPIO_Port GPIOE
 #define LCD_D7_Pin GPIO_PIN_10
 #define LCD_D7_GPIO_Port GPIOE
-#define LCD_BL_EN_Pin GPIO_PIN_15
-#define LCD_BL_EN_GPIO_Port GPIOA
-/* ============================================================================
- * LCD Related Pin Definitions
- * ============================================================================
- */
-
-#define STM32_TX_Pin GPIO_PIN_9
-#define STM32_TX_GPIO_Port GPIOA
-#define STM32_RX_Pin GPIO_PIN_10
-#define STM32_RX_GPIO_Port GPIOA
-/* ============================================================================
- * UART Pin Definitions
- * ============================================================================
- */
-//Output Enable Pin for Level Shifter and Latchs
-//Attention:The latch outputs Q0–Q7 are driven only when OE# is pulled high
-#define OE_GPIO_Port GPIOD
-#define OE_Pin GPIO_PIN_13  
+#define LCD_BL_EN_Pin GPIO_PIN_5
+#define LCD_BL_EN_GPIO_Port GPIOE
 /* ============================================================================
  * OE Pin Definitions
- * ============================================================================
- */
+ * ============================================================================ */
+#define OE_GPIO_Port GPIOA
+#define OE_Pin GPIO_PIN_12  
+#define DAC_LS_GPIO_Port GPIOA
+#define DAC_LS_Pin GPIO_PIN_4
 
+/* ============================================================================
+ * Key Pin Definitions
+ * ============================================================================ */
+#define KEY1_Pin GPIO_PIN_12
+#define KEY1_GPIO_Port GPIOB
+#define KEY2_Pin GPIO_PIN_13
+#define KEY2_GPIO_Port GPIOB
+/*  ============================================================================
+ * Pulse Pin Definitions
+ * ============================================================================ */
+#define PULSE_A_Pin GPIO_PIN_14
+#define PULSE_A_GPIO_Port GPIOE
+#define PULSE_B_Pin GPIO_PIN_15
+#define PULSE_B_GPIO_Port GPIOE
 #ifdef __cplusplus
 }
 #endif

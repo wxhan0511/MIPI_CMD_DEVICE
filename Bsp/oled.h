@@ -1,6 +1,6 @@
 /**
  * @file       oled.h
- * @brief      RA_PowerEX OLED Driver
+ * @brief      MIPI_CMD OLED Driver
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-08-14

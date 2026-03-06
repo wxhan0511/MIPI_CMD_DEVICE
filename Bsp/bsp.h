@@ -12,10 +12,11 @@
 #include "bsp_dwt.h"
 #include "cmsis_os.h"
 
-extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart3;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi_tp;
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 extern uint8_t id;
 typedef StaticSemaphore_t osStaticMutexDef_t;
 typedef StaticQueue_t osStaticMessageQDef_t;

@@ -1,24 +1,25 @@
 /* Includes ------------------------------------------------------------------*/
 #include "i2c_task.h"
+
 #include <stdlib.h>
 #include "main.h"
 #include "i2c.h"
 #include "oled.h"
+
 #include "bsp_ads1256.h"
+#include "bsp_ads1256_ctl.h"
 #include "bsp_mcp4728.h"
 #include "bsp_power.h"
-#include "power_control.h"
 #include "bsp_calibration.h"
+
+#include "power_control.h"
+
 #include "drv_ra_device.h"
 /*utils*/
 #include "utils.h"
 /* User-defined variables -----------------------------------------------------*/
-float latest_sample_data[8] = {0};     // Store the latest sampled data for 8 channel after conversion and calibration
-float latest_sample_raw_data[8] = {0}; // Store the latest sampled raw data for 8 channel
-uint8_t latest_sample_index[8] = {0};  // Store the corresponding index of the latest sampled data for 8 channel
 
-static uint8_t channel_num = 0;
-static float offset, gain, IV_data = 0.0f;
+
 
 static uint8_t cmd_header = 0;
 static uint8_t cmd = 0;
@@ -119,28 +120,28 @@ void slave_rx_task_init()
 {
   slaveRxTaskHandle = osThreadNew(SlaveRxTask, NULL, &slaveRxTask_attributes);
   if (slaveRxTaskHandle == NULL)
-    RA_POWEREX_ERROR("slaveRxTaskHandle create failed\r\n");
+    MIPI_CMD_ERROR("slaveRxTaskHandle create failed\r\n");
 }
 
 void slave_tx_task_init()
 {
   slaveTxTaskHandle = osThreadNew(SlaveTxTask, NULL, &slaveTxTask_attributes);
   if (slaveTxTaskHandle == NULL)
-    RA_POWEREX_ERROR("slaveTxTaskHandle create failed\r\n");
+    MIPI_CMD_ERROR("slaveTxTaskHandle create failed\r\n");
 }
 
 void master_tx_task_init()
 {
   masterTxTaskHandle = osThreadNew(MasterTxTask, NULL, &masterTxTask_attributes);
   if (masterTxTaskHandle == NULL)
-    RA_POWEREX_ERROR("masterTxTaskHandle create failed\r\n");
+    MIPI_CMD_ERROR("masterTxTaskHandle create failed\r\n");
 }
 
 void master_rx_task_init()
 {
   masterRxTaskHandle = osThreadNew(MasterRxTask, NULL, &masterRxTask_attributes);
   if (masterRxTaskHandle == NULL)
-    RA_POWEREX_ERROR("masterRxTaskHandle create failed\r\n");
+    MIPI_CMD_ERROR("masterRxTaskHandle create failed\r\n");
 }
 
 void SlaveRxTask(void *argument)

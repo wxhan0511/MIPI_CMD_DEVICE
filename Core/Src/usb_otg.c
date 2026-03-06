@@ -50,7 +50,7 @@ void MX_USB_OTG_HS_PCD_Init(void)
   hpcd_USB_OTG_FS.Init.use_external_vbus = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE BEGIN USB_OTG_HS_Init 2 */
 

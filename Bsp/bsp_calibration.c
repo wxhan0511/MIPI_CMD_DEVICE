@@ -23,7 +23,6 @@ calibration_manager_t g_calibration_manager = {0};
 static uint8_t cal_buffer[sizeof(calibration_data_t) + 256]; // Extra space for alignment
 
 
-
 /**
  * @brief CRC32 calculation function (using STM32 hardware CRC)
  * @param data Data pointer
@@ -76,7 +75,7 @@ HAL_StatusTypeDef calibration_verify_crc(calibration_data_t *cal_data)
     if (stored_crc == calc_crc) {
         return HAL_OK;
     } else {
-        RA_POWEREX_INFO("CRC check failed: stored=0x%08lX, calculated=0x%08lX\r\n", stored_crc, calc_crc);
+        MIPI_CMD_INFO("CRC check failed: stored=0x%08lX, calculated=0x%08lX\r\n", stored_crc, calc_crc);
         g_calibration_manager.last_error = CAL_ERROR_CRC;
         return HAL_ERROR;
     }
@@ -92,14 +91,14 @@ HAL_StatusTypeDef calibration_flash_init(void)
     uint32_t flash_id = bsp_flash_read_id();
     g_calibration_manager.flash_id = flash_id;
     
-    RA_POWEREX_INFO("Detected Flash ID: 0x%06lX\r\n", flash_id);
+    MIPI_CMD_INFO("Detected Flash ID: 0x%06lX\r\n", flash_id);
     
     // W25Q256JVEQ ID should be 0xEF4019
     if ((flash_id & 0xFFFFFF) == 0xEF4019) {
-        RA_POWEREX_INFO("W25Q256JVEQ Flash detected successfully\r\n");
+        MIPI_CMD_INFO("W25Q256JVEQ Flash detected successfully\r\n");
         return HAL_OK;
     } else {
-        RA_POWEREX_INFO("Flash ID mismatch, expected: 0xEF4019, actual: 0x%06lX\r\n", flash_id);
+        MIPI_CMD_INFO("Flash ID mismatch, expected: 0xEF4019, actual: 0x%06lX\r\n", flash_id);
         g_calibration_manager.last_error = CAL_ERROR_FLASH_READ;
         return HAL_ERROR;
     }
@@ -113,7 +112,7 @@ HAL_StatusTypeDef calibration_set_defaults(void)
 {
     calibration_data_t *cal = &g_calibration_manager.data;
     
-    RA_POWEREX_INFO("Setting default calibration values...\r\n");
+    MIPI_CMD_INFO("Setting default calibration values...\r\n");
 
     // Clear the structure
     memset(cal, 0, sizeof(calibration_data_t));
@@ -122,71 +121,125 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->magic = CALIBRATION_MAGIC;
     cal->version = CALIBRATION_VERSION;
     cal->timestamp = HAL_GetTick();
+    //Calibration Parameter Settings
+    cal->da_data.elvdd_set_gain = -1.388;
+    cal->da_data.elvdd_set_offset =3080;
+    cal->da_data.vcc_set_gain = -1.388;
+    cal->da_data.vcc_set_offset = 3080;
+    cal->da_data.iovcc_set_gain = -1.388;
+    cal->da_data.iovcc_set_offset = 3080;
+    cal->da_data.vsp_set_gain = -1.388;
+    cal->da_data.vsp_set_offset = 3080;
+    cal->da_data.avdd_set_gain = -1.388;
+    cal->da_data.avdd_set_offset = 3080;
+    cal->da_data.vdd_set_gain = -1.388;
+    cal->da_data.vdd_set_offset = 3080;
+    //Negative Voltage
+    cal->da_data.elvss_set_gain = 5.56;
+    cal->da_data.elvss_set_offset = 12925;
+    cal->da_data.vsn_set_gain = 5.56;
+    cal->da_data.vsn_set_offset = 12925;
+    //Protection Current Calibration Parameter Setting：Ilim=limref*200mA
+    cal->da_data.vcc_ref_gain = 200;
+    cal->da_data.vcc_ref_offset = 0;
+    cal->da_data.iovcc_ref_gain = 200;
+    cal->da_data.iovcc_ref_offset = 0;
+    cal->da_data.vsp_ref_gain = 200;
+    cal->da_data.vsp_ref_offset = 0;
+    cal->da_data.vsn_ref_gain = 200;
+    cal->da_data.vsn_ref_offset = 0;
+    cal->da_data.avdd_ref_gain = 200;
+    cal->da_data.avdd_ref_offset = 0;
+    cal->da_data.vdd_ref_gain = 200;
+    cal->da_data.vdd_ref_offset = 0;
+    cal->da_data.elvdd_ref_gain = 200;
+    cal->da_data.elvdd_ref_offset = 0;
+    cal->da_data.elvss_ref_gain = 200;
+    cal->da_data.elvss_ref_offset = 0;
 
-    cal->ch0_set_v_offset = 115.35f;
-    cal->ch0_set_v_gain = 1.0f;
-    cal->ch0_read_v_offset = -66854;
-    cal->ch0_read_v_gain = 1.0f;
-    cal->ch0_read_c_offset = 0.0f;
-    cal->ch0_read_c_gain = 1.0f;
+    cal->da_data.v_level_shift_gain = -1.433;
+    cal->da_data.v_level_shift_offset = 5100;
 
-    cal->ch1_set_v_offset = 115.35f;
-    cal->ch1_set_v_gain = 1.0f;
-    cal->ch1_read_v_offset = -66854;
-    cal->ch1_read_v_gain = 1.0f;
-    cal->ch1_read_c_offset = 0.0f;
-    cal->ch1_read_c_gain = 1.0f;
+    cal->da_data.vadj_p_gain = -5.21;
+    cal->da_data.vadj_p_offset = 25641;
+    cal->da_data.vadj_n_gain = -5.21;
+    cal->da_data.vadj_n_offset = 25641;
+    //Default Voltage Value
+    cal->elvdd_last_voltage = 5000;
+    cal->vsp_last_voltage = 5000;
+    cal->iovcc_last_voltage = 5000;
+    cal->vcc_last_voltage = 5000;
+    cal->vsn_last_voltage = -5000;
+    cal->elvss_last_voltage = -5000;
+    cal->avdd_last_voltage = 5000;
+    cal->vdd_last_voltage = 5000;
+    cal->v_level_shift_last = 1800;
+    cal->vadj_p_last = 10000;
+    cal->vadj_n_last = 10000;
+    
+    //AD Calibration Default Values
+    cal->ad_data.ch0_gain[0] = 1.0f;
+    cal->ad_data.ch0_offset[0] = 0.0f;
+    cal->ad_data.ch0_gain[1] = 1.0f;
+    cal->ad_data.ch0_offset[1] = 0.0f;
+    cal->ad_data.ch0_gain[2] = 1.0f;
+    cal->ad_data.ch0_offset[2] = 0.0f;
+    cal->ad_data.ch0_gain[3] = 1.0f;
+    cal->ad_data.ch0_offset[3] = 0.0f;
+    cal->ad_data.ch0_gain[4] = 1.0f;
+    cal->ad_data.ch0_offset[4] = 0.0f;
+    cal->ad_data.ch0_gain[5] = 1.0f;
+    cal->ad_data.ch0_offset[5] = 0.0f;
+    cal->ad_data.ch0_gain[6] = 1.0f;
+    cal->ad_data.ch0_offset[6] = 0.0f;
+    cal->ad_data.ch0_gain[7] = 1.0f;
+    cal->ad_data.ch0_offset[7] = 0.0f;
 
-    cal->ch2_set_v_offset = 81.25f;
-    cal->ch2_set_v_gain = 1.0f;
-    cal->ch2_read_v_offset = 57760;
-    cal->ch2_read_v_gain = 1.0f;
-    cal->ch2_read_c_offset = 0.0f;
-    cal->ch2_read_c_gain = 1.0f;
+    cal->ad_data.ch1_gain[0] = 1.0f;
+    cal->ad_data.ch1_offset[0] = 0.0f;
+    cal->ad_data.ch1_gain[1] = 1.0f;
+    cal->ad_data.ch1_offset[1] = 0.0f;
+    cal->ad_data.ch1_gain[2] = 1.0f;
+    cal->ad_data.ch1_offset[2] = 0.0f;
+    cal->ad_data.ch1_gain[3] = 1.0f;
+    cal->ad_data.ch1_offset[3] = 0.0f;
+    cal->ad_data.ch1_gain[4] = 1.0f;
+    cal->ad_data.ch1_offset[4] = 0.0f;
+    cal->ad_data.ch1_gain[5] = 1.0f;
+    cal->ad_data.ch1_offset[5] = 0.0f;
+    cal->ad_data.ch1_gain[6] = 1.0f;
+    cal->ad_data.ch1_offset[6] = 0.0f;
+    cal->ad_data.ch1_gain[7] = 1.0f;
+    cal->ad_data.ch1_offset[7] = 0.0f;
 
-    cal->ch3_set_v_offset = -203.75f;
-    cal->ch3_set_v_gain = 1.0f;
-    cal->ch3_read_v_offset = -106917;
-    cal->ch3_read_v_gain = 1.0f;
-    cal->ch3_read_c_offset = 0.0f;
-    cal->ch3_read_c_gain = 1.0f;
+    cal->ad_data.ch2_gain[0] = 1.0f;
+    cal->ad_data.ch2_offset[0] = 0.0f;
+    cal->ad_data.ch2_gain[1] = 1.0f;
+    cal->ad_data.ch2_offset[1] = 0.0f;
+    cal->ad_data.ch2_gain[2] = 1.0f;
+    cal->ad_data.ch2_offset[2] = 0.0f;
+    cal->ad_data.ch2_gain[3] = 1.0f;
+    cal->ad_data.ch2_offset[3] = 0.0f;
+    cal->ad_data.ch2_gain[4] = 1.0f;
+    cal->ad_data.ch2_offset[4] = 0.0f;
+    cal->ad_data.ch2_gain[5] = 1.0f;
+    cal->ad_data.ch2_offset[5] = 0.0f;
+    cal->ad_data.ch2_gain[6] = 1.0f;
+    cal->ad_data.ch2_offset[6] = 0.0f;
+    cal->ad_data.ch2_gain[7] = 1.0f;
+    cal->ad_data.ch2_offset[7] = 0.0f;
 
-    cal->ch4_set_v_offset = -203.75f;
-    cal->ch4_set_v_gain = 1.0f;
-    cal->ch4_read_v_offset = -106917;
-    cal->ch4_read_v_gain = 1.0f;
-    cal->ch4_read_c_offset = 761.5f;
-    cal->ch4_read_c_gain = 1.0f;
+    cal->ad_data.ch3_gain = 1.0f;
+    cal->ad_data.ch3_offset = 0.0f;
+    cal->ad_data.ch4_gain = 1.0f;
+    cal->ad_data.ch4_offset = 0.0f;
+    cal->ad_data.ch5_gain = 1.0f;
+    cal->ad_data.ch5_offset = 0.0f;
+    cal->ad_data.ch6_gain = 1.0f;
+    cal->ad_data.ch6_offset = 0.0f;
+    cal->ad_data.ch7_gain = 1.0f;
+    cal->ad_data.ch7_offset = 0.0f;
 
-    cal->ch5_set_v_offset = 115.35f;
-    cal->ch5_set_v_gain = 1.0f;
-    cal->ch5_read_v_offset = -66854;
-    cal->ch5_read_v_gain = 1.0f;
-    cal->ch5_read_c_offset = -527.0f;
-    cal->ch5_read_c_gain = 1.0f;
-
-    cal->ch6_set_v_offset = 81.25f;
-    cal->ch6_set_v_gain = 1.0f;
-    cal->ch6_read_v_offset = 57760;
-    cal->ch6_read_v_gain = 1.0f;
-    cal->ch6_read_c_offset = -1455.0f;
-    cal->ch6_read_c_gain = 1.0f;
-
-    cal->ch7_set_v_offset = 115.35f;
-    cal->ch7_set_v_gain = 1.0f;
-    cal->ch7_read_v_offset = -66854;
-    cal->ch7_read_v_gain = 1.0f;
-    cal->ch7_read_c_offset = -527.0f;
-    cal->ch7_read_c_gain = 1.0f;
-
-    cal->da_data.elvdd_set_gain = -3.557;
-    cal->da_data.elvdd_set_offset =12850;
-    cal->da_data.elvss_set_gain = 3.557;
-    cal->da_data.elvss_set_offset = 12850;
-    cal->da_data.vcc_set_gain = -1.576;
-    cal->da_data.vcc_set_offset = 5100;
-    cal->da_data.iovcc_set_gain = -1.576;
-    cal->da_data.iovcc_set_offset = 5100;
     // Clear reserved fields
     memset(cal->reserved, 0, sizeof(cal->reserved));
 
@@ -199,9 +252,6 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     g_calibration_manager.is_valid = true;
     g_calibration_manager.last_error = CAL_ERROR_NONE;
 
-
-
-    
     return HAL_OK;
 }
 
@@ -212,10 +262,8 @@ HAL_StatusTypeDef calibration_set_defaults(void)
 HAL_StatusTypeDef calibration_load(void)
 {
     calibration_data_t *cal = &g_calibration_manager.data;
-    
-    RA_POWEREX_INFO("Loading calibration data from Flash...\r\n");
+
     g_calibration_manager.load_attempts++;
-	//sf_WaitForWriteEnd();
     // Read data from Flash to buffer
     bsp_flash_read(cal_buffer, CALIBRATION_MAIN_ADDR, sizeof(calibration_data_t));
     
@@ -224,19 +272,24 @@ HAL_StatusTypeDef calibration_load(void)
     
     // Check magic number
     if (cal->magic != CALIBRATION_MAGIC) {
-        RA_POWEREX_INFO("Magic number check failed: 0x%08lX (expected: 0x%08lX)\r\n", 
+        W25Q256JVEQ_ERROR("Magic number check failed: 0x%08lX (expected: 0x%08lX)\r\n", 
                cal->magic, CALIBRATION_MAGIC);
         calibration_set_defaults();
+        W25Q256JVEQ_INFO("Default calibration values have been set\r\n");
         calibration_save();
         calibration_load();
         
         g_calibration_manager.last_error = CAL_ERROR_MAGIC;
         return HAL_ERROR;
     }
+    else
+    {
+        W25Q256JVEQ_INFO("Loaded calibration data with magic number: 0x%08lX\r\n", cal->magic);
+    }
     
     // Check version compatibility
     if (cal->version > CALIBRATION_MAX_VERSION) {
-        RA_POWEREX_INFO("Version not compatible: %lu (max supported: %d)\r\n", 
+        W25Q256JVEQ_INFO("Version not compatible: %lu (max supported: %d)\r\n", 
                cal->version, CALIBRATION_MAX_VERSION);
         g_calibration_manager.last_error = CAL_ERROR_VERSION;
         return HAL_ERROR;
@@ -244,7 +297,7 @@ HAL_StatusTypeDef calibration_load(void)
     
     // Verify CRC
     if (calibration_verify_crc(cal) != HAL_OK) {
-        RA_POWEREX_INFO("CRC check failed, trying backup data\r\n");
+        W25Q256JVEQ_ERROR("CRC check failed, trying backup data\r\n");
         return calibration_restore_from_backup();
     }
     
@@ -253,7 +306,7 @@ HAL_StatusTypeDef calibration_load(void)
     g_calibration_manager.is_valid = true;
     g_calibration_manager.last_error = CAL_ERROR_NONE;
     
-    RA_POWEREX_INFO("Calibration data loaded successfully (version: %lu, timestamp: %lu, CRC: 0x%08lX)\r\n", 
+    W25Q256JVEQ_INFO("Calibration data loaded successfully (version: %lu, timestamp: %lu, CRC: 0x%08lX)\r\n", 
            cal->version, cal->timestamp, cal->crc32);
     
     return HAL_OK;
@@ -267,7 +320,7 @@ HAL_StatusTypeDef calibration_save(void)
 {
     calibration_data_t *cal = &g_calibration_manager.data;
     
-    RA_POWEREX_INFO("Saving calibration data to Flash...\r\n");
+    W25Q256JVEQ_INFO("Saving calibration data to Flash...\r\n");
     
     // Update timestamp and CRC
     cal->timestamp = HAL_GetTick();
@@ -279,7 +332,7 @@ HAL_StatusTypeDef calibration_save(void)
     
     // Write to Flash
     if (!bsp_flash_write(cal_buffer, CALIBRATION_MAIN_ADDR, sizeof(calibration_data_t))) {
-        RA_POWEREX_INFO(" Flash write failed\r\n");
+        W25Q256JVEQ_ERROR(" Flash write failed\r\n");
         g_calibration_manager.last_error = CAL_ERROR_FLASH_WRITE;
         return HAL_ERROR;
     }
@@ -287,18 +340,18 @@ HAL_StatusTypeDef calibration_save(void)
     // Verify written data
     bsp_flash_read(cal_buffer, CALIBRATION_MAIN_ADDR, sizeof(calibration_data_t));
     if (memcmp(cal_buffer, cal, sizeof(calibration_data_t)) != 0) {
-        RA_POWEREX_INFO("Flash write verification failed\r\n");
+        W25Q256JVEQ_ERROR("Flash write verification failed\r\n");
         g_calibration_manager.last_error = CAL_ERROR_FLASH_WRITE;
         return HAL_ERROR;
     }
     
     g_calibration_manager.save_count++;
-    RA_POWEREX_INFO("Calibration data saved successfully (CRC: 0x%08lX, save count: %lu)\r\n", 
+    W25Q256JVEQ_INFO("Calibration data saved successfully (CRC: 0x%08lX, save count: %lu)\r\n", 
            cal->crc32, g_calibration_manager.save_count);
     
     // Auto create backup
     if (calibration_backup() != HAL_OK) {
-        RA_POWEREX_INFO("Backup creation failed, but main data saved\r\n");
+        W25Q256JVEQ_INFO("Backup creation failed, but main data saved\r\n");
     }
     
     return HAL_OK;
@@ -312,14 +365,14 @@ HAL_StatusTypeDef calibration_backup(void)
 {
     calibration_data_t *cal = &g_calibration_manager.data;
     
-    RA_POWEREX_INFO("Creating calibration data backup...\r\n");
+    W25Q256JVEQ_INFO("Creating calibration data backup...\r\n");
     
     // Copy data to buffer
     memcpy(cal_buffer, cal, sizeof(calibration_data_t));
     
     // Write to backup 1
     if (!bsp_flash_write(cal_buffer, CALIBRATION_BACKUP1_ADDR, sizeof(calibration_data_t))) {
-        RA_POWEREX_INFO("Backup 1 write failed\r\n");
+        W25Q256JVEQ_ERROR("Backup 1 write failed\r\n");
         g_calibration_manager.last_error = CAL_ERROR_BACKUP_FAILED;
         return HAL_ERROR;
     }
@@ -335,14 +388,14 @@ HAL_StatusTypeDef calibration_restore_from_backup(void)
     calibration_data_t temp_cal;
     calibration_data_t *cal = &g_calibration_manager.data;
     
-    RA_POWEREX_INFO(" Restoring calibration data from backup...\r\n");
+    W25Q256JVEQ_INFO(" Restoring calibration data from backup...\r\n");
     
     // Try backup 1
     bsp_flash_read(cal_buffer, CALIBRATION_BACKUP1_ADDR, sizeof(calibration_data_t));
     memcpy(&temp_cal, cal_buffer, sizeof(calibration_data_t));
     
     if (temp_cal.magic == CALIBRATION_MAGIC && calibration_verify_crc(&temp_cal) == HAL_OK) {
-        RA_POWEREX_INFO(" Restored successfully from backup 1\r\n");
+        W25Q256JVEQ_INFO(" Restored successfully from backup 1\r\n");
         memcpy(cal, &temp_cal, sizeof(calibration_data_t));
         g_calibration_manager.is_loaded = true;
         g_calibration_manager.is_valid = true;
@@ -352,7 +405,7 @@ HAL_StatusTypeDef calibration_restore_from_backup(void)
     }
     
     // All backups failed, use default values
-    RA_POWEREX_INFO(" All backup data corrupted, using default values\r\n");
+    W25Q256JVEQ_INFO(" All backup data corrupted, using default values\r\n");
     calibration_set_defaults();
     return calibration_save();
 }
@@ -363,7 +416,7 @@ HAL_StatusTypeDef calibration_restore_from_backup(void)
  */
 HAL_StatusTypeDef calibration_factory_reset(void)
 {
-    RA_POWEREX_INFO("Performing factory reset...\r\n");
+    W25Q256JVEQ_INFO("Performing factory reset...\r\n");
     
     // Erase main data area
     bsp_flash_erase_sector(CALIBRATION_MAIN_ADDR);
@@ -382,30 +435,30 @@ HAL_StatusTypeDef calibration_factory_reset(void)
  */
 HAL_StatusTypeDef calibration_init(void)
 {
-    RA_POWEREX_INFO("🚀 Initializing calibration data system...\r\n");
+    MIPI_CMD_INFO("🚀 Initializing calibration data system...\r\n");
     
     // Initialize manager
     memset(&g_calibration_manager, 0, sizeof(calibration_manager_t));
     
     // Initialize Flash
     if (calibration_flash_init() != HAL_OK) {
-        RA_POWEREX_INFO("Flash initialization failed\r\n");
+        W25Q256JVEQ_ERROR("Flash initialization failed\r\n");
         return HAL_ERROR;
     }
     
     // Try to load data from Flash
     if (calibration_load() == HAL_OK) {
-        RA_POWEREX_INFO("Calibration data system initialized successfully\r\n");
+        W25Q256JVEQ_INFO("Calibration data system initialized successfully\r\n");
         return HAL_OK;
     }
     
     // Load failed, use default values
-    RA_POWEREX_INFO("Unable to load valid calibration data, using default values\r\n");
+    W25Q256JVEQ_INFO("Unable to load valid calibration data, using default values\r\n");
     calibration_set_defaults();
     
     // Save default values to Flash
     if (calibration_save() == HAL_OK) {
-        RA_POWEREX_INFO("Default calibration data saved to Flash\r\n");
+        W25Q256JVEQ_INFO("Default calibration data saved to Flash\r\n");
     }
     
     return HAL_OK;
@@ -443,15 +496,15 @@ void calibration_dump_data(uint32_t addr, uint32_t size)
     
     bsp_flash_read(cal_buffer, addr, size);
     
-    RA_POWEREX_INFO("\r\n=== Flash Data Dump (Addr: 0x%08lX, Size: %lu) ===\r\n", addr, size);
+    W25Q256JVEQ_INFO("\r\n=== Flash Data Dump (Addr: 0x%08lX, Size: %lu) ===\r\n", addr, size);
     
     for (uint32_t i = 0; i < size; i++) {
         if (i % 16 == 0) {
-            RA_POWEREX_INFO("\r\n%08lX: ", addr + i);
+            W25Q256JVEQ_INFO("\r\n%08lX: ", addr + i);
         }
-        RA_POWEREX_INFO("%02X ", cal_buffer[i]);
+        W25Q256JVEQ_INFO("%02X ", cal_buffer[i]);
     }
-    RA_POWEREX_INFO("\r\n");
+    W25Q256JVEQ_INFO("\r\n");
 }
 
 /**
@@ -459,24 +512,24 @@ void calibration_dump_data(uint32_t addr, uint32_t size)
  */
 void calibration_test_crc(void)
 {
-    RA_POWEREX_INFO("\r\n=== CRC Function Test ===\r\n");
+    W25Q256JVEQ_INFO("\r\n=== CRC Function Test ===\r\n");
     
     // Test data
     uint8_t test_data[] = "Hello W25Q256 Calibration!";
     uint32_t test_len = strlen((char*)test_data);
     
     uint32_t crc = calibration_calculate_crc32(test_data, test_len);
-    RA_POWEREX_INFO("Test data: %s\r\n", test_data);
-    RA_POWEREX_INFO("CRC32: 0x%08lX\r\n", crc);
+    W25Q256JVEQ_INFO("Test data: %s\r\n", test_data);
+    W25Q256JVEQ_INFO("CRC32: 0x%08lX\r\n", crc);
     
     // Test calibration data CRC
     calibration_data_t *cal = calibration_get_data();
     if (cal) {
         uint32_t calc_crc = calibration_calculate_crc32((uint8_t*)cal, 
                                                        sizeof(calibration_data_t) - sizeof(uint32_t));
-        RA_POWEREX_INFO("Calibration data stored CRC: 0x%08lX\r\n", cal->crc32);
-        RA_POWEREX_INFO("Calibration data calculated CRC: 0x%08lX\r\n", calc_crc);
-        RA_POWEREX_INFO("CRC check: %s\r\n", (calc_crc == cal->crc32) ? " Pass" : "Fail");
+        W25Q256JVEQ_INFO("Calibration data stored CRC: 0x%08lX\r\n", cal->crc32);
+        W25Q256JVEQ_INFO("Calibration data calculated CRC: 0x%08lX\r\n", calc_crc);
+        W25Q256JVEQ_INFO("CRC check: %s\r\n", (calc_crc == cal->crc32) ? " Pass" : "Fail");
     }
 }
 

@@ -1,6 +1,6 @@
 /**
  * @file       power_task.c
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-11-05
@@ -41,7 +41,7 @@ void power_task_init()
 {
     powertaskhandle = osThreadNew(PowerTask, NULL, &powertask_attributes);
     if (powertaskhandle == NULL)
-        RA_POWEREX_ERROR("powertaskhandle create failed\r\n");
+        MIPI_CMD_ERROR("powertaskhandle create failed\r\n");
 }
 
 void PowerTask(void *argument)
@@ -62,13 +62,13 @@ void PowerTask(void *argument)
         //             ADJ_ELVDD_status = bsp_dac_single_voltage_set(&dac_dev, 0, dac_dev.val[0], 0);
         //             if (ADJ_ELVDD_status != BSP_OK)
         //             {
-        //                 RA_POWEREX_DEBUG("bsp_dac_single_voltage_set channel 0 ELVDD failed\r\n");
+        //                 MIPI_CMD_DEBUG("bsp_dac_single_voltage_set channel 0 ELVDD failed\r\n");
         //             }
         //             osDelay(10);
-        //             RA_POWEREX_DEBUG("bsp_dac_single_voltage_set channel 0 ELVDD: %d\r\n", dac_dev.val[0]);
+        //             MIPI_CMD_DEBUG("bsp_dac_single_voltage_set channel 0 ELVDD: %d\r\n", dac_dev.val[0]);
         //             ELVDD_ENABLE(); // 重新使能ELVDD
         //             HAL_GPIO_WritePin(LDAC_Port, LDAC_Pin, GPIO_PIN_RESET);
-        //             RA_POWEREX_DEBUG("ELVDD output enabled\r\n");
+        //             MIPI_CMD_DEBUG("ELVDD output enabled\r\n");
         //         }
         //         falling_edge_detected = 2;
         //         HAL_Delay(10000); // 消抖延时
@@ -88,11 +88,11 @@ void PowerTask(void *argument)
         //         status = ra_dev_main_0.ops->set_power_en(ra_dev_main_0.dev, RA_POWER_VSN, 1);
         //         if (status != BSP_OK)
         //         {
-        //             RA_POWEREX_DEBUG("[drv ra ops] main 0x%x vsn power off\r\n", ra_dev_main_0.main_address);
+        //             MIPI_CMD_DEBUG("[drv ra ops] main 0x%x vsn power off\r\n", ra_dev_main_0.main_address);
         //         }
         //         HAL_Delay(40);
         //         ELVSS_ENABLE();
-        //         RA_POWEREX_DEBUG("ELVDD_EN pin high detected, VSP and ELVSS enabled\r\n");
+        //         MIPI_CMD_DEBUG("ELVDD_EN pin high detected, VSP and ELVSS enabled\r\n");
         //     }
         // }
 

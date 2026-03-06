@@ -1,6 +1,6 @@
 /**
  * @file       oledfont.h
- * @brief      RA_PowerEX
+ * @brief      MIPI_CMD
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-08-14

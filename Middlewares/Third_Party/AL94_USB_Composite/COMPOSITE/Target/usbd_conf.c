@@ -41,7 +41,7 @@
 
 /* USER CODE END PV */
 PCD_HandleTypeDef *hpcd_USB_OTG_PTR;
-void Error_Handler(void);
+void Error_Handler(const char *file, int line);
 
 /* External functions --------------------------------------------------------*/
 
@@ -170,7 +170,7 @@ void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
   #endif
   else
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /* Set Speed. */
   USBD_LL_SetSpeed((USBD_HandleTypeDef *)hpcd->pData, speed);

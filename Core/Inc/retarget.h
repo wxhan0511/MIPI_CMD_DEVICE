@@ -16,5 +16,5 @@ int _close(int fd);
 int _lseek(int fd, int ptr, int dir);
 int _read(int fd, char* ptr, int len);
 int _fstat(int fd, struct stat* st);
-
+void bsp_retarget_init(UART_HandleTypeDef *huart);
 #endif //RETARGET_H

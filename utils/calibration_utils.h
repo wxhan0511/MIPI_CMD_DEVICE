@@ -17,7 +17,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported functions prototypes ---------------------------------------------*/
-void sel_cali_param(uint8_t ch, uint8_t type, uint8_t power, float *offset, float *gain);
+void sel_cali_param(uint8_t ch, uint8_t power, float *offset, float *gain);
 int16_t float_to_int16_round(float value);
 uint16_t float_to_uint16_round(float value);
 uint8_t float_to_uint8_round(float value);
