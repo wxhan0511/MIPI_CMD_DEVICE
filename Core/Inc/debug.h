@@ -34,13 +34,24 @@ extern "C" {
 #define MIPI_CMD_INFO(fmt, ...)    printf(fmt, ##__VA_ARGS__)
 #define MIPI_CMD_WARN(fmt, ...)    printf(fmt, ##__VA_ARGS__)
 #define MIPI_CMD_ERROR(fmt, ...)   printf( fmt, ##__VA_ARGS__)
-//#define MIPI_CMD_DEBUG_ENABLE 1
+#define MIPI_CMD_DEBUG_ENABLE 1
 #if MIPI_CMD_DEBUG_ENABLE
-    #define MIPI_CMD_PRINTF(fmt, ...)  printf("[MIPI_CMD] " fmt, ##__VA_ARGS__)
-    #define MIPI_CMD_DEBUG(fmt, ...)   printf("[MIPI_CMD][DEBUG] " fmt, ##__VA_ARGS__)
+    #define MIPI_CMD_PRINTF(fmt, ...)  printf(fmt, ##__VA_ARGS__)
+    #define MIPI_CMD_DEBUG(fmt, ...)   printf(fmt, ##__VA_ARGS__)
 #else
     #define MIPI_CMD_PRINTF(fmt, ...)  do {} while(0)
     #define MIPI_CMD_DEBUG(fmt, ...)   do {} while(0)
+#endif
+#define M_SPI_INFO(fmt, ...)    printf(fmt, ##__VA_ARGS__)
+#define M_SPI_WARN(fmt, ...)    printf(fmt, ##__VA_ARGS__)
+#define M_SPI_ERROR(fmt, ...)   printf( fmt, ##__VA_ARGS__)
+#define M_SPI_DEBUG_ENABLE 1
+#if M_SPI_DEBUG_ENABLE
+    #define M_SPI_PRINTF(fmt, ...)  printf("[M_SPI] " fmt, ##__VA_ARGS__)
+    #define M_SPI_DEBUG(fmt, ...)   printf( fmt, ##__VA_ARGS__)
+#else
+    #define M_SPI_PRINTF(fmt, ...)  do {} while(0)
+    #define M_SPI_DEBUG(fmt, ...)   do {} while(0)
 #endif
 #define TIME_DEBUG_ENABLE
 #ifdef TIME_DEBUG_ENABLE
@@ -101,7 +112,7 @@ extern "C" {
 #endif
 #define ADS1256_INFO(fmt, ...)           printf("[ADS1256 INFO] " fmt, ##__VA_ARGS__)
 #define ADS1256_ERROR(fmt, ...)          printf("[ADS1256 ERROR] " fmt, ##__VA_ARGS__)
-// #define ADS1256_DEBUG_ENABLE
+#define ADS1256_DEBUG_ENABLE
 #ifdef ADS1256_DEBUG_ENABLE
     #define ADS1256_DEBUG(fmt, ...)          printf( fmt, ##__VA_ARGS__)
 #else

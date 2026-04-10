@@ -20,9 +20,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "spi.h"
 #include "stm32f4xx_hal_spi.h"
-/* USER CODE BEGIN 0 */
+#include  "debug.h"
 
-/* USER CODE END 0 */
+uint8_t g_spi2_rx_buf[SPI2_SLAVE_RX_LEN];
+uint8_t g_spi2_tx_buf[SPI2_SLAVE_TX_LEN];
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
@@ -33,12 +34,6 @@ DMA_HandleTypeDef hdma_spi1_tx;
 DMA_HandleTypeDef hdma_spi3_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
-volatile uint8_t spi_rx_flag = 0;
-uint8_t spi2_rx_buf[SPI_FRAME_LEN];
-
-/* 中断工作缓冲 */
-static uint8_t s_rx_work[SPI_FRAME_LEN];
-static uint8_t s_tx_work[SPI_FRAME_LEN];
 
 /* SPI1 init function */
 void MX_SPI1_Init(void)//***ADS1256***
@@ -238,15 +233,16 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
     /**SPI2 GPIO Configuration
-    PC0     ------> SPI2_CS
-    PC1     ------> SPI2_SCK
+    PB12    ------> SPI2_CS
+    PB13     ------> SPI2_SCK
     PC2     ------> SPI2_MISO
     PC3     ------> SPI2_MOSI
     */
     GPIO_InitStruct.Pin = M_CS_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; 
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP; 
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
     HAL_GPIO_Init(M_CS_GPIO_Port, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = M_SCK_Pin;
@@ -347,7 +343,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     }
 
     __HAL_LINKDMA(spiHandle,hdmatx,hdma_spi3_tx);
-    HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
+   
     /* SPI3 interrupt Init */
     HAL_NVIC_SetPriority(SPI3_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
@@ -434,46 +430,76 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
   /* USER CODE END SPI3_MspDeInit 1 */
   }
 }
-
-/* 对外：更新下一帧要返回给主机的数据 */
-void SPI2_SlaveFixed_SetTx(const uint8_t *data, uint16_t len)
-{
-    if (data == NULL) return;
-    if (len > SPI_FRAME_LEN) len = SPI_FRAME_LEN;
-
-    __disable_irq();
-    memset(s_tx_work, 0, SPI_FRAME_LEN);
-    memcpy(s_tx_work, data, len);
-    __enable_irq();
-}
-
-void SPI2_SlaveFixed_InitAndStart(void)
+//系统启动时调用一次，进入“等待主机发送”状态
+void SPI2_Slave_StartRx_IT(void)
 {
     spi_rx_flag = 0;
-    memset((void *)spi2_rx_buf, 0, SPI_FRAME_LEN);
-    memset(s_rx_work, 0, SPI_FRAME_LEN);
-    memset(s_tx_work, 0, SPI_FRAME_LEN);
-
-    // 启动第一帧收发
-    HAL_SPI_TransmitReceive_IT(&hspi2, s_tx_work, s_rx_work, SPI_FRAME_LEN);
+    spi_tx_flag = 0;
+    memset(g_spi2_rx_buf, 0, sizeof(g_spi2_rx_buf));
+    memset(g_spi2_tx_buf, 0, sizeof(g_spi2_tx_buf));
+    HAL_SPI_Receive_IT(&hspi2, g_spi2_rx_buf, SPI2_SLAVE_RX_LEN);
 }
-/* 一帧完成：主机这帧发送结束 */
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+//发送 64 字节（不足补 0）
+HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len)
+{
+    if (len > SPI2_SLAVE_TX_LEN) len = SPI2_SLAVE_TX_LEN;
+
+    memcpy(g_spi2_tx_buf, data, len);
+    if (len < SPI2_SLAVE_TX_LEN) {
+        memset(&g_spi2_tx_buf[len], 0, SPI2_SLAVE_TX_LEN - len);
+    }
+    
+    return HAL_SPI_Transmit_IT(&hspi2, g_spi2_tx_buf, SPI2_SLAVE_TX_LEN);
+}
+//中断回调转发入口
+void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance != SPI2) return;
 
-    memcpy((void *)spi2_rx_buf, s_rx_work, SPI_FRAME_LEN);
-    spi_rx_flag = 1;  // 关键：主机发完置1
+    uint16_t tx_len = 0;
+    M_SPI_INFO("Received SPI frame: len=%d\r\n", SPI2_SLAVE_RX_LEN);
+    M_SPI_DEBUG("Received SPI frame data:\r\n");
+    for (int i = 0; i < SPI2_SLAVE_RX_LEN; i++) {
+        M_SPI_DEBUG("%02X ", g_spi2_rx_buf[i]);
+        if ((i + 1) % 16 == 0) {
+            M_SPI_DEBUG("\r\n");
+        }
+    }
+    M_SPI_DEBUG("\r\n");
 
-    // 立即挂下一帧
-    HAL_SPI_TransmitReceive_IT(&hspi2, s_tx_work, s_rx_work, SPI_FRAME_LEN);
+    /* 收完->处理->发送 */
 }
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+//中断回调转发入口
+void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance != SPI2) return;
 
+    /* 发送完成后，重新进入接收等待下一帧 */
+    memset(g_spi2_rx_buf, 0, sizeof(g_spi2_rx_buf));
+    printf("start receive\r\n");
+    HAL_SPI_Receive_IT(&hspi2, g_spi2_rx_buf, SPI2_SLAVE_RX_LEN);
+    M_INT_HIGH();
+}
+//中断回调转发入口
+void SPI2_Slave_OnError_IT(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance != SPI2) return;
+    M_SPI_INFO("SPI2 ERR=0x%08lX, SR=0x%04X\r\n",HAL_SPI_GetError(&hspi2), hspi2.Instance->SR);
+    __HAL_SPI_CLEAR_OVRFLAG(&hspi2);
     HAL_SPI_Abort_IT(&hspi2);
-    HAL_SPI_TransmitReceive_IT(&hspi2, s_tx_work, s_rx_work, SPI_FRAME_LEN);
+
+    /* 错误后恢复接收 */
+    memset(g_spi2_rx_buf, 0, sizeof(g_spi2_rx_buf));
+    HAL_SPI_Receive_IT(&hspi2, g_spi2_rx_buf, SPI2_SLAVE_RX_LEN);
 }
 
+void M_INT_HIGH()
+{
+  HAL_GPIO_WritePin(M_INT_GPIO_Port, M_INT_Pin, GPIO_PIN_SET);
+  printf("high\r\n");
+}
+void M_INT_LOW()
+{
+  HAL_GPIO_WritePin(M_INT_GPIO_Port, M_INT_Pin, GPIO_PIN_RESET);
+  printf("low\r\n");
+}

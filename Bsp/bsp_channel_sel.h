@@ -165,7 +165,11 @@ void bsp_bias_p_select_pin(const uint8_t group, const uint16_t pin);
 void bsp_bias_n_select_pin(const uint8_t group, const uint16_t pin);
 //测试模式选择
 void bsp_test_select_mode(const TEST_MODE mode);
-void bsp_limit_current_set(uint8_t state);
+void bsp_limit_current_reset();
 
 void bsp_rly_gear_set(TEST_CUR_GEAR gear ,RLY_INDEX rly_index);
+
+void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index);
+void bsp_ads1256_ch1_select(const AI1_INDEX ai1_index);
+void bsp_ads1256_ch2_select(const AI2_INDEX ai2_index);
 #endif //BSP_CHANNEL_SEL_H

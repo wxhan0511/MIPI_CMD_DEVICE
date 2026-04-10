@@ -34,8 +34,10 @@ typedef struct {
     uint8_t reserve; // 保留字段
     void (*enable_func)(uint8_t id); // 使能函数指针
     void (*disable_func)(uint8_t id); // 禁能函数指针
+    const char *name1;
 
 } dac_config_table_t;
+
 
 /* Exported constants --------------------------------------------------------*/
 extern dac_config_table_t dac_config_table[20]; 

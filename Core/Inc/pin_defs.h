@@ -41,13 +41,13 @@ extern "C"
 /* ============================================================================
  * Flash SPI Pin Definitions
  * ============================================================================ */
-#define FLASH_MOSI_Pin GPIO_PIN_11
+#define FLASH_MOSI_Pin GPIO_PIN_12
 #define FLASH_MOSI_GPIO_Port GPIOC
-#define FLASH_MISO_Pin GPIO_PIN_10
+#define FLASH_MISO_Pin GPIO_PIN_11
 #define FLASH_MISO_GPIO_Port GPIOC
-#define FLASH_CLK_Pin GPIO_PIN_13
+#define FLASH_CLK_Pin GPIO_PIN_10
 #define FLASH_CLK_GPIO_Port GPIOC
-#define FLASH_CS_Pin GPIO_PIN_12
+#define FLASH_CS_Pin GPIO_PIN_13
 #define FLASH_CS_GPIO_Port GPIOC
 /* ============================================================================
  * Latch Data Pin Definitions
@@ -153,10 +153,10 @@ extern "C"
 /* ============================================================================
  * M SPI Pin Definitions
  * ============================================================================ */
-#define M_CS_Pin GPIO_PIN_0
-#define M_CS_GPIO_Port GPIOC
-#define M_SCK_Pin GPIO_PIN_1
-#define M_SCK_GPIO_Port GPIOC
+#define M_CS_Pin GPIO_PIN_12
+#define M_CS_GPIO_Port GPIOB
+#define M_SCK_Pin GPIO_PIN_13
+#define M_SCK_GPIO_Port GPIOB
 #define M_MISO_Pin GPIO_PIN_2
 #define M_MISO_GPIO_Port GPIOC
 #define M_MOSI_Pin GPIO_PIN_3

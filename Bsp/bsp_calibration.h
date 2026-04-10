@@ -22,58 +22,79 @@
 
 typedef struct
 {
-    // VSN校准参数
-    float vsn_set_offset;          
+    // ===== 校准参数 =====
+    // VCC
+    float vcc_set_offset;
+    float vcc_set_gain;
+
+    // IOVCC
+    float iovcc_set_offset;
+    float iovcc_set_gain;
+
+    // VSP
+    float vsp_set_offset;
+    float vsp_set_gain;
+
+    // VSN
+    float vsn_set_offset;
     float vsn_set_gain;
-    // ELVSS校准参数
-    float elvss_set_offset;         
-    float elvss_set_gain;
-    // VCC校准参数
-    float vcc_set_offset;          
-    float vcc_set_gain;  
-    // IOVCC校准参数
-    float iovcc_set_offset;          
-    float iovcc_set_gain;  
-    // VSP校准参数
-    float vsp_set_offset;          
-    float vsp_set_gain;           
-    // AVDD校准参数
-    float avdd_set_offset;       
-    float avdd_set_gain; 
-    // VDD校准参数
-    float vdd_set_offset;       
-    float vdd_set_gain; 
-    // ELVDD校准参数
-    float elvdd_set_offset;       
-    float elvdd_set_gain;
-    //限流参考电压校准参数
+
+    // ===== 限流参考=====
     float vcc_ref_offset;
     float vcc_ref_gain;
+
     float iovcc_ref_offset;
     float iovcc_ref_gain;
+
     float vsp_ref_offset;
     float vsp_ref_gain;
+
     float vsn_ref_offset;
     float vsn_ref_gain;
 
+    // ===== 校准参数=====
+    // AVDD
+    float avdd_set_offset;
+    float avdd_set_gain;
+
+    // VDD
+    float vdd_set_offset;
+    float vdd_set_gain;
+
+    // ELVDD
+    float elvdd_set_offset;
+    float elvdd_set_gain;
+
+    // ELVSS
+    float elvss_set_offset;
+    float elvss_set_gain;
+
+    // ===== 限流参考=====
     float avdd_ref_offset;
     float avdd_ref_gain;
+
     float vdd_ref_offset;
     float vdd_ref_gain;
+
     float elvdd_ref_offset;
     float elvdd_ref_gain;
+
     float elvss_ref_offset;
     float elvss_ref_gain;
 
-    float ref_freq_offset;
-    float ref_freq_gain;
+    // ===== 其余参数=====
     float v_level_shift_offset;
     float v_level_shift_gain;
+
+    float ref_freq_offset;
+    float ref_freq_gain;
+
     float vadj_p_offset;
-    float vadj_p_gain;    
+    float vadj_p_gain;
+
     float vadj_n_offset;
     float vadj_n_gain;
-    
+
 } da_calibration_data_t;
 
 typedef struct
@@ -182,6 +203,7 @@ HAL_StatusTypeDef calibration_verify_crc(calibration_data_t *cal_data);
 // Data Access Function
 calibration_data_t* calibration_get_data(void);
 bool calibration_is_valid(void);
+HAL_StatusTypeDef calu_calibration_data();
 
 // Flash操作函数
 HAL_StatusTypeDef calibration_flash_init(void);

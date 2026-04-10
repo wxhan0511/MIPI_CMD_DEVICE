@@ -30,6 +30,7 @@
 #include "bsp_gtb.h"
 #include "i2c_task.h"
 #include "tim.h"
+#include "spi.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -86,9 +87,6 @@ extern TIM_HandleTypeDef htim6;
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern tp_config_t tp_config_hid;
-extern volatile int spi_rx_flag;
-extern volatile int spi_rx_tx_flag;
-extern volatile int spi_tx_flag;
 
 extern volatile uint8_t i2c1_rx_ready_flag;
 
@@ -416,13 +414,33 @@ void SPI2_IRQHandler(void)
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if(hspi->Instance == SPI2) {
-        spi_rx_flag = 1;
+      M_INT_LOW();
+      spi_rx_flag = 1;
+      SPI2_Slave_OnRxCplt_IT(hspi);
+      
     }
 }
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance == SPI2) {
+        M_INT_LOW();
+        SPI2_Slave_OnTxCplt_IT(hspi);
+        
+    }
+}
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+     if(hspi == &hspi_tp){
+        
+         //printf("SPI2 TxRx Complete\r\n");
+     }
+    if(hspi->Instance == SPI3){
+     }
 
+}
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
-    if (hspi == &hspi_tp) {
+    if (hspi->Instance == SPI2) {
         // 处理错误
         // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
         // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
@@ -432,8 +450,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
         // #define HAL_SPI_ERROR_DMA               (0x00000010U)   /*!< DMA transfer error                     */
         // #define HAL_SPI_ERROR_FLAG              (0x00000020U)   /*!< Error on RXNE/TXE/BSY Flag             */
         // #define HAL_SPI_ERROR_ABORT             (0x00000040U)   /*!< Error during SPI Abort procedure       */
-        GTB_INFO("[SPI ERROR] code=%lu\r\n", HAL_SPI_GetError(hspi));
-    }
+        SPI2_Slave_OnError_IT(hspi);    }
 }
 /**
  * @brief This function handles USART3 global interrupt.
@@ -697,24 +714,6 @@ void I2C2_ER_IRQHandler(void)
 {
   HAL_I2C_ErrorCallback(&hi2c2);
 }
-/*used for gtb_task*/
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-     //printf("HAL_SPI_TxRxCpltCallback\r\n");
-     if(hspi == &hspi_tp){
-         spi_rx_tx_flag = 1;
-         //printf("SPI2 TxRx Complete\r\n");
-     }
-    if(hspi->Instance == SPI3){
-     }
-
-}
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-    if(hspi->Instance == SPI2) {
-        spi_tx_flag = 1;
-    }
-}
 
 
 
@@ -770,7 +769,10 @@ void OTG_HS_IRQHandler(void)
   /* USER CODE END OTG_HS_IRQn 1 */
 }
 /* USER CODE END 1 */
-
+void EXTI2_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+}
 // 电压电流采样回调函数
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {

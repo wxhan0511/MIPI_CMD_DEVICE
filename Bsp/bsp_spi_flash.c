@@ -194,8 +194,9 @@ uint8_t bsp_flash_read_status(void)
     g_spiTxBuf[0] = (CMD_RDSR);								
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 2);
     status = g_spiRxBuf[1];					
-    SF_CS_H();									 
-    //printf("[spi flash] read status %d\r\n",status);
+    SF_CS_H();
+    //while(1);									 
+    printf("[spi flash] read status %d\r\n",status);
     return status;
 }
 void QSPI_FLASH_Wait_Busy(void)

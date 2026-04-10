@@ -15,8 +15,8 @@
 typedef enum {
     POWER_CMD_STATUS_SUCCESS = 0,
     POWER_CMD_STATUS_FAILED,          
-    POWER_CMD_STATUS_TIMEOUT,         
-    POWER_CMD_STATUS_INVALID,         
+    POWER_CMD_STATUS_BUSY, 
+    POWER_CMD_STATUS_TIMEOUT,                 
     POWER_CMD_STATUS_MAX              
 } PowerCmdStatus_E;
 
@@ -73,6 +73,17 @@ typedef struct
 
 } SampleTask_S;
 
+typedef struct
+{
+    uint8_t h0;
+    uint8_t h1;
+} protocol_header_t;
+
 void task_sample_init(void);
 void task_sample_run();
+/* 在 SPI 中断回调里调用（ISR上下文） */
+void task_sample_spi_frame_isr(const uint8_t *rx, uint16_t len);
+
+/* 供 SPI 层取当前要回传的帧 */
+void task_sample_get_tx_frame(uint8_t *out, uint16_t len);
 #endif /* _TASK_SAMPLE_H_ */

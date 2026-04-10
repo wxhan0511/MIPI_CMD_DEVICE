@@ -43,7 +43,7 @@
 // #endif
 
 
-#define I2C1_IRQ
+// #define I2C1_IRQ
 #ifdef I2C1_IRQ
   #define I2C_SLAVE_I2C1_LISTEN
 #endif

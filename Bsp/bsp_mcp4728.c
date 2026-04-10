@@ -12,7 +12,7 @@
 
 /*Static function declaration-------------------------------------- */
 
-static void I2C_CTRL_init(void);
+
 static void DAC_gpio_init(void);
 
 /* User-defined variables -----------------------------------------------------*/
@@ -42,11 +42,12 @@ BSP_STATUS bsp_dac_single_voltage_set(dac_dev_t *dev, const uint8_t channel, con
     buf[0] = MCP4728_SINGLE_WRITE | (channel << 1) | en; // Command and channel
     buf[1] = dev->val[channel] >> 8 | dev->vref[channel] << 7 | dev->gain[channel] << 4 | dev->pd[channel] << 5;
     buf[2] = dev->val[channel] & 0xFF; // Lower 8 bits of the 12-bit DAC value
+    // ADS1256_DEBUG("chip_i2c_addr: 0x%02X, channel: %d, DAC_voltage: %d\r\n", dev->i2c_bus->dev_addr[dev->chip_index], channel, voltage);
     const HAL_StatusTypeDef status = HAL_I2C_Master_Transmit(
-        dev->i2c_bus->handle, dev->i2c_bus->dev_addr[dev->chip_index], buf, 3, 100);
+        dev->i2c_bus->handle, dev->i2c_bus->dev_addr[dev->chip_index], buf, 3, 1000);
     if (status != HAL_OK)
     {
-        printf("I2C transmit failed %d \r\n", status);
+        ADS1256_DEBUG("I2C transmit failed %d \r\n", status);
         return BSP_ERROR;
     }
     // 等待 EEPROM 写入周期完成 (RDY/BSY 判断)
@@ -75,7 +76,7 @@ BSP_STATUS bsp_dac_multi_voltage_set(const dac_dev_t *dev)
         dev->i2c_bus->handle, dev->i2c_bus->dev_addr[dev->chip_index], buf, buf_index, 1000);
     if (status != HAL_OK)
     {
-        printf("I2C transmit failed %d \r\n", status);
+        ADS1256_DEBUG("I2C transmit failed %d \r\n", status);
         return BSP_ERROR;
     }
     // Multi Write 通常不写 EEPROM，响应较快，但为了安全也可以增加 ready 判断
@@ -201,7 +202,7 @@ BSP_STATUS bsp_mcp4728_wait_ready(const dac_dev_t *dev, uint32_t timeout_ms)
 *	功能说明: 板载芯片I2C通讯初始化
 *********************************************************************************************************
 */
-static void I2C_CTRL_init(void)
+void I2C_CTRL_init(void)
 {
     bsp_InitI2C();
 

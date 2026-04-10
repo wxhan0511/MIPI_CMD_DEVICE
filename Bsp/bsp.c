@@ -35,8 +35,8 @@ static void bsp_print_version_info(void);
 static HAL_StatusTypeDef bsp_init_adc_system(void);
 static void bsp_test_spi_flash(void);
 static void bsp_test_latch(void);
-
-
+extern SPI_HandleTypeDef hspi2;
+uint8_t id = 0x01; 
 
 /**
  * @brief Firmware name stored in specific section
@@ -66,10 +66,14 @@ uint8_t magic_number[4] = {0x12, 0x34, 0xf8, 0x8f};
 
 void bsp_init()
 {
-
     bsp_retarget_init(&huart3);
+    bsp_print_version_info();
+
     bsp_init_dwt();
-    /*-------------D trigger init START----------------*/
+    // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
+    // app_delay(100);
+    // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
+
     bsp_d_trigger_init(d_1);
     bsp_d_trigger_init(d_2);
     bsp_d_trigger_init(d_3);
@@ -78,42 +82,49 @@ void bsp_init()
     bsp_d_trigger_init(d_6);
     bsp_d_trigger_init(d_7);
     bsp_d_trigger_init(d_8);
-    bsp_d_trigger_set(enabled);
-    /*-------------D trigger init END----------------*/
-    bsp_lcd_reset(&lcd);
+    bsp_d_trigger_set(enabled); //验证通过
 
-    // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
-    // app_delay(100);
-    // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
+    // bsp_lcd_reset(&lcd);
     
-    // bsp_test_spi_flash();
-    calibration_load(); 
+    //bsp_test_spi_flash();
+    calibration_set_defaults();
+    W25Q256JVEQ_INFO("Default calibration values have been set\r\n");
+    //calibration_save();
+    //calibration_load();
     
-    bsp_init_adc_system();
+    // while(1);
+    // M_CS_Pin_L();
+    // HAL_SPI_Transmit(&hspi2, (uint8_t*)"Hello Flash", 11, HAL_MAX_DELAY);
+    // M_CS_Pin_H();
     
-    
-    
+/*-------------ADC START---------------------------*/
+    //bsp_init_adc_system();
+/*-------------ADC END---------------------------*/
+
     //Master mode and listening are mutually exclusive 
 #ifdef I2C_SLAVE_I2C2_LISTEN
     HAL_I2C_DisableListen_IT(&hi2c2);
 #endif
-    /*-------------DAC and LIMIT CURRENT START----------------*/
+/*-------------DAC and LIMIT CURRENT START----------*/
+    
     bsp_dac_init();
-    /*-------------DAC and LIMIT CURRENT END----------------*/
+    
+    
+/*-------------DAC and LIMIT CURRENT END------------*/
 #ifdef I2C_SLAVE_I2C2_LISTEN
     HAL_I2C_EnableListen_IT(&hi2c2);
 #endif
     /*-------------PWM START----------------*/
-    bsp_led_pwm_init();
+    //bsp_led_pwm_init();
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
-    bsp_CCP_Init();
+    //bsp_CCP_Init();
     /*-------------CCP END----------------*/
     
     //MX_USB_OTG_HS_PCD_Init();
     //MX_USB_DEVICE_Init();
     MIPI_CMD_INFO("------------- bsp init finish -------------\r\n");
-    bsp_print_version_info();
+    
 }
 
 void bsp_led_pwm_init(void)
@@ -126,6 +137,7 @@ void bsp_CCP_Init(void)
     TIM1_CCP_Init();
     MIPI_CMD_INFO("------------- bsp tim1 ccp init finish -------------\r\n");
 }
+
 
 /**
  * @brief Print system version information

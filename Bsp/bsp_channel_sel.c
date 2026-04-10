@@ -107,9 +107,12 @@ void bsp_ads1256_ch1_select(const AI1_INDEX ai1_index)
         ch1_flag = ai1_index;
     }
 }
-void bsp_limit_current_set(uint8_t state)
+/*清故障标志*/
+void bsp_limit_current_reset()
 {
-    bsp_d_trigger_set_channel(&d_5, 0, !state);
+    bsp_d_trigger_set_channel(&d_5, 0, 0);
+    bsp_delay_us(5);
+    bsp_d_trigger_set_channel(&d_5, 0, 1);
 }
 // ANCHOR -  ADS1256 AI2选通采样通道
 //  @param power_index 电源索引

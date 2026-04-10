@@ -107,4 +107,5 @@ void bsp_mcp4728_change_address(dev_mcp4728_t *dev, uint8_t dev_address);
 uint8_t bsp_mcp4728_read_address(dev_mcp4728_t *dev);
 bool bsp_mcp4728_is_ready(const dac_dev_t *dev);
 BSP_STATUS bsp_mcp4728_wait_ready(const dac_dev_t *dev, uint32_t timeout_ms);
+void I2C_CTRL_init(void);
 #endif // BSP_MCP4728_H

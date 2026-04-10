@@ -66,7 +66,7 @@ file(GLOB_RECURSE SOURCES "Core/*.*" "Composite/*.*" "Middlewares/*.*" "Drivers/
 add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 
-set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F407VETX_FLASH.ld)
+set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F407VGTX_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/build.map)
 add_link_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)

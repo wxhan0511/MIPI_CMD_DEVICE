@@ -28,6 +28,7 @@
 #include "widget_main.h"
 #include "lv_port_disp_template.h"
 #include "widget_func.h"
+#include "task_sample.h"
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -51,7 +52,8 @@ void MX_FREERTOS_Init(void)
   //master_rx_task_init();
 
   //power_task_init();
-  widget_main_task_init(); //LVGL UI task
+  task_sample_init();
+  //widget_main_task_init(); //LVGL UI task
 
 
 }

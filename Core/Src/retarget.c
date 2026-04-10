@@ -50,6 +50,10 @@ int _write(int fd, char* ptr, int len) {
     HAL_StatusTypeDef hstatus;
 
     if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
+        if (gHuart == NULL) {
+            errno = ENODEV;
+            return -1;
+        }
         hstatus = HAL_UART_Transmit(gHuart, (uint8_t *) ptr, len, HAL_MAX_DELAY);
         if (hstatus == HAL_OK)
             return len;
@@ -81,6 +85,10 @@ int _read(int fd, char* ptr, int len) {
     HAL_StatusTypeDef hstatus;
 
     if (fd == STDIN_FILENO) {
+        if (gHuart == NULL) {
+            errno = ENODEV;
+            return -1;
+        }
         hstatus = HAL_UART_Receive(gHuart, (uint8_t *) ptr, 1, HAL_MAX_DELAY);
         if (hstatus == HAL_OK)
             return 1;

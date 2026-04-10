@@ -6,8 +6,8 @@
 #define Flash_TotalSize   (32 * 1024 * 1024)
 #define Flash_SectorSize  (4 * 1024)
 
-#define SF_CS_H()					GPIOC->BSRR = GPIO_PIN_12
-#define SF_CS_L()					GPIOC->BSRR = ((uint32_t)GPIO_PIN_12 << 16U)
+#define SF_CS_H()					GPIOC->BSRR = GPIO_PIN_13
+#define SF_CS_L()					GPIOC->BSRR = ((uint32_t)GPIO_PIN_13 << 16U)
 
 
 #define CMD_AAI       0xAD

@@ -25,21 +25,12 @@
 #include "crc.h"
 #include "fsmc.h"
 #include "bsp_mcp4728_ctl.h" 
-//5.0前期测试
-#include "widget_main.h"
+#include "retarget.h"
 
-
-
-
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 
-static void test_fun(void);
-/**
- * @brief  The application entry point.
- * @retval int
- */
+
 int main(void)
 {
   HAL_Init();
@@ -51,11 +42,12 @@ int main(void)
   MX_CRC_Init();
   MX_FSMC_Init();
   MX_DAC_Init();
-  MX_SPI1_Init(); //***ADS1256***
-  MX_SPI2_Init();//***M SPI***
-  MX_SPI3_Init();//***FLASH***
+  MX_SPI1_Init(); //ADS1256
+  MX_SPI2_Init();//M SPI
+  MX_SPI3_Init();//FLASH
   MX_USART3_UART_Init();
   bsp_init();
+
   // while(1){
   //     HAL_Delay(100);
   //     enableTim1CaptureCompareInterrupt();
