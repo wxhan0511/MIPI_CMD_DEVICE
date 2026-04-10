@@ -115,7 +115,8 @@ void bsp_init()
     HAL_I2C_EnableListen_IT(&hi2c2);
 #endif
     /*-------------PWM START----------------*/
-    //bsp_led_pwm_init();
+    bsp_led_pwm_init();
+    test_pwm();
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     //bsp_CCP_Init();
@@ -130,7 +131,7 @@ void bsp_init()
 void bsp_led_pwm_init(void)
 {
     TIM1_PWM_Init(2,150,1);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
-    TIM1_Generate_N_Pulses(11000);
+    TIM1_Generate_N_Pulses(11000);//非使能
 }
 void bsp_CCP_Init(void)
 {

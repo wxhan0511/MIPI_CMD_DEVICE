@@ -50,12 +50,11 @@ i2c_dev_t i2c_bus_2 = {
 
 //
 dac_dev_t dac_chips[DAC_CHIP_MAX] = {
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_1, .vref = {1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_2, .vref = {1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}}};
-
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_1, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_2, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}}};
 // 1. 定义映射表
 dac_config_table_t dac_config_table[20] = {
     //  上次电压地址                                      | 偏移地址                                               | 增益地址                                             | 芯片       | 名称         | 通道 | 反 | id | res | 使能                    | 禁能
@@ -118,10 +117,10 @@ void bsp_cali_and_set_power(uint8_t power_id)
     float val = *(cfg->last_voltage);
 
     val = (val - *(cfg->offset)) / (*(cfg->gain));
-    MIPI_CMD_DEBUG("%s,%s: Calibrated voltage = %.2f mV (raw=%.2f mV, offset=%.2f, gain=%.2f)\r\n",
+    MIPI_CMD_DEBUG("%s,%s: vi = %.2f mV (vo=%.2f mV, offset=%.2f, gain=%.2f)\r\n",
         cfg->name, cfg->name1, val, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
 
-    //val = val / 2; // MCP4728默认增益为2，如果校准增益是基于增益=1的，需要除以2进行补偿
+    val = val * 2; // MCP4728默认增益为2，如果校准增益是基于增益=1的，需要除以2进行补偿
     // 最大输出电压 4.096V
     dac_chips[cfg->chip].val[cfg->channel] = float_to_uint16_round(val);
     // dac_chips[cfg->chip].val[cfg->channel] = 1000;
@@ -179,9 +178,10 @@ void bsp_dac_init()
     
     bsp_power_all_disable();
     bsp_limit_current_reset();
-    g_calibration_manager.data.vsn_last_voltage = -3219.0f;
-    g_calibration_manager.data.vsp_last_voltage = 5500.0f;
-    g_calibration_manager.data.iovcc_last_voltage = 1920.0f;
+    g_calibration_manager.data.vsn_last_voltage = -5205.0f;
+    g_calibration_manager.data.vsp_last_voltage = 5600.0f;
+    g_calibration_manager.data.vcc_last_voltage = 1800.0f;
+    g_calibration_manager.data.iovcc_last_voltage = 1900.0f;
     // 打印恢复电压信息
     MIPI_CMD_INFO("Restore the voltage set last time\r\n");
     ADS1256_DEBUG("VSN : %f mV\r\n", g_calibration_manager.data.vsn_last_voltage);
