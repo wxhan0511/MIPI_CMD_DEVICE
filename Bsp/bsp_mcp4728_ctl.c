@@ -147,7 +147,7 @@ void bsp_cali_and_set_power(uint8_t power_id)
     }
     single_mcp4728_sync_update(power_id);
 
-    bsp_power_single_enable(power_id);
+    
 }
 void all_mcp4728_sync_update()
 {
@@ -214,15 +214,21 @@ void bsp_dac_init()
     {
         bsp_cali_and_set_power(i);
     }
+    HAL_Delay(5000); // 等待DAC输出稳定
+    for( uint8_t i =0;i<20;i++)
+    {
+       bsp_power_single_enable(i);
+    }
+    
     LEVEL_SHIFT_ENABLE();
-    bsp_rly_gear_set(GEAR_mA, VSN_RLY);
-    bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
-    bsp_rly_gear_set(GEAR_mA, VCC_RLY);
-    bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
-    bsp_rly_gear_set(GEAR_mA, VSP_RLY);
-    bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
-    bsp_rly_gear_set(GEAR_mA, VDD_RLY);
-    bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
+    bsp_rly_gear_set(GEAR_uA, VSN_RLY);
+    bsp_rly_gear_set(GEAR_uA, ELVSS_RLY);
+    bsp_rly_gear_set(GEAR_uA, VCC_RLY);
+    bsp_rly_gear_set(GEAR_uA, IOVCC_RLY);
+    bsp_rly_gear_set(GEAR_uA, VSP_RLY);
+    bsp_rly_gear_set(GEAR_uA, AVDD_RLY);
+    bsp_rly_gear_set(GEAR_uA, VDD_RLY);
+    bsp_rly_gear_set(GEAR_uA, ELVDD_RLY);
 }
 
 void mcp4728_device_init()
