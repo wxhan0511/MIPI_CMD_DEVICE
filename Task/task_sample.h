@@ -20,7 +20,8 @@ typedef enum {
     POWER_CMD_STATUS_MAX              
 } PowerCmdStatus_E;
 
-typedef enum{
+typedef enum
+{
     GET_ID = 0x10,
     GET_SW_VERSION = 0x11,
     VOL_SET = 0x12,
@@ -28,18 +29,27 @@ typedef enum{
     ALL_POWER_EN = 0x14,
     SINGLE_POWER_EN = 0x15,
     SINGLE_VOL_GET = 0x16,
-    SINGLE_CUR_GET = 0x17
-}vol_cur_control_cmd_type;
+    SINGLE_CUR_GET = 0x17,
+    SET_RESISTANCE = 0x18,
+    GET_RESISTANCE = 0x19,
+    GET_DIODE = 0x1A,
+    SET_FREQUENCY = 0x1B,
+    GET_FREQUENCY = 0x1C,
+    SEL_PIN_24 = 0x1D,
+    SEL_PIN_PN = 0x1E,
+    GET_24PIN_VOLTAGE = 0x1F
+} vol_cur_control_cmd_type;
 
 typedef struct {
     uint8_t frame_header;
     uint8_t cmd_type;                 
-    uint8_t power_id;               
+    uint8_t power_id;
+    uint8_t reserved[1];                
     union {
         uint8_t bytes[4];        
         float float_value;       
     } value;
-    uint8_t reserved[1];                      
+                        
 } SetPowerDataFrame_S;
 
 typedef struct {

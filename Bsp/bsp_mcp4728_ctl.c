@@ -141,11 +141,15 @@ void bsp_cali_and_set_power(uint8_t power_id)
     // {
     //     MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
     // }
+    
     if (bsp_dac_single_voltage_set(&dac_chips[cfg->chip], cfg->channel, dac_chips[cfg->chip].val[cfg->channel], 0) != BSP_OK)
     {
         MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
     }
+    
     single_mcp4728_sync_update(power_id);
+
+    bsp_power_single_enable(power_id);
 
     
 }
@@ -178,10 +182,18 @@ void bsp_dac_init()
     
     bsp_power_all_disable();
     bsp_limit_current_reset();
-    g_calibration_manager.data.vsn_last_voltage = -5205.0f;
-    g_calibration_manager.data.vsp_last_voltage = 5600.0f;
-    g_calibration_manager.data.vcc_last_voltage = 1800.0f;
-    g_calibration_manager.data.iovcc_last_voltage = 1900.0f;
+    g_calibration_manager.data.vsn_last_voltage = -5500.0f;
+    g_calibration_manager.data.vsp_last_voltage = 5500.0f;
+    g_calibration_manager.data.vcc_last_voltage = 3600.0f;
+    g_calibration_manager.data.iovcc_last_voltage = 1800.0f;
+    g_calibration_manager.data.vcc_ref_last = 2000.0f;
+    g_calibration_manager.data.iovcc_ref_last = 2000.0f;
+    g_calibration_manager.data.vsp_ref_last = 2000.0f;
+    g_calibration_manager.data.vsn_ref_last = 2000.0f;
+    g_calibration_manager.data.avdd_ref_last = 5000.0f;
+    g_calibration_manager.data.vdd_ref_last = 5000.0f;
+    g_calibration_manager.data.elvdd_ref_last = 5000.0f;
+    g_calibration_manager.data.elvss_ref_last = 2000.0f;
     // 打印恢复电压信息
     MIPI_CMD_INFO("Restore the voltage set last time\r\n");
     ADS1256_DEBUG("VSN : %f mV\r\n", g_calibration_manager.data.vsn_last_voltage);
@@ -214,21 +226,25 @@ void bsp_dac_init()
     {
         bsp_cali_and_set_power(i);
     }
-    HAL_Delay(5000); // 等待DAC输出稳定
+    //HAL_Delay(5000); // 等待DAC输出稳定
     for( uint8_t i =0;i<20;i++)
     {
        bsp_power_single_enable(i);
     }
     
     LEVEL_SHIFT_ENABLE();
-    bsp_rly_gear_set(GEAR_uA, VSN_RLY);
-    bsp_rly_gear_set(GEAR_uA, ELVSS_RLY);
-    bsp_rly_gear_set(GEAR_uA, VCC_RLY);
-    bsp_rly_gear_set(GEAR_uA, IOVCC_RLY);
-    bsp_rly_gear_set(GEAR_uA, VSP_RLY);
-    bsp_rly_gear_set(GEAR_uA, AVDD_RLY);
-    bsp_rly_gear_set(GEAR_uA, VDD_RLY);
-    bsp_rly_gear_set(GEAR_uA, ELVDD_RLY);
+
+    //使能不能切档位,常态是ma档
+    //测完ua再切回ma档
+
+    // bsp_rly_gear_set(GEAR_mA, VSN_RLY);
+    // bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
+    // bsp_rly_gear_set(GEAR_mA, VCC_RLY);
+    // bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
+    // bsp_rly_gear_set(GEAR_mA, VSP_RLY);
+    // bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
+    // bsp_rly_gear_set(GEAR_mA, VDD_RLY);
+    // bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
 }
 
 void mcp4728_device_init()
@@ -251,15 +267,19 @@ void bsp_power_single_enable(uint8_t power_id)
     {
     case 0:
         VCC_ENABLE_POWEREN_P_1();
+        printf("VCC_ENABLE_POWEREN_P_1\r\n");
         break;
     case 1:
         IOVCC_ENABLE_POWEREN_P_2();
+        printf("IOVCC_ENABLE_POWEREN_P_2\r\n");
         break;
     case 2:
         VSP_ENABLE_POWEREN_P_3();
+        printf("VSP_ENABLE_POWEREN_P_3\r\n");
         break;
     case 3:
         VSN_ENABLE_POWEREN_N_1();
+        printf("VSN_ENABLE_POWEREN_N_1\r\n");
         break;
     case 4:
     case 5:
@@ -273,18 +293,23 @@ void bsp_power_single_enable(uint8_t power_id)
         break;
     case 8:
         AVDD_ENABLE_POWEREN_P_4();
+        printf("AVDD_ENABLE_POWEREN_P_4\r\n");
         break;
     case 9:
         VDD_ENABLE_POWEREN_P_5();
+        printf("VDD_ENABLE_POWEREN_P_5\r\n");
         break;
     case 10:
         ELVDD_ENABLE_POWEREN_P_6();
+        printf("ELVDD_ENABLE_POWEREN_P_6\r\n");
         break;
     case 11:
         ELVSS_ENABLE_POWEREN_N_2();
+        printf("ELVSS_ENABLE_POWEREN_N_2\r\n");
         break;
     case 16:
         LEVEL_SHIFT_ENABLE();
+        printf("LEVEL_SHIFT_ENABLE\r\n");
         break;
     default:
         MIPI_CMD_DEBUG("other power_id: %d\r\n no need to handle", power_id);
@@ -298,15 +323,19 @@ void bsp_power_single_disable(uint8_t power_id)
     {
     case 0:
         VCC_DISABLE_POWEREN_P_1();
+        printf("VCC_DISABLE_POWEREN_P_1\r\n");
         break;
     case 1:
         IOVCC_DISABLE_POWEREN_P_2();
+        printf("IOVCC_DISABLE_POWEREN_P_2\r\n");
         break;
     case 2:
         VSP_DISABLE_POWEREN_P_3();
+        printf("VSP_DISABLE_POWEREN_P_3\r\n");
         break;
     case 3:
         VSN_DISABLE_POWEREN_N_1();
+        printf("VSN_DISABLE_POWEREN_N_1\r\n");
         break;
     case 4:
     case 5:
@@ -320,15 +349,19 @@ void bsp_power_single_disable(uint8_t power_id)
         break;
     case 8:
         AVDD_DISABLE_POWEREN_P_4();
+        printf("AVDD_DISABLE_POWEREN_P_4\r\n");
         break;
     case 9:
         VDD_DISABLE_POWEREN_P_5();
+        printf("VDD_DISABLE_POWEREN_P_5\r\n");
         break;
     case 10:
         ELVDD_DISABLE_POWEREN_P_6();
+        printf("ELVDD_DISABLE_POWEREN_P_6\r\n");
         break;
     case 11:
         ELVSS_DISABLE_POWEREN_N_2();
+        printf("ELVSS_DISABLE_POWEREN_N_2\r\n");
         break;
     case 16:
         LEVEL_SHIFT_DISABLE();

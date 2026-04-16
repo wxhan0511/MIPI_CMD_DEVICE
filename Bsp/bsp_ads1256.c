@@ -422,7 +422,7 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
                     raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
                 }
             }
-            printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
+            //printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
             // AD_DATA_DEBUG("channel %d raw data %f \r\n",handle->last_channel,raw_data);
 
             // const double compare = bsp_adc_vol_convert_64pin(handle->vol_gear,raw_data,handle->single_vol_cali_en);

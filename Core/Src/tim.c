@@ -41,10 +41,13 @@ __IO uint32_t            uwFrequency = 0;
 
 static uint32_t sample_count = 0;
 
-#define SAMPLE_WINDOW 1000U
-#define GRADIENT_STEP 0.1f
+#define SAMPLE_WINDOW 1000U //采样次数
+#define GRADIENT_STEP 0.1f  //
 #define GRADIENT_BUCKETS 100U  // 0.1%, 0.2%, …, 1.0%
 
+
+uint32_t mean_freq_samples = 0;
+uint32_t mean_duty_samples = 0;
 static uint32_t freq_samples[SAMPLE_WINDOW];
 static uint32_t duty_samples[SAMPLE_WINDOW];
 static uint32_t sample_index;
@@ -217,7 +220,28 @@ void disableTim1PWMOutput(void)
         Error_Handler(__FILE__, __LINE__);
     }
 }
-
+void enableTim2PWMOutput(void)
+{
+  if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+    if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
+    {
+        Error_Handler(__FILE__, __LINE__);
+    }
+}
+void disableTim2PWMOutput(void)
+{
+  if (HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+    if (HAL_TIM_Base_Stop_IT(&htim2) != HAL_OK)
+    {
+        Error_Handler(__FILE__, __LINE__);
+    }
+}
 void app_delay(uint32_t delay_ms)
 {
   if(osKernelGetState() != osKernelRunning) {
@@ -227,6 +251,66 @@ void app_delay(uint32_t delay_ms)
   }
 }
 
+void TIM2_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse) {
+   /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = psc-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = arr-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.RepetitionCounter = 0;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+  /*当你因为总线速度限制而不得不降低整个 APB1 总线的时钟时（即预分频系数 > 1），系统会自动将供给定时器的时钟频率乘以2。*/
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;//APB2 Bus Clock 84MHZ×2=168MHZ
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = pulse;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+
+    if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler(__FILE__, __LINE__);
+  }
+  /* TIM2 is a general-purpose timer: no complementary output / dead-time config */
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, pulse);
+
+}
 /**
   * @brief  TIM1 PWM Initialization (Channel 4, PE14 Pin)
   * @param  arr: Auto-reload value (determines PWM period)
@@ -334,6 +418,12 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* tim_pwmHandle)
 
   /* USER CODE END TIM2_MspInit 1 */
   }
+  if(tim_pwmHandle->Instance==TIM1)
+  {
+  /* USER CODE BEGIN TIM1_MspInit 0 */
+    __HAL_RCC_TIM1_CLK_ENABLE();
+  /* USER CODE END TIM1_MspInit 0 */
+  }
 }
 void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 {
@@ -372,6 +462,26 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
   /* USER CODE BEGIN TIM1_MspPostInit 1 */
 
   /* USER CODE END TIM1_MspPostInit 1 */
+  }
+  if(timHandle->Instance==TIM2)
+  {
+  /* USER CODE BEGIN TIM2_MspPostInit 0 */
+
+  /* USER CODE END TIM2_MspPostInit 0 */
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**TIM2 GPIO Configuration
+    PA3     ------> TIM2_CH4
+    */
+    GPIO_InitStruct.Pin = PWM_BLASI;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+    HAL_GPIO_Init(PWM_BLASI_GPIO_Port, &GPIO_InitStruct);
+
+  /* USER CODE BEGIN TIM2_MspPostInit 1 */
+
+  /* USER CODE END TIM2_MspPostInit 1 */
   }
 
 }

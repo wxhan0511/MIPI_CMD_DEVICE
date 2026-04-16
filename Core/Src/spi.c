@@ -34,6 +34,8 @@ DMA_HandleTypeDef hdma_spi1_tx;
 DMA_HandleTypeDef hdma_spi3_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
+volatile uint8_t s_need_send_busy = 0;
+volatile uint8_t s_need_resend = 0;
 
 /* SPI1 init function */
 void MX_SPI1_Init(void)//***ADS1256***
@@ -457,15 +459,15 @@ void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi)
     if (hspi->Instance != SPI2) return;
 
     uint16_t tx_len = 0;
-    M_SPI_INFO("Received SPI frame: len=%d\r\n", SPI2_SLAVE_RX_LEN);
-    M_SPI_DEBUG("Received SPI frame data:\r\n");
-    for (int i = 0; i < SPI2_SLAVE_RX_LEN; i++) {
-        M_SPI_DEBUG("%02X ", g_spi2_rx_buf[i]);
-        if ((i + 1) % 16 == 0) {
-            M_SPI_DEBUG("\r\n");
-        }
-    }
-    M_SPI_DEBUG("\r\n");
+    // M_SPI_INFO("Received SPI frame: len=%d\r\n", SPI2_SLAVE_RX_LEN);
+    // M_SPI_DEBUG("Received SPI frame data:\r\n");
+    // for (int i = 0; i < SPI2_SLAVE_RX_LEN; i++) {
+    //     M_SPI_DEBUG("%02X ", g_spi2_rx_buf[i]);
+    //     if ((i + 1) % 16 == 0) {
+    //         M_SPI_DEBUG("\r\n");
+    //     }
+    // }
+    // M_SPI_DEBUG("\r\n");
 
     /* 收完->处理->发送 */
 }
@@ -475,8 +477,6 @@ void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi)
     if (hspi->Instance != SPI2) return;
 
     /* 发送完成后，重新进入接收等待下一帧 */
-    memset(g_spi2_rx_buf, 0, sizeof(g_spi2_rx_buf));
-    printf("start receive\r\n");
     HAL_SPI_Receive_IT(&hspi2, g_spi2_rx_buf, SPI2_SLAVE_RX_LEN);
     M_INT_HIGH();
 }
@@ -484,22 +484,16 @@ void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi)
 void SPI2_Slave_OnError_IT(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance != SPI2) return;
-    M_SPI_INFO("SPI2 ERR=0x%08lX, SR=0x%04X\r\n",HAL_SPI_GetError(&hspi2), hspi2.Instance->SR);
-    __HAL_SPI_CLEAR_OVRFLAG(&hspi2);
-    HAL_SPI_Abort_IT(&hspi2);
-
-    /* 错误后恢复接收 */
-    memset(g_spi2_rx_buf, 0, sizeof(g_spi2_rx_buf));
-    HAL_SPI_Receive_IT(&hspi2, g_spi2_rx_buf, SPI2_SLAVE_RX_LEN);
+    printf("SPI error: code=%d\r\n", hspi->ErrorCode);
+    __HAL_SPI_CLEAR_OVRFLAG(hspi);     // 清 OVR
+    HAL_SPI_Abort(hspi);               // 终止当前事务（同步版更直接）
 }
 
 void M_INT_HIGH()
 {
   HAL_GPIO_WritePin(M_INT_GPIO_Port, M_INT_Pin, GPIO_PIN_SET);
-  printf("high\r\n");
 }
 void M_INT_LOW()
 {
   HAL_GPIO_WritePin(M_INT_GPIO_Port, M_INT_Pin, GPIO_PIN_RESET);
-  printf("low\r\n");
 }

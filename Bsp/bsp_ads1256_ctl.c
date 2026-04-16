@@ -28,11 +28,11 @@ float raw_data_queue[RAW_DATA_QUEUE_SIZE] __attribute__((section(".raw_data_queu
 uint8_t raw_data_index_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
 uint8_t raw_data_ch_sel_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
 volatile uint16_t raw_data_queue_head = 0;
-float latest_sample_raw_data[8] = {0};
-uint8_t latest_sample_ch_sel[8] = {0};
-double raw_data = 0;
-float latest_sample_data[8] = {0}; 
-uint8_t latest_sample_index[8] = {0};
+volatile float latest_sample_raw_data[8] = {0};
+volatile uint8_t latest_sample_ch_sel[8] = {0};
+volatile double raw_data = 0;
+volatile float latest_sample_data[8] = {0}; 
+volatile uint8_t latest_sample_index[8] = {0};
 /* Private function prototypes -----------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
@@ -45,7 +45,6 @@ void raw_data_queue_push(float value, uint8_t index)
     raw_data_ch_sel_queue[raw_data_queue_head] = index == 0 ? ch0_flag : index == 1 ? ch1_flag : index == 2 ? ch2_flag : 0;
     latest_sample_raw_data[index] = value;//latest sample data for  8 channel
     latest_sample_ch_sel[index] = index == 0 ? ch0_flag : index == 1 ? ch1_flag : index == 2 ? ch2_flag : 0;//latest sample channel sel for  8 channel   
-    
     if(ch0_flag == 8 && ch1_flag ==8 && ch2_flag ==8) MIPI_CMD_ERROR("ads1256 ch0~2 not selected , not connected!\r\n");
     
     raw_data_queue_head = (raw_data_queue_head + 1) % RAW_DATA_QUEUE_SIZE;
@@ -61,24 +60,11 @@ void sample_data_cali()
       sel_cali_param(i , latest_sample_ch_sel[i], &offset, &gain);
 
       //ch0(all,2-,3-),ch1(0,5),ch2(0,2,5,6,7-)
-      if(i==0 || (i==1 && (latest_sample_ch_sel[i] == 0 || latest_sample_ch_sel[i] == 5)) || (i==2 && (latest_sample_ch_sel[i] == 0 || latest_sample_ch_sel[i] == 2 || latest_sample_ch_sel[i] == 5 || latest_sample_ch_sel[i] == 6 || latest_sample_ch_sel[i] == 7)))
-      {
-          IV_data = latest_sample_raw_data[i] * 1e3;
-          if((i==0&&(latest_sample_ch_sel[i] == 2 || latest_sample_ch_sel[i] == 3)) || (i==2 && (latest_sample_ch_sel[i] == 7 )))
-          {
-            IV_data = -IV_data;
-          }
-          else
-          {
-           IV_data = IV_data;
-          }
-      }
-      else
-      {
-        IV_data = latest_sample_raw_data[i] * 500;
-      }  
+      //VOL
+      IV_data = latest_sample_raw_data[i] * gain + offset; 
           
-      latest_sample_data[channel_num] = IV_data;
+      latest_sample_data[i] = IV_data * 1000;
+      //printf("channel %d, raw data %f, cali data %f\r\n", i, latest_sample_raw_data[i], latest_sample_data[i]);
     }
 
 }

@@ -27,6 +27,7 @@ typedef enum
 {
     D_MODE = 0,
     R_MODE = 1,
+    R_D_MODE_NULL = 2,
 }R_D_MODE;
 
 typedef enum
@@ -68,8 +69,8 @@ typedef enum
 
 typedef enum
 {
-    GEAR_mA = 0,
-    GEAR_uA = 1,
+    GEAR_uA = 0,
+    GEAR_mA = 1,
 }TEST_CUR_GEAR;
 
 typedef enum
@@ -131,10 +132,10 @@ extern uint8_t ch2_flag;
 /* Exported macro ------------------------------------------------------------*/
 
 //ANCHOR - 电源控制宏
-#define VSN_ENABLE_POWEREN_N_1()    bsp_d_trigger_set_channel(&d_3, 0, 1);
-#define VSN_DISABLE_POWEREN_N_1()   bsp_d_trigger_set_channel(&d_3, 0, 0);
-#define ELVSS_ENABLE_POWEREN_N_2()    bsp_d_trigger_set_channel(&d_3, 1, 1);
-#define ELVSS_DISABLE_POWEREN_N_2()   bsp_d_trigger_set_channel(&d_3, 1, 0);
+#define VSN_ENABLE_POWEREN_N_1()    bsp_d_trigger_set_channel(&d_3, 0, 0);
+#define VSN_DISABLE_POWEREN_N_1()   bsp_d_trigger_set_channel(&d_3, 0, 1);
+#define ELVSS_ENABLE_POWEREN_N_2()    bsp_d_trigger_set_channel(&d_3, 1, 0);
+#define ELVSS_DISABLE_POWEREN_N_2()   bsp_d_trigger_set_channel(&d_3, 1, 1);
 #define ELVDD_ENABLE_POWEREN_P_6()    bsp_d_trigger_set_channel(&d_3, 2 , 1);
 #define ELVDD_DISABLE_POWEREN_P_6()   bsp_d_trigger_set_channel(&d_3, 2 , 0);
 #define VDD_ENABLE_POWEREN_P_5()    bsp_d_trigger_set_channel(&d_3, 3, 1);
@@ -168,7 +169,7 @@ void bsp_test_select_mode(const TEST_MODE mode);
 void bsp_limit_current_reset();
 
 void bsp_rly_gear_set(TEST_CUR_GEAR gear ,RLY_INDEX rly_index);
-
+void bsp_select_24pin_channel(uint16_t pin);
 void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index);
 void bsp_ads1256_ch1_select(const AI1_INDEX ai1_index);
 void bsp_ads1256_ch2_select(const AI2_INDEX ai2_index);

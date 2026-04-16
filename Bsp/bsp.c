@@ -35,6 +35,8 @@ static void bsp_print_version_info(void);
 static HAL_StatusTypeDef bsp_init_adc_system(void);
 static void bsp_test_spi_flash(void);
 static void bsp_test_latch(void);
+void test_pwm(void);
+void test_ccp(void);
 extern SPI_HandleTypeDef hspi2;
 uint8_t id = 0x01; 
 
@@ -73,7 +75,7 @@ void bsp_init()
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     // app_delay(100);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
-
+    
     bsp_d_trigger_init(d_1);
     bsp_d_trigger_init(d_2);
     bsp_d_trigger_init(d_3);
@@ -83,7 +85,18 @@ void bsp_init()
     bsp_d_trigger_init(d_7);
     bsp_d_trigger_init(d_8);
     bsp_d_trigger_set(enabled); //验证通过
-
+    //默认D触发器全关断
+    //24 pin测完马上关断
+    //VSN的电流不对,测一下
+    
+    bsp_rly_gear_set(GEAR_mA, VSN_RLY); //需放最前
+    bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
+    bsp_rly_gear_set(GEAR_mA, VCC_RLY);
+    bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
+    bsp_rly_gear_set(GEAR_mA, VSP_RLY);
+    bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
+    bsp_rly_gear_set(GEAR_mA, VDD_RLY);
+    bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
     // bsp_lcd_reset(&lcd);
     
     //bsp_test_spi_flash();
@@ -98,7 +111,10 @@ void bsp_init()
     // M_CS_Pin_H();
     
 /*-------------ADC START---------------------------*/
-    //bsp_init_adc_system();
+    bsp_init_adc_system();
+    bsp_ads1256_ch0_select(VCC_V);
+    bsp_ads1256_ch1_select(AD_V);
+    bsp_ads1256_ch2_select(AD_24PinV);
 /*-------------ADC END---------------------------*/
 
     //Master mode and listening are mutually exclusive 
@@ -115,11 +131,11 @@ void bsp_init()
     HAL_I2C_EnableListen_IT(&hi2c2);
 #endif
     /*-------------PWM START----------------*/
-    bsp_led_pwm_init();
+    //bsp_led_pwm_init();
     test_pwm();
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
-    //bsp_CCP_Init();
+    //test_ccp();
     /*-------------CCP END----------------*/
     
     //MX_USB_OTG_HS_PCD_Init();
@@ -130,8 +146,27 @@ void bsp_init()
 
 void bsp_led_pwm_init(void)
 {
-    TIM1_PWM_Init(2,150,1);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
-    TIM1_Generate_N_Pulses(11000);//非使能
+    uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    uint16_t psc =15;//分频
+    uint16_t pulse =525;//比较值
+    uint16_t pulses_num = 11000;
+    TIM1_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    printf("TIM1 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
+    //TIM1_Generate_N_Pulses(pulses_num);//非使能
+    printf("generate %d pulses\r\n", pulses_num);
+    //推荐10KHz，占空比分辨率0.1%
+    
+}
+void bsp_blasi_pwm_init(void)
+{
+    uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    uint16_t psc =15;//分频
+    uint16_t pulse =525;//比较值
+    uint16_t pulses_num = 11000;
+    TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
+    //推荐10KHz，占空比分辨率0.1%
+    
 }
 void bsp_CCP_Init(void)
 {
@@ -264,9 +299,11 @@ static void bsp_test_spi_flash(void)
 void test_pwm(void)
 {
     bsp_led_pwm_init();//step1
+    bsp_blasi_pwm_init();
     enableTim1PWMOutput();//step2
+    enableTim2PWMOutput();
     app_delay(5000);
-    disableTim1PWMOutput();//step3
+    //disableTim1PWMOutput();//step3
 }
 //ANCHOR - DEMO CCP TEST FUNCTIONS
 void test_ccp(void)

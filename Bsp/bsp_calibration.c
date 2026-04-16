@@ -263,66 +263,66 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->vadj_n_last = -10000;
     
     //AD Calibration Default Values
-    cal->ad_data.ch0_gain[0] = 1.0f;
+    cal->ad_data.ch0_gain[0] = 5.0f;
     cal->ad_data.ch0_offset[0] = 0.0f;
-    cal->ad_data.ch0_gain[1] = 1.0f;
+    cal->ad_data.ch0_gain[1] = 5.0f;
     cal->ad_data.ch0_offset[1] = 0.0f;
-    cal->ad_data.ch0_gain[2] = 1.0f;
+    cal->ad_data.ch0_gain[2] = 5.0f;
     cal->ad_data.ch0_offset[2] = 0.0f;
-    cal->ad_data.ch0_gain[3] = 1.0f;
+    cal->ad_data.ch0_gain[3] = 5.0f;
     cal->ad_data.ch0_offset[3] = 0.0f;
-    cal->ad_data.ch0_gain[4] = 1.0f;
+    cal->ad_data.ch0_gain[4] = 5.0f;
     cal->ad_data.ch0_offset[4] = 0.0f;
-    cal->ad_data.ch0_gain[5] = 1.0f;
+    cal->ad_data.ch0_gain[5] = 5.0f;
     cal->ad_data.ch0_offset[5] = 0.0f;
-    cal->ad_data.ch0_gain[6] = 1.0f;
+    cal->ad_data.ch0_gain[6] = 5.0f;
     cal->ad_data.ch0_offset[6] = 0.0f;
-    cal->ad_data.ch0_gain[7] = 1.0f;
+    cal->ad_data.ch0_gain[7] = 5.0f;
     cal->ad_data.ch0_offset[7] = 0.0f;
 
-    cal->ad_data.ch1_gain[0] = 1.0f;
+    cal->ad_data.ch1_gain[0] = 6.0f;
     cal->ad_data.ch1_offset[0] = 0.0f;
-    cal->ad_data.ch1_gain[1] = 1.0f;
+    cal->ad_data.ch1_gain[1] = 1.0f;//无
     cal->ad_data.ch1_offset[1] = 0.0f;
-    cal->ad_data.ch1_gain[2] = 1.0f;
+    cal->ad_data.ch1_gain[2] = 0.2f;
     cal->ad_data.ch1_offset[2] = 0.0f;
-    cal->ad_data.ch1_gain[3] = 1.0f;
+    cal->ad_data.ch1_gain[3] = 0.2f;
     cal->ad_data.ch1_offset[3] = 0.0f;
-    cal->ad_data.ch1_gain[4] = 1.0f;
+    cal->ad_data.ch1_gain[4] = 0.5f;
     cal->ad_data.ch1_offset[4] = 0.0f;
-    cal->ad_data.ch1_gain[5] = 1.0f;
+    cal->ad_data.ch1_gain[5] = 0.05f;
     cal->ad_data.ch1_offset[5] = 0.0f;
-    cal->ad_data.ch1_gain[6] = 1.0f;
+    cal->ad_data.ch1_gain[6] = 0.05f;
     cal->ad_data.ch1_offset[6] = 0.0f;
-    cal->ad_data.ch1_gain[7] = 1.0f;
+    cal->ad_data.ch1_gain[7] = 0.2f;
     cal->ad_data.ch1_offset[7] = 0.0f;
 
-    cal->ad_data.ch2_gain[0] = 1.0f;
+    cal->ad_data.ch2_gain[0] = 1.0f;  //R=VoRt/(0.5-Vo) Vo为AD值    二极管模式采到的即为实际压降,必须用4.7K电阻档
     cal->ad_data.ch2_offset[0] = 0.0f;
-    cal->ad_data.ch2_gain[1] = 1.0f;
+    cal->ad_data.ch2_gain[1] = 1.0f; //无
     cal->ad_data.ch2_offset[1] = 0.0f;
-    cal->ad_data.ch2_gain[2] = 1.0f;
-    cal->ad_data.ch2_offset[2] = 0.0f;
-    cal->ad_data.ch2_gain[3] = 1.0f;
+    cal->ad_data.ch2_gain[2] = 11.0f;
+    cal->ad_data.ch2_offset[2] = 2500.0f;
+    cal->ad_data.ch2_gain[3] = 1.0f;//无
     cal->ad_data.ch2_offset[3] = 0.0f;
-    cal->ad_data.ch2_gain[4] = 1.0f;
+    cal->ad_data.ch2_gain[4] = 1.0f;//AD_V_BLAS_I
     cal->ad_data.ch2_offset[4] = 0.0f;
-    cal->ad_data.ch2_gain[5] = 1.0f;
+    cal->ad_data.ch2_gain[5] = 1.0f;//BLAS_V
     cal->ad_data.ch2_offset[5] = 0.0f;
-    cal->ad_data.ch2_gain[6] = 1.0f;
+    cal->ad_data.ch2_gain[6] = 0.099f;
     cal->ad_data.ch2_offset[6] = 0.0f;
-    cal->ad_data.ch2_gain[7] = 1.0f;
+    cal->ad_data.ch2_gain[7] = -5.0f;
     cal->ad_data.ch2_offset[7] = 0.0f;
 
-    cal->ad_data.ch3_gain = 1.0f;
+    cal->ad_data.ch3_gain = 0.2f;
     cal->ad_data.ch3_offset = 0.0f;
-    cal->ad_data.ch4_gain = 1.0f;
+    cal->ad_data.ch4_gain =  0.2f;
     cal->ad_data.ch4_offset = 0.0f;
-    cal->ad_data.ch5_gain = 1.0f;
+    cal->ad_data.ch5_gain =  0.2f;
     cal->ad_data.ch5_offset = 0.0f;
-    cal->ad_data.ch6_gain = 1.0f;
+    cal->ad_data.ch6_gain =  0.2f;
     cal->ad_data.ch6_offset = 0.0f;
-    cal->ad_data.ch7_gain = 1.0f;
+    cal->ad_data.ch7_gain =  0.2f;
     cal->ad_data.ch7_offset = 0.0f;
 
     // Clear reserved fields

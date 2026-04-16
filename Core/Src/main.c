@@ -35,7 +35,7 @@ int main(void)
 {
   HAL_Init();
   SystemClock_Config(); // sysclk=168M,pclk1=42M,pclk2=84M
-  MX_GPIO_Init();
+  MX_GPIO_Init(); //DA限流最好配到4V,能限流800ma
   MX_DMA_Init();
   MX_I2C1_Init(); // PB6 PB7
   MX_I2C2_Init(); // PB10 PB11
@@ -108,8 +108,6 @@ void SystemClock_Config(void)
 
 void Error_Handler(const char *FileName, int LineNumber)
 {
-
-  __disable_irq();
   printf("Error Handler Entered , File: %s, Line: %d!\r\n", FileName, LineNumber);
   while (1)
     ;

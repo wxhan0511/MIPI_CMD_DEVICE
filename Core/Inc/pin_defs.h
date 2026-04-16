@@ -94,7 +94,8 @@ extern "C"
 #define PWM_FUNC_GPIO_Port GPIOE
 #define Pulse_FUNC_Pin GPIO_PIN_14
 #define Pulse_FUNC_GPIO_Port GPIOE
-
+#define PWM_BLASI GPIO_PIN_3
+#define PWM_BLASI_GPIO_Port GPIOA
 #define LED_PWM_IN GPIO_PIN_12
 #define LED_PWM_IN_GPIO_Port GPIOE
 /* ============================================================================

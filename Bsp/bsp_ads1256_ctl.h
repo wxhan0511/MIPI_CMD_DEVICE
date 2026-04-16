@@ -80,8 +80,9 @@ typedef enum
 
 /* Exported constants --------------------------------------------------------*/
 extern volatile uint16_t raw_data_queue_head;
-extern float latest_sample_data[8];
-extern double raw_data;
+extern volatile float latest_sample_data[8];
+extern volatile float latest_sample_raw_data[8];
+extern volatile double raw_data;
 /* Exported macro ------------------------------------------------------------*/
 #define RAW_DATA_QUEUE_SIZE  (4092 / sizeof(float)) 
 #define RAW_DATA_INDEX_QUEUE_SIZE  4092
@@ -98,7 +99,7 @@ uint16_t raw_data_queue_get_count(void);
 float raw_data_queue_get_data(uint16_t index);
 uint8_t raw_data_queue_get_index(uint16_t index);
 void sample_data_cali();
-extern uint8_t latest_sample_ch_sel[8];
+extern volatile  uint8_t latest_sample_ch_sel[8];
 #ifdef __cplusplus
 }
 #endif

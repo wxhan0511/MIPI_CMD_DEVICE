@@ -36,6 +36,7 @@ extern "C" {
 
 /* USER CODE END Private defines */
 void TIM1_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse);
+void TIM2_PWM_Init(uint16_t arr, uint16_t  psc, uint16_t pulse);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void TIM1_Generate_N_Pulses(uint16_t num_pulses);
 void TIM1_CCP_Init(void);
@@ -43,6 +44,8 @@ void enableTim1CaptureCompareInterrupt(void);
 void disableTim1CaptureCompareInterrupt(void);
 void enableTim1PWMOutput(void);
 void disableTim1PWMOutput(void);
+void enableTim2PWMOutput(void);
+void disableTim2PWMOutput(void);
 void app_delay(uint32_t delay_ms);
 /* USER CODE BEGIN EFP */
 /* USER CODE BEGIN Prototypes */
