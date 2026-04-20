@@ -134,7 +134,7 @@ void bsp_init()
     enableTim2PWMOutput();
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
-     bsp_CCP_Init();
+     //bsp_CCP_Init();
     //test_ccp();
     /*-------------CCP END----------------*/
     
@@ -146,6 +146,8 @@ void bsp_init()
 
 void bsp_led_pwm_init(void)
 {
+    HAL_TIM_IC_DeInit(&htim1);
+    HAL_TIM_PWM_DeInit(&htim1);
     uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
     uint16_t psc =15;//分频
     uint16_t pulse =525;//比较值
@@ -159,6 +161,8 @@ void bsp_led_pwm_init(void)
 }
 void bsp_blasi_pwm_init(void)
 {
+    HAL_TIM_IC_DeInit(&htim2);
+    HAL_TIM_PWM_DeInit(&htim2);
     uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
     uint16_t psc =15;//分频
     uint16_t pulse =525;//比较值
@@ -311,5 +315,5 @@ void test_ccp(void)
     bsp_CCP_Init();//step1
     enableTim1CaptureCompareInterrupt();//step2
     app_delay(5000);
-    //disableTim1CaptureCompareInterrupt();//step3
+    disableTim1CaptureCompareInterrupt();//step3
 }

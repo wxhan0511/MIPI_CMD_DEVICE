@@ -65,6 +65,11 @@ extern ads1256_dev_t dev_vol;
 #define WAIT_ADC_1_IDLE                 while (dev_vol.step_cnt != 6){osDelay(10);};
 extern volatile uint8_t r_en;
 extern volatile TEST_R_D_RES_LEVEL cal_r;
+extern __IO uint32_t            uwDutyCycle;
+/* Frequency Value */
+extern __IO uint32_t            uwFrequency;
+extern uint8_t get_freq_flag;
+
 SampleTask_S g_sample_task = {0};
 
 uint8_t sample_cur_map[11][2] = {
@@ -298,8 +303,31 @@ void task_sample_run()
                 bsp_d_trigger_set_channel(&d_1, 6, 1);
                 g_calibration_manager.data.ref_freq_last = ref_freq_vol/2;
                 bsp_cali_and_set_power(17);
+                get_freq_flag = 0;
+                disableTim1PWMOutput();
+                disableTim2PWMOutput();
+                bsp_CCP_Init();
                 enableTim1CaptureCompareInterrupt();
-                //bsp_select_24pin_channel(pin_num, 0);
+                t0 = HAL_GetTick();
+                while (get_freq_flag == 0 ) // 等待ADS1256通道2的数据准备好
+                {
+                    if ((HAL_GetTick() - t0) >= 1000U)  // 最多等待1s
+                    {
+                        // 可按你的状态定义改成超时状态
+                        g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
+                        M_SPI_INFO("GET_RESISTANCE timeout\r\n");
+                        break;
+                    }
+                    osDelay(1);
+                }
+                memcpy(&tx_buf[3], &uwFrequency, sizeof(float));
+                memcpy(&tx_buf[7], &uwDutyCycle, sizeof(float));
+                bsp_select_24pin_channel(pin_num, 0);
+                bsp_led_pwm_init();//step1
+                bsp_blasi_pwm_init();
+                enableTim1PWMOutput();//step2
+                enableTim2PWMOutput();
+                
                 break;
             case GET_RESISTANCE:
                 pin_p = rx_buf[2];

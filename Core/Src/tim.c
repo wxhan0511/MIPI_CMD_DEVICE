@@ -37,17 +37,17 @@ __IO uint32_t            uwIC2Value = 0;
 __IO uint32_t            uwDutyCycle = 0;
 /* Frequency Value */
 __IO uint32_t            uwFrequency = 0;
+uint8_t get_freq_flag = 0;
 
-
-static uint32_t sample_count = 0;
+uint32_t sample_count = 0;
 
 #define SAMPLE_WINDOW 1000U //采样次数
 #define GRADIENT_STEP 0.1f  //
 #define GRADIENT_BUCKETS 100U  // 0.1%, 0.2%, …, 1.0%
 
 
-uint32_t mean_freq_samples = 0;
-uint32_t mean_duty_samples = 0;
+float mean_freq_samples = 0;
+float mean_duty_samples = 0;
 static uint32_t freq_samples[SAMPLE_WINDOW];
 static uint32_t duty_samples[SAMPLE_WINDOW];
 static uint32_t sample_index;
@@ -69,12 +69,11 @@ static inline void StoreSample(uint32_t freq, uint32_t duty)
  */
 static void PrintDeviationHistogram(const uint32_t *samples, const char *label)
 {
-    float sum = 0.0f;
+    uint32_t sum = 0;
     for (uint32_t i = 0; i < SAMPLE_WINDOW; ++i) {
-        sum += (float)samples[i];
+        sum += samples[i];
     }
-    const float mean = sum / SAMPLE_WINDOW;
-
+    const float mean = (float)sum / SAMPLE_WINDOW;
     uint32_t bucket_counts[GRADIENT_BUCKETS] = {0};
     uint32_t over_one_percent = 0;
 
@@ -108,6 +107,8 @@ static void FinishSampleWindow(void)
 
 void TIM1_CCP_Init(void)
 {
+  HAL_TIM_PWM_DeInit(&htim1); // 停止所有PWM
+  HAL_TIM_IC_DeInit(&htim1);  // 停止所有输入捕获
   /*##-1- Configure the TIM peripheral #######################################*/ 
   /* Set TIMx instance */
   htim1.Instance = TIM1;// APB2上限84MHZ,APB1上限42MHZ(见cubeide clock confi图),TIM1 的最高时钟可以达到 168 MHz
@@ -178,7 +179,7 @@ void enableTim1CaptureCompareInterrupt(void)
     /* Starting Error */
     Error_Handler(__FILE__, __LINE__);
   }
-  
+  sample_count = 0;
   /*##-6- Enable the TIM1 global Interrupt ####################################*/
   HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 1);
   HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
@@ -524,6 +525,7 @@ void TIM1_Generate_N_Pulses(uint16_t num_pulses)
   * @param  htim : TIM handle
   * @retval None
   */
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
@@ -555,6 +557,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   * @param  htim: TIM IC handle
   * @retval None
   */
+ /*ANCHOR - TIM1的输入捕获中断回调函数*/
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
@@ -569,27 +572,33 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
       
       /* uwFrequency computation */    
       uwFrequency = 168000000U / ((htim1.Init.Prescaler + 1U) * uwIC2Value);
+
+      printf("sample_count:%d\r\n",sample_count);
       printf("Sample %lu: Frequency: %lu Hz, Duty Cycle: %lu %%\n", sample_count, uwFrequency, uwDutyCycle);
-      //测量1000次取第100次到1100次的平均值
-      if (sample_count >= 100 && sample_count <= 1100)
+#if 1
+      if (sample_count < 11)
       {
-        StoreSample(uwFrequency, uwDutyCycle);
-      }
-      sample_count++;
-      
-      if (sample_count >= 1100)
-      {
-        //关闭中断
-        HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
-        //FinishSampleWindow();
-        //printf("1000-time average :Frequency: %lu Hz, Duty Cycle: %lu %%\n", uwFrequency, uwDutyCycle);
+          StoreSample(uwFrequency, uwDutyCycle);
+          sample_count++;
       }
 
-    }
-    else
-    {
-      uwDutyCycle = 0;
-      uwFrequency = 0;
+      if (sample_count == 11)
+      {
+          // 关闭中断
+          HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
+
+          uint32_t sum_freq = 0, sum_duty = 0;
+          for (uint32_t i = 1; i < 11; ++i) {
+              sum_freq += freq_samples[i];
+              sum_duty += duty_samples[i];
+          }
+          uwFrequency = sum_freq / 10;
+          uwDutyCycle = sum_duty / 10;
+          get_freq_flag = 1;
+          disableTim1CaptureCompareInterrupt();
+          printf("10-time average: Frequency: %lu Hz, Duty Cycle: %lu %%\n", uwFrequency, uwDutyCycle);
+      }
+#endif
     }
   }
 }
