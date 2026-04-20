@@ -31,4 +31,5 @@ void bsp_d_trigger_init(d_trigger_t cfg);
 void bsp_d_trigger_set(uint8_t state);
 void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel,uint8_t enable);
 void test_d_trigger();
+void bsp_close_64pin_channel();
 #endif //BSP_D_TRIGGER_H

@@ -15,6 +15,7 @@
 
 #include "main.h"
 
+uint8_t first_loop_flag[8] = {0};
 
 
 ads1256_dev_t dev_vol = {
@@ -33,6 +34,7 @@ ads1256_dev_t dev_vol = {
     .sample_res_gear = {0, 0, 0, 0, 0, 0, 0, 0},
     .step_cnt = 1,
     .sample_cnt = 0,
+    .r_en=0,
 };
 
 ads1256_dev_t dev_cur = {
@@ -411,7 +413,7 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
     }
     else if (handle->step_cnt == 5)
     {
-        // if(handle->vol_en == 1)
+        if(first_loop_flag[handle->last_channel] == 1)
         {
             raw_data = handle->data_buffer_avg[handle->last_channel] * ADC_RATIO * 0.000001;
             // printf("channel %d raw data %f \r\n",handle->last_channel,raw_data);
@@ -422,12 +424,17 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
                     raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
                 }
             }
+            first_loop_flag[handle->last_channel] = 0;
             //printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
             // AD_DATA_DEBUG("channel %d raw data %f \r\n",handle->last_channel,raw_data);
 
             // const double compare = bsp_adc_vol_convert_64pin(handle->vol_gear,raw_data,handle->single_vol_cali_en);
             // handle->data_buffer_avg[handle->last_channel] = compare;
             // printf("vol raw data %d gear %d ,%f %.3f \r\n",handle->last_channel,handle->vol_gear,raw_data,compare);
+        }
+        else
+        {
+            first_loop_flag[handle->last_channel] = 1;
         }
     }
     else if (handle->step_cnt == 6)
@@ -438,7 +445,7 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
     handle->step_cnt += 1;
 }
 
-uint8_t first_loop_flag[8] = {0};
+
 /**
  * @brief 向ADS1256发送同步（SYNC）和唤醒（WAKEUP）命令
  * @param handle ADS1256设备句柄

@@ -50,8 +50,8 @@ typedef enum
     OHM_100_K,
     OHM_10_K,
     OHM_1_K,
-    OHM_91,
-    OHM_1,
+    OHM_100_OHM,
+    OHM_4_point_7_K,
 } TEST_R_D_RES_LEVEL;
 
 typedef enum
@@ -125,9 +125,9 @@ typedef enum
     AD_V_N=7,
 }AI2_INDEX;
 
-extern uint8_t ch0_flag;
-extern uint8_t ch1_flag;
-extern uint8_t ch2_flag;
+extern volatile uint8_t ch0_flag;
+extern volatile uint8_t ch1_flag;
+extern volatile uint8_t ch2_flag;
 
 /* Exported macro ------------------------------------------------------------*/
 
@@ -158,7 +158,8 @@ void bsp_channel_sel_init(void);
 //电阻二极管
 void bsp_rd_select_mode(const R_D_MODE mode);
 void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level);
-void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n);
+void bsp_close_rd_select_channel();
+void bsp_rd_select_pin(uint16_t pin_p,  uint16_t pin_n , uint8_t en);
 //电压
 static void bsp_vol_select_pin_8_to_1(const uint16_t pin_group);
 void bsp_vol_select_pin_64_to_1(const uint16_t pin, const uint8_t en);
@@ -169,7 +170,9 @@ void bsp_test_select_mode(const TEST_MODE mode);
 void bsp_limit_current_reset();
 
 void bsp_rly_gear_set(TEST_CUR_GEAR gear ,RLY_INDEX rly_index);
-void bsp_select_24pin_channel(uint16_t pin);
+void bsp_select_24pin_channel(uint16_t pin , uint8_t en);
+void bsp_close_24pin_channel();
+void bsp_close_40pin_channel();
 void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index);
 void bsp_ads1256_ch1_select(const AI1_INDEX ai1_index);
 void bsp_ads1256_ch2_select(const AI2_INDEX ai2_index);

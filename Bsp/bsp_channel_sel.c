@@ -11,9 +11,12 @@
 #include "task_sample.h"
 extern uint8_t freq_ch_vol_check_flag;
 //aix 选通 num chx_flag通道
-uint8_t ch0_flag = 8;
-uint8_t ch1_flag = 8;
-uint8_t ch2_flag = 8;
+volatile uint8_t ch0_flag = 8;
+volatile uint8_t ch1_flag = 8;
+volatile uint8_t ch2_flag = 8;
+
+volatile R_D_MODE r_d_mode = 0;
+volatile TEST_R_D_RES_LEVEL r_level_selected = OHM_NULL;
 
 const static uint8_t truth_table[8][3] = {
     {0, 0, 0}, // A2 A1 A0
@@ -58,7 +61,8 @@ void bsp_channel_sel_init(void)
 //  @param mode mode = 0 为 二极管 ，1为电阻
 void bsp_rd_select_mode(const R_D_MODE mode)
 {
-    bsp_d_trigger_set_channel(&d_6, 5, mode);
+    bsp_d_trigger_set_channel(&d_8, 5, mode);
+    r_d_mode = mode;
 }
 //ANCHOR - 电流档位设置
 // @param gear 0: mA档，1: uA档
@@ -72,15 +76,19 @@ void bsp_rly_gear_set(TEST_CUR_GEAR gear ,RLY_INDEX rly_index)
 //  @param r_level 电阻级别
 void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level)
 {
-    if (r_level > OHM_NULL && r_level <= OHM_1)
+    if (r_level >= OHM_10_M && r_level <= OHM_4_point_7_K)
     {
-        bsp_d_trigger_set_channel(&d_6, 0, truth_table[r_level][2]); // A0
-        bsp_d_trigger_set_channel(&d_6, 1, truth_table[r_level][1]); // A1
-        bsp_d_trigger_set_channel(&d_6, 2, truth_table[r_level][0]); // A2
-        bsp_d_trigger_set_channel(&d_6, 3, 1);                       // EN
+        bsp_d_trigger_set_channel(&d_8, 0, truth_table[r_level][2]); // A0
+        bsp_d_trigger_set_channel(&d_8, 1, truth_table[r_level][1]); // A1
+        bsp_d_trigger_set_channel(&d_8, 2, truth_table[r_level][0]); // A2
+        bsp_d_trigger_set_channel(&d_8, 3, 1);                       // EN
     }
+    r_level_selected = r_level;
 }
-
+void bsp_close_rd_select_channel()
+{
+    bsp_d_trigger_set_channel(&d_8, 3, 0); // EN
+}
 // ANCHOR -  ADS1256 AI0选通采样通道
 //  @param power_index 电源索引
 void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index)
@@ -134,23 +142,51 @@ void bsp_24pin_select_pin(uint8_t pin_num)
 {
 
 }
+void bsp_close_64pin_channel()
+{
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        bsp_d_trigger_set_channel(&d_6, i, 0); // R&D+ EN1-EN8
+        bsp_d_trigger_set_channel(&d_7, i, 0); // R&D+ EN1-EN8
+    }
+}
+
+
 // ANCHOR -  选通64×64条测试路径,pin_p接V_R&D,pin_n接地
 //  @param pin_p 正极通道 0-63
 //  @param pin_n 负极通道 0-63
-void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
+void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
 {
+    pin_p = pin_p -1;
+    pin_n = pin_n -1;//attention:用户使用1开头,我这里转换成0开头
+
+    if(pin_p >= 64 || pin_n >= 64 || pin_p == pin_n || pin_p < 0 || pin_n < 0)
+    {
+        printf("Invalid pin number. pin_p and pin_n should be between 0 and 63.\r\n");
+        return;
+    }
     const uint16_t _pin_p_group = pin_p / 8;
     const uint16_t _pin_p = pin_p % 8;
     const uint16_t _pin_n_group = pin_n / 8;
     const uint16_t _pin_n = pin_n % 8;
-    // printf("p group = %u p pin %u : n group = %u n pin %u \r\n ", _pin_p_group,_pin_p,_pin_n_group,_pin_n);
+    //注意:应当只关en,不要做多余的A0,A1,A2控制,否则开不开
+    if(en == 0)
+    {
+        if(_pin_p_group == 0) bsp_d_trigger_set_channel(&d_6, _pin_p_group, 0); 
+        if(_pin_n_group == 1) bsp_d_trigger_set_channel(&d_7, _pin_n_group, 0);
+        return;
+
+    }
+
+    printf("p group = %u p pin %u : n group = %u n pin %u \r\n ", _pin_p_group,_pin_p,_pin_n_group,_pin_n);
     if (_pin_p_group == 0)
     {
         bsp_d_trigger_set_channel(&d_5, 2, truth_table[_pin_p][2]); // R&D+A0  64pin分8组,该组的pin几打开几通道连接V_r&D
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
-
-        bsp_d_trigger_set_channel(&d_6, 0, 1); // R&D+ EN1
+        printf("_pin_p: %d\r\n",_pin_p);
+        printf( "A0:%d, A1:%d, A2:%d\r\n",truth_table[_pin_p][2], truth_table[_pin_p][1], truth_table[_pin_p][0]);
+        bsp_d_trigger_set_channel(&d_6, 0, en); // R&D+ EN1
     }
     else if (_pin_p_group == 1)
     {
@@ -158,7 +194,7 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 1, 1); // R&D+ EN2
+        bsp_d_trigger_set_channel(&d_6, 1, en); // R&D+ EN2
     }
     else if (_pin_p_group == 2)
     {
@@ -166,7 +202,7 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 2, 1); // R&D+ EN3
+        bsp_d_trigger_set_channel(&d_6, 2, en); // R&D+ EN3
     }
     else if (_pin_p_group == 3)
     {
@@ -174,7 +210,7 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 3, 1); // R&D+ EN4
+        bsp_d_trigger_set_channel(&d_6, 3, en); // R&D+ EN4
     }
     else if (_pin_p_group == 4)
     {
@@ -182,7 +218,7 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 4, 1); // R&D+ EN5
+        bsp_d_trigger_set_channel(&d_6, 4, en); // R&D+ EN5
     }
     else if (_pin_p_group == 5)
     {
@@ -190,7 +226,7 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 5, 1); // R&D+ EN6
+        bsp_d_trigger_set_channel(&d_6, 5, en); // R&D+ EN6
     }
     else if (_pin_p_group == 6)
     {
@@ -198,7 +234,7 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 6, 1); // R&D+ EN7
+        bsp_d_trigger_set_channel(&d_6, 6, en); // R&D+ EN7
     }
     else if (_pin_p_group == 7)
     {
@@ -206,72 +242,74 @@ void bsp_rd_select_pin(const uint16_t pin_p, const uint16_t pin_n)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 7, 1); // R&D+ EN8
+        bsp_d_trigger_set_channel(&d_6, 7, en); // R&D+ EN8
     }
 
     if (_pin_n_group == 0)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
+        printf("_pin_n: %d\r\n",_pin_n);
+        printf( "A0:%d, A1:%d, A2:%d\r\n",truth_table[_pin_n][2], truth_table[_pin_n][1], truth_table[_pin_n][0]);
 
-        bsp_d_trigger_set_channel(&d_7, 0, 1); // R&D- EN1
+        bsp_d_trigger_set_channel(&d_7, 0, en); // R&D- EN1
     }
     else if (_pin_n_group == 1)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 1, 1); // R&D- EN2
+        bsp_d_trigger_set_channel(&d_7, 1, en); // R&D- EN2
     }
     else if (_pin_n_group == 2)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 2, 1); // R&D- EN3
+        bsp_d_trigger_set_channel(&d_7, 2, en); // R&D- EN3
     }
     else if (_pin_n_group == 3)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 3, 1); // R&D- EN4
+        bsp_d_trigger_set_channel(&d_7, 3, en); // R&D- EN4
     }
     else if (_pin_n_group == 4)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 4, 1); // R&D- EN5
+        bsp_d_trigger_set_channel(&d_7, 4, en); // R&D- EN5
     }
     else if (_pin_n_group == 5)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 5, 1); // R&D- EN6
+        bsp_d_trigger_set_channel(&d_7, 5, en); // R&D- EN6
     }
     else if (_pin_n_group == 6)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 6, 1); // R&D- EN7
+        bsp_d_trigger_set_channel(&d_7, 6, en); // R&D- EN7
     }
     else if (_pin_n_group == 7)
     {
-        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_p][2]); // R&D-A0
-        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_p][1]); // R&D-A1
-        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_p][0]); // R&D-A2
+        bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
+        bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
+        bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 7, 1); // R&D- EN8
+        bsp_d_trigger_set_channel(&d_7, 7, en); // R&D- EN8
     }
 }
 #if 0
@@ -598,38 +636,68 @@ void bsp_test_select_mode(const TEST_MODE mode)
 //datasheet:408EN1~4
 //@param pin 0~23
 //NOTE - 开启频率测试前，先对选择通道执行电压测量。电压为0~5V才可EN，否则有概率损坏保护器件 -比较器的Ref_Freq 需要设置
-void bsp_select_24pin_channel(uint16_t pin)
+void bsp_select_24pin_channel(uint16_t pin , uint8_t en)
 {
 
-    uint16_t _pin_p_group = pin / 8;
-    uint16_t _pin_p = pin % 8;
-    //only one freq channel enable
-    bsp_d_trigger_set_channel(&d_1, 3, 0); // 408EN1
-    bsp_d_trigger_set_channel(&d_1, 4, 0); // 408EN2
-    bsp_d_trigger_set_channel(&d_1, 5, 0); // 408EN3
-    if(_pin_p_group == 0&&_pin_p > 3) 
+    uint16_t _pin_group = pin / 8;
+    uint16_t _pin = pin % 8;
+    if (en == 0) 
     {
-        _pin_p_group = 1;
-        _pin_p = _pin_p - 4;
+        if (_pin_group == 0)  bsp_d_trigger_set_channel(&d_1, 3, 0); 
+        else if (_pin_group == 1) bsp_d_trigger_set_channel(&d_1, 4, 0);
+        else if (_pin_group == 2) bsp_d_trigger_set_channel(&d_1, 5, 0); 
     }
-    if(_pin_p_group == 1&&_pin_p < 4) 
+    if(_pin_group == 0&&_pin > 3) 
     {
-        _pin_p_group = 0;
-        _pin_p = _pin_p + 4;
+        _pin_group = 1;
+        _pin = _pin - 4;
     }
-    if (pin >= 0 && pin <= 23&& _pin_p_group <=2)
+    if(_pin_group == 1&&_pin < 4) 
     {
-        bsp_d_trigger_set_channel(&d_1, 0, truth_table[_pin_p][2]); // 408A0  24pin分8组,该组的pin几打开几通道连接
-        bsp_d_trigger_set_channel(&d_1, 1, truth_table[_pin_p][1]); // 408A1
-        bsp_d_trigger_set_channel(&d_1, 2, truth_table[_pin_p][0]); // 408A2
-        if (_pin_p_group == 0)  bsp_d_trigger_set_channel(&d_1, 3, 1); // 408EN1
-        else if (_pin_p_group == 1) bsp_d_trigger_set_channel(&d_1, 4, 1); // 408EN2
-        else if (_pin_p_group == 2) bsp_d_trigger_set_channel(&d_1, 5, 1); // 408EN3
+        _pin_group = 0;
+        _pin = _pin + 4;
+    }
+    if (pin >= 0 && pin <= 23&& _pin_group <=2)
+    {
+        bsp_d_trigger_set_channel(&d_1, 0, truth_table[_pin][2]); // 408A0  24pin分8组,该组的pin几打开几通道连接
+        bsp_d_trigger_set_channel(&d_1, 1, truth_table[_pin][1]); // 408A1
+        bsp_d_trigger_set_channel(&d_1, 2, truth_table[_pin][0]); // 408A2
+        if (_pin_group == 0)  bsp_d_trigger_set_channel(&d_1, 3, 1); // 408EN1
+        else if (_pin_group == 1) bsp_d_trigger_set_channel(&d_1, 4, 1); // 408EN2
+        else if (_pin_group == 2) bsp_d_trigger_set_channel(&d_1, 5, 1); // 408EN3
     }
     else
     {
         printf("pin or pin_group out of range \r\n");
     }
+}
+
+void bsp_close_24pin_channel(void)
+{
+    bsp_d_trigger_set_channel(&d_1, 3, 0); // 408EN1
+    bsp_d_trigger_set_channel(&d_1, 4, 0); // 408EN2
+    bsp_d_trigger_set_channel(&d_1, 5, 0); // 408EN3
+
+}
+void bsp_close_40pin_channel(void)
+{
+    bsp_d_trigger_set_channel(&d_6, 0, 0); 
+    bsp_d_trigger_set_channel(&d_6, 1, 0);
+    bsp_d_trigger_set_channel(&d_6, 2, 0);
+    bsp_d_trigger_set_channel(&d_6, 3, 0);
+    bsp_d_trigger_set_channel(&d_6, 4, 0);
+    bsp_d_trigger_set_channel(&d_6, 5, 0);
+    bsp_d_trigger_set_channel(&d_6, 6, 0);
+    bsp_d_trigger_set_channel(&d_6, 7, 0);
+    bsp_d_trigger_set_channel(&d_7, 0, 0);
+    bsp_d_trigger_set_channel(&d_7, 1, 0);
+    bsp_d_trigger_set_channel(&d_7, 2, 0);
+    bsp_d_trigger_set_channel(&d_7, 3, 0);
+    bsp_d_trigger_set_channel(&d_7, 4, 0);
+    bsp_d_trigger_set_channel(&d_7, 5, 0);
+    bsp_d_trigger_set_channel(&d_7, 6, 0);
+    bsp_d_trigger_set_channel(&d_7, 7, 0);
+
 }
 #if 0
 ///

@@ -74,10 +74,10 @@ dac_config_table_t dac_config_table[20] = {
     {&g_calibration_manager.data.vdd_ref_last,           &g_calibration_manager.data.da_data.vdd_ref_offset,      &g_calibration_manager.data.da_data.vdd_ref_gain,       DAC_CHIP_4, "VDD_LimRef",    1,   0,  13,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF5"},
     {&g_calibration_manager.data.elvdd_ref_last,         &g_calibration_manager.data.da_data.elvdd_ref_offset,    &g_calibration_manager.data.da_data.elvdd_ref_gain,     DAC_CHIP_4, "ELVDD_LimRef",  2,   0,  14,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF6"},
     {&g_calibration_manager.data.elvss_ref_last,         &g_calibration_manager.data.da_data.elvss_ref_offset,    &g_calibration_manager.data.da_data.elvss_ref_gain,     DAC_CHIP_4, "ELVSS_LimRef",  3,   1,  15,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF-2"},
-    {&g_calibration_manager.data.v_level_shift_last,     &g_calibration_manager.data.da_data.v_level_shift_offset, &g_calibration_manager.data.da_data.v_level_shift_gain, DAC_CHIP_5, "V_LEVEL_SHIFT", 0,   0,  16,  0,   bsp_power_single_enable, bsp_power_single_disable,"VLSHIFT"},
-    {&g_calibration_manager.data.ref_freq_last,          &g_calibration_manager.data.da_data.ref_freq_offset,     &g_calibration_manager.data.da_data.ref_freq_gain,      DAC_CHIP_5, "REF_FREQ",       1,   0,  17,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_REFFREQ"},
-    {&g_calibration_manager.data.vadj_p_last,            &g_calibration_manager.data.da_data.vadj_p_offset,       &g_calibration_manager.data.da_data.vadj_p_gain,        DAC_CHIP_5, "VADJ_P",         2,   0,  18,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_VADJP"},
-    {&g_calibration_manager.data.vadj_n_last,            &g_calibration_manager.data.da_data.vadj_n_offset,       &g_calibration_manager.data.da_data.vadj_n_gain,        DAC_CHIP_5, "VADJ_N",         3,   1,  19,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_VADJN"},
+    {&g_calibration_manager.data.v_level_shift_last,     &g_calibration_manager.data.da_data.v_level_shift_offset, &g_calibration_manager.data.da_data.v_level_shift_gain, DAC_CHIP_5, "V_LEVEL_SHIFT", 3,   0,  16,  0,   bsp_power_single_enable, bsp_power_single_disable,"VLSHIFT"},
+    {&g_calibration_manager.data.ref_freq_last,          &g_calibration_manager.data.da_data.ref_freq_offset,     &g_calibration_manager.data.da_data.ref_freq_gain,      DAC_CHIP_5, "REF_FREQ",       2,   0,  17,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_REFFREQ"},
+    {&g_calibration_manager.data.vadj_p_last,            &g_calibration_manager.data.da_data.vadj_p_offset,       &g_calibration_manager.data.da_data.vadj_p_gain,        DAC_CHIP_5, "VADJ_P",         1,   0,  18,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_VADJP"},
+    {&g_calibration_manager.data.vadj_n_last,            &g_calibration_manager.data.da_data.vadj_n_offset,       &g_calibration_manager.data.da_data.vadj_n_gain,        DAC_CHIP_5, "VADJ_N",         0,   1,  19,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_VADJN"},
 };
 /* Private function prototypes -----------------------------------------------*/
 static void DAC_gpio_init(void);
@@ -119,7 +119,7 @@ void bsp_cali_and_set_power(uint8_t power_id)
     val = (val - *(cfg->offset)) / (*(cfg->gain));
     MIPI_CMD_DEBUG("%s,%s: vi = %.2f mV (vo=%.2f mV, offset=%.2f, gain=%.2f)\r\n",
         cfg->name, cfg->name1, val, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
-
+    MIPI_CMD_DEBUG("channel = %d, last_voltage = %.2f mV\r\n", cfg->channel, *(cfg->last_voltage));  
     val = val * 2; // MCP4728默认增益为2，如果校准增益是基于增益=1的，需要除以2进行补偿
     // 最大输出电压 4.096V
     dac_chips[cfg->chip].val[cfg->channel] = float_to_uint16_round(val);
@@ -134,7 +134,7 @@ void bsp_cali_and_set_power(uint8_t power_id)
     // bsp_dac_single_voltage_set(&dac_chips[2],1, 1400, 0);//(1500,2702)(1400,3535.7)
     //bsp_dac_single_voltage_set(&dac_chips[2],2, 1100, 0);//(1500,2637.6)(1100,6000.6)
     // bsp_dac_single_voltage_set(&dac_chips[2],3, 1100, 0);//(1500,-3115.0)(1100,-5796)
-    // bsp_dac_single_voltage_set(&dac_chips[4],3, 1500, 0);//(1500,)       
+    //bsp_dac_single_voltage_set(&dac_chips[4],3, 1500, 0);//(1500,)       
     // MIPI_CMD_DEBUG("%s,%s: last_voltage=%.2f mV, offset=%.2f, gain=%.2f\r\n",
     //     cfg->name, cfg->name1, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
     //if (bsp_dac_single_voltage_set(&dac_chips[2], 0, 1000, 0) != BSP_OK)
@@ -146,7 +146,7 @@ void bsp_cali_and_set_power(uint8_t power_id)
     {
         MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
     }
-    
+    //bsp_dac_single_voltage_set(&dac_chips[4],3, 2000, 0);//(1500,) 
     single_mcp4728_sync_update(power_id);
 
     bsp_power_single_enable(power_id);
@@ -194,6 +194,7 @@ void bsp_dac_init()
     g_calibration_manager.data.vdd_ref_last = 5000.0f;
     g_calibration_manager.data.elvdd_ref_last = 5000.0f;
     g_calibration_manager.data.elvss_ref_last = 2000.0f;
+    g_calibration_manager.data.v_level_shift_last = 2500.0f;//0-2.5
     // 打印恢复电压信息
     MIPI_CMD_INFO("Restore the voltage set last time\r\n");
     ADS1256_DEBUG("VSN : %f mV\r\n", g_calibration_manager.data.vsn_last_voltage);

@@ -31,8 +31,13 @@ volatile uint16_t raw_data_queue_head = 0;
 volatile float latest_sample_raw_data[8] = {0};
 volatile uint8_t latest_sample_ch_sel[8] = {0};
 volatile double raw_data = 0;
-volatile float latest_sample_data[8] = {0}; 
+volatile float latest_sample_data[8] = {0};
 volatile uint8_t latest_sample_index[8] = {0};
+float cali_data = 0;
+extern R_D_MODE r_d_mode;
+extern TEST_R_D_RES_LEVEL r_level_selected;
+volatile TEST_R_D_RES_LEVEL cal_r = OHM_NULL;
+volatile uint8_t r_en = 0;
 /* Private function prototypes -----------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
@@ -40,13 +45,16 @@ volatile uint8_t latest_sample_index[8] = {0};
 void raw_data_queue_push(float value, uint8_t index)
 {
 
-    raw_data_queue[raw_data_queue_head] = value; //raw data
-    raw_data_index_queue[raw_data_queue_head] = index; //channel index
-    raw_data_ch_sel_queue[raw_data_queue_head] = index == 0 ? ch0_flag : index == 1 ? ch1_flag : index == 2 ? ch2_flag : 0;
-    latest_sample_raw_data[index] = value;//latest sample data for  8 channel
-    latest_sample_ch_sel[index] = index == 0 ? ch0_flag : index == 1 ? ch1_flag : index == 2 ? ch2_flag : 0;//latest sample channel sel for  8 channel   
-    if(ch0_flag == 8 && ch1_flag ==8 && ch2_flag ==8) MIPI_CMD_ERROR("ads1256 ch0~2 not selected , not connected!\r\n");
-    
+    raw_data_queue[raw_data_queue_head] = value;       // raw data
+    raw_data_index_queue[raw_data_queue_head] = index; // channel index
+    raw_data_ch_sel_queue[raw_data_queue_head] = index == 0 ? ch0_flag : index == 1 ? ch1_flag
+                                                                     : index == 2   ? ch2_flag
+                                                                                    : 0;
+    latest_sample_raw_data[index] = value; // latest sample data for  8 channel
+    latest_sample_ch_sel[index] = index == 0 ? ch0_flag : index == 1 ? ch1_flag
+                                                      : index == 2   ? ch2_flag
+                                                                     : 0; // latest sample channel sel for  8 channel
+
     raw_data_queue_head = (raw_data_queue_head + 1) % RAW_DATA_QUEUE_SIZE;
 
     sample_data_cali();
@@ -54,19 +62,62 @@ void raw_data_queue_push(float value, uint8_t index)
 
 void sample_data_cali()
 {
+    float rt_value = 0xffffff;
 
     for (uint8_t i = 0; i < 8; i++)
     {
-      sel_cali_param(i , latest_sample_ch_sel[i], &offset, &gain);
+        sel_cali_param(i, latest_sample_ch_sel[i], &offset, &gain);
 
-      //ch0(all,2-,3-),ch1(0,5),ch2(0,2,5,6,7-)
-      //VOL
-      IV_data = latest_sample_raw_data[i] * gain + offset; 
-          
-      latest_sample_data[i] = IV_data * 1000;
-      //printf("channel %d, raw data %f, cali data %f\r\n", i, latest_sample_raw_data[i], latest_sample_data[i]);
+        if (r_d_mode == R_MODE && i == 2 && latest_sample_ch_sel[i] == 0)
+        {
+
+            
+            // R=VoRt/(0.5-Vo)  mv
+    // OHM_NULL = 0,
+    // OHM_10_M,
+    // OHM_1_M,
+    // OHM_100_K,
+    // OHM_10_K,
+    // OHM_1_K,
+    // OHM_100_OHM,
+    // OHM_4_point_7_K,
+            cal_r = r_level_selected;
+            if (r_level_selected == OHM_10_M)
+                rt_value = 10000.0f;
+            else if (r_level_selected == OHM_1_M)
+                rt_value = 1000.0f;
+            else if (r_level_selected == OHM_100_K)
+                rt_value = 100.0f;
+            else if (r_level_selected == OHM_10_K)
+                rt_value = 10.0f;
+            else if (r_level_selected == OHM_1_K)
+                rt_value = 1.0f;
+            else if (r_level_selected == OHM_100_OHM)
+                rt_value = 0.1f;
+            else if (r_level_selected == OHM_4_point_7_K)
+                rt_value = 4.7f;
+    //0.271600
+            if(latest_sample_raw_data[i] >= 0.27160f)
+            {
+                printf("Warning: raw data %f may be out of range for resistance calculation\r\n", latest_sample_raw_data[i]);
+                latest_sample_data[i] = 999999;//防止除数为0或者负数
+            }
+            else
+            {
+                latest_sample_data[i] = (latest_sample_raw_data[i]*rt_value)/(0.27160-latest_sample_raw_data[i]);
+                //单位为k
+            }
+            cali_data = latest_sample_data[i];
+            
+        }
+        else
+        {
+            IV_data = latest_sample_raw_data[i] * gain + offset;
+            latest_sample_data[i] = IV_data * 1000; 
+        }
+        
+        //printf("channel %d, raw data %f, cali data %f\r\n", i, latest_sample_raw_data[i], latest_sample_data[i]);
     }
-
 }
 /**
  * @brief get the index value from the ring buffer
@@ -109,6 +160,5 @@ float raw_data_queue_get_data(uint16_t index)
         return 0.0f;
     }
 }
-
 
 /* Exported functions --------------------------------------------------------*/

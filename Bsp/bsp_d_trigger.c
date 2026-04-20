@@ -24,7 +24,10 @@
 #include "bsp_dwt.h"//for delay
 
 #define D_TRIGGER_CHANNEL_NUM 8
+#define D_TRIGGER_DEVICE_NUM  8
 
+/* 每个D触发器8路通道状态缓存：bit0~bit7 对应 channel 0~7 */
+static uint8_t s_d_trigger_shadow[D_TRIGGER_DEVICE_NUM] = {0};
 GPIO_TypeDef *latch_group[8] = {
     LATCH_0_GPIO_Port,
     LATCH_1_GPIO_Port,
@@ -144,6 +147,18 @@ void bsp_d_trigger_set(uint8_t state)
 {
     HAL_GPIO_WritePin(OE_GPIO_Port, OE_Pin, !state);
 }
+static int8_t bsp_d_trigger_get_index(const d_trigger_t *cfg)
+{
+    if (cfg == &d_1) return 0;
+    if (cfg == &d_2) return 1;
+    if (cfg == &d_3) return 2;
+    if (cfg == &d_4) return 3;
+    if (cfg == &d_5) return 4;
+    if (cfg == &d_6) return 5;
+    if (cfg == &d_7) return 6;
+    if (cfg == &d_8) return 7;
+    return -1;
+}
 /**
  * @brief 设置单个通道并锁存
  * @param cfg     触发器配置指针（&d_1 ~ &d_8）
@@ -161,7 +176,24 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
     {
         return;
     }
-    HAL_GPIO_WritePin(cfg->d_group[channel],cfg->d_pin[channel],enable);
+    /* 1) 先更新软件缓存 */
+    int8_t idx = bsp_d_trigger_get_index(cfg);
+    if (idx >= 0)
+    {
+        if (enable)
+            s_d_trigger_shadow[idx] |=  (uint8_t)(1U << channel);
+        else
+            s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
+    }
+    /* 2) 按缓存回放全部8路数据脚，避免只改1路导致其余路状态丢失 */
+    uint8_t shadow = s_d_trigger_shadow[idx];
+    for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)
+    {
+        GPIO_PinState st = ((shadow >> i) & 0x01U) ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        HAL_GPIO_WritePin(cfg->d_group[i], cfg->d_pin[i], st);
+    }
+    
+    //HAL_GPIO_WritePin(cfg->d_group[channel],cfg->d_pin[channel],enable);
     //bsp_delay_us(20);
 
     HAL_GPIO_WritePin(cfg->d_clk_group,cfg->d_clk_pin,GPIO_PIN_SET);

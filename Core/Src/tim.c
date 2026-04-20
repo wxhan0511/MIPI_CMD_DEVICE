@@ -119,7 +119,7 @@ void TIM1_CCP_Init(void)
        + Counter direction = Up
   */
   htim1.Init.Period = 0xFFFF;//65535 最大测量时间 = 65536 * (1 / 168,000,000) ≈ 0.00039 秒 ≈ 0.39 毫秒 (ms),实际信号周期 不可以大于定时器最大测量时间 (0.39 ms),实际信号频率要大于2600hz
-  htim1.Init.Prescaler = 0;//TIM8 的计数时钟168MHz
+  htim1.Init.Prescaler = 167;//TIM8 的计数时钟168MHz
   htim1.Init.ClockDivision = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -450,7 +450,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
   /* USER CODE END TIM1_MspPostInit 0 */
     __HAL_RCC_GPIOE_CLK_ENABLE();
     /**TIM1 GPIO Configuration
-    PE14     ------> TIM1_CH4
+    PE12     ------> TIM1_CH3
     */
     GPIO_InitStruct.Pin = LED_PWM_IN;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -568,8 +568,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
       uwDutyCycle = ((HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1)) * 100) / uwIC2Value;//占空比
       
       /* uwFrequency computation */    
-      uwFrequency = 168000000 / uwIC2Value;
-      
+      uwFrequency = 168000000U / ((htim1.Init.Prescaler + 1U) * uwIC2Value);
+      printf("Sample %lu: Frequency: %lu Hz, Duty Cycle: %lu %%\n", sample_count, uwFrequency, uwDutyCycle);
       //测量1000次取第100次到1100次的平均值
       if (sample_count >= 100 && sample_count <= 1100)
       {
@@ -581,7 +581,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
       {
         //关闭中断
         HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
-        FinishSampleWindow();
+        //FinishSampleWindow();
         //printf("1000-time average :Frequency: %lu Hz, Duty Cycle: %lu %%\n", uwFrequency, uwDutyCycle);
       }
 
@@ -614,7 +614,7 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef *htim)
   __HAL_RCC_GPIOE_CLK_ENABLE();
   
   /* Configure  (TIMx_Channel) in Alternate function, push-pull and 100MHz speed */
-  GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_11;
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;

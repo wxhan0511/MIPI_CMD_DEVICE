@@ -198,8 +198,8 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->da_data.vadj_p_gain = -5.612;
     cal->da_data.vadj_p_offset = 25641;
 
-    cal->da_data.v_level_shift_gain = 1;
-    cal->da_data.v_level_shift_offset = 0;
+    cal->da_data.v_level_shift_gain = -1.433;
+    cal->da_data.v_level_shift_offset = 5100;
     cal->da_data.ref_freq_gain = 1;
     cal->da_data.ref_freq_offset = 0;
     cal->da_data.vcc_ref_gain = 1.0f;

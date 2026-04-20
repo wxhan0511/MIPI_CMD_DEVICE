@@ -85,11 +85,11 @@ void bsp_init()
     bsp_d_trigger_init(d_7);
     bsp_d_trigger_init(d_8);
     bsp_d_trigger_set(enabled); //验证通过
-    //默认D触发器全关断
-    //24 pin测完马上关断
+    bsp_close_24pin_channel();
+    bsp_close_40pin_channel();
     //VSN的电流不对,测一下
     
-    bsp_rly_gear_set(GEAR_mA, VSN_RLY); //需放最前
+    bsp_rly_gear_set(GEAR_mA, VSN_RLY); //⚠️⚠️⚠️需放最前
     bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
     bsp_rly_gear_set(GEAR_mA, VCC_RLY);
     bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
@@ -112,11 +112,8 @@ void bsp_init()
     
 /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
-    bsp_ads1256_ch0_select(VCC_V);
-    bsp_ads1256_ch1_select(AD_V);
-    bsp_ads1256_ch2_select(AD_24PinV);
 /*-------------ADC END---------------------------*/
-
+    
     //Master mode and listening are mutually exclusive 
 #ifdef I2C_SLAVE_I2C2_LISTEN
     HAL_I2C_DisableListen_IT(&hi2c2);
@@ -131,10 +128,13 @@ void bsp_init()
     HAL_I2C_EnableListen_IT(&hi2c2);
 #endif
     /*-------------PWM START----------------*/
-    //bsp_led_pwm_init();
-    test_pwm();
+    bsp_led_pwm_init();//step1
+    bsp_blasi_pwm_init();
+    enableTim1PWMOutput();//step2
+    enableTim2PWMOutput();
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
+     bsp_CCP_Init();
     //test_ccp();
     /*-------------CCP END----------------*/
     
@@ -311,5 +311,5 @@ void test_ccp(void)
     bsp_CCP_Init();//step1
     enableTim1CaptureCompareInterrupt();//step2
     app_delay(5000);
-    disableTim1CaptureCompareInterrupt();//step3
+    //disableTim1CaptureCompareInterrupt();//step3
 }

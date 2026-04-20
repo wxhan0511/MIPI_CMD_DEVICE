@@ -34,6 +34,7 @@ typedef enum
  * @param en 0: 立即生效，1: 重启生效
  * @retval BSP_OK 成功，BSP_ERROR 失败
  * @note 通过I2C发送3字节命令设置指定通道电压
+ * dev->gain[channel] 如果为 1，输出范围翻倍（4.096V），如果为 0，最大 2.048V
  */
 BSP_STATUS bsp_dac_single_voltage_set(dac_dev_t *dev, const uint8_t channel, const uint16_t voltage, const uint8_t en)
 {

@@ -12,7 +12,7 @@
 #include "calibration_utils.h"
 #include "main.h"
 #include "bsp_calibration.h"
-
+#include "bsp_channel_sel.h"
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
@@ -71,8 +71,6 @@ void sel_cali_param(uint8_t main_index,uint8_t sub_index, float *offset, float *
   {
     *offset = 0.0f;
     *gain = 1.0f;
-    MIPI_CMD_DEBUG("Invalid channel (%d, %d) or NULL pointer(&offset , &gain) for calibration selection\r\n", main_index,sub_index);
-    return;
   }
 
   calibration_data_t *cal = &g_calibration_manager.data;
