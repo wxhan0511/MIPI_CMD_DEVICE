@@ -217,6 +217,10 @@ extern "C"
 #define PULSE_A_GPIO_Port GPIOE
 #define PULSE_B_Pin GPIO_PIN_15
 #define PULSE_B_GPIO_Port GPIOE
+
+
+#define LCD_BL_EN_Pin  GPIO_PIN_5
+#define LCD_BL_EN_GPIO_Port GPIOE
 #ifdef __cplusplus
 }
 #endif

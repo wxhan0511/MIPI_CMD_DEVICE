@@ -258,7 +258,7 @@ void bsp_lcd_reset(lcd_dev_t *dev)
 	app_delay(100);
 	HAL_GPIO_WritePin(LCD_RESET_GPIO_Port,LCD_RESET_Pin,GPIO_PIN_SET);
 	app_delay(100);
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LCD_BL_EN_GPIO_Port,LCD_BL_EN_Pin, GPIO_PIN_SET);
 }
 
 void bsl_lcd_backlight(lcd_dev_t *dev,uint8_t en)

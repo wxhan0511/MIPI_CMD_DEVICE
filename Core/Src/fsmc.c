@@ -92,7 +92,7 @@ void MX_FSMC_Init(void)
   Timing.AccessMode = FSMC_ACCESS_MODE_A;  // 使用AccessMode A
   if (HAL_SRAM_Init(&hsram1, &Timing, &Timing2) != HAL_OK)
   {
-    printf("fsmc write burst enable failed\r\n");
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE END FSMC_Init 2 */
 }
@@ -280,7 +280,7 @@ void fsmc_write_burst_en(uint8_t enable)
   Timing2.AccessMode = FSMC_ACCESS_MODE_A;  // 使用AccessMode A
   if (HAL_SRAM_Init(&hsram1, &Timing, &Timing2) != HAL_OK)
   {
-    printf("fsmc write burst enable failed\r\n");
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE END FSMC_Init 2 */
 }

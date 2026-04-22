@@ -198,25 +198,25 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->da_data.vadj_p_gain = -5.612;
     cal->da_data.vadj_p_offset = 25641;
 
-    cal->da_data.v_level_shift_gain = -1.433;
-    cal->da_data.v_level_shift_offset = 5100;
+    cal->da_data.v_level_shift_gain = -1.109;
+    cal->da_data.v_level_shift_offset = 5087;
     cal->da_data.ref_freq_gain = 1;
     cal->da_data.ref_freq_offset = 0;
-    cal->da_data.vcc_ref_gain = 1.0f;
+    cal->da_data.vcc_ref_gain = 0.2f;
     cal->da_data.vcc_ref_offset = 0.0f;
-    cal->da_data.iovcc_ref_gain = 1.0f;
+    cal->da_data.iovcc_ref_gain = 0.2f;
     cal->da_data.iovcc_ref_offset = 0.0f;
-    cal->da_data.vsp_ref_gain = 1.0f;
+    cal->da_data.vsp_ref_gain = 0.2f;
     cal->da_data.vsp_ref_offset = 0.0f;
-    cal->da_data.vsn_ref_gain = 1.0f;
+    cal->da_data.vsn_ref_gain = 0.2f;
     cal->da_data.vsn_ref_offset = 0.0f;
-    cal->da_data.avdd_ref_gain = 1.0f;
+    cal->da_data.avdd_ref_gain = 0.2f;
     cal->da_data.avdd_ref_offset = 0.0f;
-    cal->da_data.vdd_ref_gain = 1.0f;
+    cal->da_data.vdd_ref_gain = 0.2f;
     cal->da_data.vdd_ref_offset = 0.0f;
-    cal->da_data.elvdd_ref_gain = 1.0f;
+    cal->da_data.elvdd_ref_gain = 0.2f;
     cal->da_data.elvdd_ref_offset = 0.0f;
-    cal->da_data.elvss_ref_gain = 1.0f;
+    cal->da_data.elvss_ref_gain = 0.2f;
     cal->da_data.elvss_ref_offset = 0.0f;
 
     cal->da_data.elvss_set_gain = 11.111f;

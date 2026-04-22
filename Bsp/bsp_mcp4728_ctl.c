@@ -50,11 +50,11 @@ i2c_dev_t i2c_bus_2 = {
 
 //
 dac_dev_t dac_chips[DAC_CHIP_MAX] = {
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_1, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_2, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1, MCP4728_GAIN_1}, .val = {1500, 1500, 1500, 1500}}};
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_1, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_2, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}}};
 // 1. 定义映射表
 dac_config_table_t dac_config_table[20] = {
     //  上次电压地址                                      | 偏移地址                                               | 增益地址                                             | 芯片       | 名称         | 通道 | 反 | id | res | 使能                    | 禁能
@@ -120,7 +120,6 @@ void bsp_cali_and_set_power(uint8_t power_id)
     MIPI_CMD_DEBUG("%s,%s: vi = %.2f mV (vo=%.2f mV, offset=%.2f, gain=%.2f)\r\n",
         cfg->name, cfg->name1, val, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
     MIPI_CMD_DEBUG("channel = %d, last_voltage = %.2f mV\r\n", cfg->channel, *(cfg->last_voltage));  
-    val = val * 2; // MCP4728默认增益为2，如果校准增益是基于增益=1的，需要除以2进行补偿
     // 最大输出电压 4.096V
     dac_chips[cfg->chip].val[cfg->channel] = float_to_uint16_round(val);
     // dac_chips[cfg->chip].val[cfg->channel] = 1000;

@@ -119,7 +119,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-  while(1);
+  
   /* USER CODE END HardFault_IRQn 0 */
   MIPI_CMD_DEBUG("HardFault_Handler\r\n");
   //先判断是MSP还是PSP，再打印 SP偏移6*4 字节处的PC值

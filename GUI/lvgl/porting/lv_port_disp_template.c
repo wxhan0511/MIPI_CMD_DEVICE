@@ -73,6 +73,7 @@ void lv_port_disp_init(void)
 
 
     lv_display_set_flush_cb(disp, disp_flush);
+    //ANCHOR - 定义显存缓冲区 (Display Buffers)
     static lv_color_t buf_1_1[MY_DISP_HOR_RES * 10]; /*A buffer for 10 rows*/
     static lv_color_t buf_1_2[MY_DISP_HOR_RES * 10]; /*A buffer for 10 rows*/
     lv_display_set_buffers(disp, buf_1_1, buf_1_2, sizeof(buf_1_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
@@ -127,7 +128,6 @@ void lcd_draw_fast_rgb_color(int16_t sx, int16_t sy, int16_t ex, int16_t ey, uin
     {
         lcd_wr_data(color[i] >> 8);
         lcd_wr_data(color[i] & 0xff);
-
         // LCD->LCD_RAM = color[i] >> 8;
         // LCD->LCD_RAM = color[i] & 0xff;
     }

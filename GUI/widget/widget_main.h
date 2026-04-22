@@ -14,7 +14,7 @@ void widget_main_create(void);
 void widget_main_update_show_buf_vol(const double *vol);
 
 void widget_main_update_show_buf_cur(const double *cur);
-void lvgl_timer_test();
+
 
 
 #endif //WIDGET_MAIN_H

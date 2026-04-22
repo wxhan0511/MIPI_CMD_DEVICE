@@ -70,10 +70,10 @@ void bsp_init()
 {
     bsp_retarget_init(&huart3);
     bsp_print_version_info();
-
+    bsp_lcd_reset(&lcd);
+    
     bsp_init_dwt();
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
-    // app_delay(100);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     
     bsp_d_trigger_init(d_1);
@@ -97,7 +97,7 @@ void bsp_init()
     bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
     bsp_rly_gear_set(GEAR_mA, VDD_RLY);
     bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
-    // bsp_lcd_reset(&lcd);
+
     
     //bsp_test_spi_flash();
     calibration_set_defaults();
