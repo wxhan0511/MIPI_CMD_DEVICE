@@ -302,7 +302,7 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->ad_data.ch2_gain[1] = 1.0f; //无
     cal->ad_data.ch2_offset[1] = 0.0f;
     cal->ad_data.ch2_gain[2] = 11.0f;
-    cal->ad_data.ch2_offset[2] = 2500.0f;
+    cal->ad_data.ch2_offset[2] = -27.5f;
     cal->ad_data.ch2_gain[3] = 1.0f;//无
     cal->ad_data.ch2_offset[3] = 0.0f;
     cal->ad_data.ch2_gain[4] = 1.0f;//AD_V_BLAS_I

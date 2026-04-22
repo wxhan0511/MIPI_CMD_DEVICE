@@ -459,8 +459,10 @@ void task_sample_run()
                 pin_num = rx_buf[2];
                 pin_num = pin_num -1;//外部传入的pin_num从1开始,这里转换成从0开始
                 bsp_select_24pin_channel(pin_num, 1);
+                
                 ads1256_ch_index = 2;
                 d_trigger_ch_index = 2;
+                latest_sample_ch_sel[ads1256_ch_index] = 8; // 先将latest_sample_ch_sel置为8，表示数据未准备好
                 if (ads1256_ch_index == 0 && d_trigger_ch_index != 0xff) 
                     bsp_ads1256_ch0_select(d_trigger_ch_index);
                 else if (ads1256_ch_index == 1 && d_trigger_ch_index != 0xff)
@@ -472,7 +474,7 @@ void task_sample_run()
                     t0 = HAL_GetTick();
                     while (latest_sample_ch_sel[ads1256_ch_index] != d_trigger_ch_index)
                     {
-                        if ((HAL_GetTick() - t0) >= 1000U)  // 最多等待1s
+                        if ((HAL_GetTick() - t0) >= 2000U)  // 最多等待2s
                         {
                             // 可按你的状态定义改成超时状态
                             g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
@@ -482,10 +484,13 @@ void task_sample_run()
                         osDelay(1);
                     }
                 }
+
                 M_SPI_INFO("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[ads1256_ch_index], sizeof(float));
                 M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[ads1256_ch_index]);
                 M_SPI_DEBUG( "SINGLE_VOL_GET: channel %d, voltage %f\r\n", ads1256_ch_index, latest_sample_data[ads1256_ch_index]);
+                //极端值处理,
+                //TODO:未打开24pin,测24pin电压
                 bsp_select_24pin_channel(pin_num, 0);
                 break;
             case SEL_PIN_24:
