@@ -62,7 +62,9 @@ static uint8_t rx_buf[64] = {0};
 static uint8_t tx_buf[64] = {0};
 extern volatile TEST_R_D_RES_LEVEL r_level_selected;
 extern ads1256_dev_t dev_vol;
-#define WAIT_ADC_1_IDLE                 while (dev_vol.step_cnt != 6){osDelay(10);};
+#define WAIT_ADC_1_IDLE                 \
+    while (dev_vol.step_cnt != 0) { osDelay(10); } \
+    while (dev_vol.step_cnt != 6) { osDelay(10); } \
 extern volatile uint8_t r_en;
 extern volatile TEST_R_D_RES_LEVEL cal_r;
 extern __IO uint32_t            uwDutyCycle;
@@ -135,7 +137,7 @@ void task_sample_run()
 //-------------------------------------------------------------------------------------------------            
             memset(tx_buf, 0, sizeof(tx_buf));
             // 打印收到的数据
-            printf("receive\r\n");
+            M_SPI_DEBUG("receive\r\n");
             for(int i = 0; i < SPI2_SLAVE_RX_LEN; i++) {
                 M_SPI_DEBUG("%02X ", rx_buf[i]);
                 if ((i + 1) % 16 == 0) {
@@ -256,7 +258,7 @@ void task_sample_run()
                 //测完24pin和40pin关闭24pin和40pin的通道,避免干扰
                 if(sample_vol_id == 10) bsp_close_24pin_channel();
                 if(sample_vol_id == 9) bsp_close_40pin_channel();
-                
+
                 M_SPI_INFO("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[ads1256_ch_index], sizeof(float));
                 M_SPI_DEBUG( "SINGLE_VOL_GET: channel %d, voltage %f\r\n", ads1256_ch_index, latest_sample_data[ads1256_ch_index]);
@@ -346,7 +348,7 @@ void task_sample_run()
                 t0 = HAL_GetTick();
                 while (latest_sample_ch_sel[2] != 0 ) // 等待ADS1256通道2的数据准备好
                 {
-                    if ((HAL_GetTick() - t0) >= 1000U)  // 最多等待1s
+                    if ((HAL_GetTick() - t0) >= 5000U)
                     {
                         // 可按你的状态定义改成超时状态
                         g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
@@ -355,67 +357,56 @@ void task_sample_run()
                     }
                     osDelay(1);
                 }
-
+                while(dev_vol.work_channel != 2){osDelay(1);};
+                WAIT_ADC_1_IDLE
+                float temp_val = latest_sample_raw_data[2];
+                M_SPI_DEBUG("temp_val: %f\r\n", temp_val);
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
                 //bsp_close_64pin_channel();//attention:测完电阻后要关闭64pin的通道,避免干扰其他测量
                 M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
                 M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
+                M_SPI_DEBUG("cal_r: %d, r_level_selected: %d\r\n", cal_r, r_level_selected);
                 double cali_data = latest_sample_data[2];
                             //default gear 10K
                 if(cali_data > 0.01 && cali_data <= 0.1 && r_level_selected != OHM_100_OHM)
                 {
-                    printf("change gear 100 ohm\r\n");
+                    M_SPI_DEBUG("change gear 100 ohm\r\n");
                     bsp_rd_select_r_level(OHM_100_OHM);
                 }
                 else if(cali_data > 0.1 && cali_data <= 1 && r_level_selected != OHM_1_K)
                 {
-                    printf("change gear 1k ohm\r\n");
+                    M_SPI_DEBUG("change gear 1k ohm\r\n");
                     bsp_rd_select_r_level(OHM_1_K);
                 }
                 else if(cali_data > 1 && cali_data <= 10 && r_level_selected != OHM_10_K)
                 {
-                    printf("change gear 10k ohm\r\n");
+                    M_SPI_DEBUG("change gear 10k ohm\r\n");
                     bsp_rd_select_r_level(OHM_10_K);    
                 }
                 else if(cali_data > 10 && cali_data <= 100 && r_level_selected != OHM_100_K)
                 {
-                    printf("change gear 100k ohm\r\n");
+                    M_SPI_DEBUG("change gear 100k ohm\r\n");
                     bsp_rd_select_r_level(OHM_100_K);
                 }
                 else if(cali_data > 100 && cali_data <= 1000 && r_level_selected != OHM_1_M)
                 {
-                    printf("change gear 1M ohm\r\n");
+                    M_SPI_DEBUG("change gear 1M ohm\r\n");
                     bsp_rd_select_r_level(OHM_1_M);
                 }
                 else if(cali_data > 1000 && cali_data <= 10000 && r_level_selected != OHM_10_M)
                 {
-                    printf("change gear 10M ohm\r\n");
+                    M_SPI_DEBUG("change gear 10M ohm\r\n");
                     bsp_rd_select_r_level(OHM_10_M);
                 }
-                //切换电阻后,采样值还是旧值,需要等新值准备好
-                M_SPI_DEBUG("Waiting for new ADS1256 channel 2 sub channel 0 data ready after gear change...\r\n");
-                bsp_delay_ms(10);//等待ADS1256数据稳定
-                t0 = HAL_GetTick();
-                while (cal_r != r_level_selected)
-                {
-                    if ((HAL_GetTick() - t0) >= 1000U)  // 最多等待1s
-                    {
-                        // 可按你的状态定义改成超时状态
-                        g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
-                        M_SPI_INFO("GET_RESISTANCE timeout\r\n");
-                        break;
-                    }
-                    osDelay(1);
-                }
-                
+                while(dev_vol.work_channel != 2){osDelay(1);};
+                WAIT_ADC_1_IDLE
+                //printf("temp_val:%f\r\n",temp_val);
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
-                
+                M_SPI_DEBUG("cal_r: %d, r_level_selected: %d\r\n", cal_r, r_level_selected);
                 M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
                 M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
+                printf("pin_p: %d, pin_n: %d, resistance: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
                 bsp_rd_select_pin(pin_p, pin_n,0);
-                bsp_delay_ms(10);
-
-
                 break;
             case GET_DIODE:
                 pin_p = rx_buf[2];
@@ -426,7 +417,9 @@ void task_sample_run()
                 M_SPI_DEBUG("GET_DIODE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, r_level);
                                 pin_p = rx_buf[2];
                 bsp_ads1256_ch2_select(0);
-                bsp_delay_ms(100);//等待ADS1256数据稳定
+                while(dev_vol.work_channel != 2){osDelay(1);};
+                WAIT_ADC_1_IDLE
+
                 M_SPI_DEBUG("Waiting for ADS1256 channel 2 sub channel 0 data ready...\r\n");
                 t0 = HAL_GetTick();
                 while (latest_sample_ch_sel[2] != 0 ) // 等待ADS1256通道2的数据准备好
@@ -443,8 +436,8 @@ void task_sample_run()
 
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
                 //bsp_close_64pin_channel();//attention:测完电阻后要关闭64pin的通道,避免干扰其他测量
-                M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
-                M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
+                M_SPI_DEBUG( "GET DIODE: %f\r\n", latest_sample_data[2]);
+                printf("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
                 bsp_rd_select_pin(pin_p, pin_n,0);
                 break;
             case SET_RESISTANCE:
@@ -509,7 +502,7 @@ void task_sample_run()
                 M_SPI_DEBUG("unknow command\r\n");
                 break;
             }
-            printf("send\r\n");
+            //printf("send\r\n");
             
             // float mock_vol = 3.1415926; 
             // memcpy(&tx_buf[3], &mock_vol, sizeof(mock_vol));

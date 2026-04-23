@@ -351,7 +351,6 @@ uint8_t bsp_ads1256_get_sample_channel(const ads1256_dev_t *handle)
  */
 void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
 {
-
     if (handle->step_cnt == 0)
     {
         // 1、通道选择
@@ -413,16 +412,12 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
     }
     else if (handle->step_cnt == 5)
     {
-        if(first_loop_flag[handle->last_channel] == 1)
-        {
+
             raw_data = handle->data_buffer_avg[handle->last_channel] * ADC_RATIO * 0.000001;
             // printf("channel %d raw data %f \r\n",handle->last_channel,raw_data);
-            if (raw_data != 0.0)
+            if (handle == &dev_vol)
             {
-                if (handle == &dev_vol)
-                {
-                    raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
-                }
+                raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
             }
             first_loop_flag[handle->last_channel] = 0;
             //printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
@@ -431,11 +426,7 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
             // const double compare = bsp_adc_vol_convert_64pin(handle->vol_gear,raw_data,handle->single_vol_cali_en);
             // handle->data_buffer_avg[handle->last_channel] = compare;
             // printf("vol raw data %d gear %d ,%f %.3f \r\n",handle->last_channel,handle->vol_gear,raw_data,compare);
-        }
-        else
-        {
-            first_loop_flag[handle->last_channel] = 1;
-        }
+        
     }
     else if (handle->step_cnt == 6)
     {

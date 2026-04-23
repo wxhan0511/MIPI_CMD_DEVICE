@@ -83,6 +83,7 @@ void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level)
         bsp_d_trigger_set_channel(&d_8, 2, truth_table[r_level][0]); // A2
         bsp_d_trigger_set_channel(&d_8, 3, 1);                       // EN
     }
+    //printf("selected r level: %d\r\n", r_level);
     r_level_selected = r_level;
 }
 void bsp_close_rd_select_channel()
@@ -178,15 +179,15 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
 
     }
 
-    printf("p group = %u p pin %u : n group = %u n pin %u \r\n ", _pin_p_group,_pin_p,_pin_n_group,_pin_n);
+    //printf("p group = %u p pin %u : n group = %u n pin %u \r\n ", _pin_p_group,_pin_p,_pin_n_group,_pin_n);
     if (_pin_p_group == 0)
     {
         bsp_d_trigger_set_channel(&d_5, 2, truth_table[_pin_p][2]); // R&D+A0  64pin分8组,该组的pin几打开几通道连接V_r&D
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
-        printf("_pin_p: %d\r\n",_pin_p);
-        printf( "A0:%d, A1:%d, A2:%d\r\n",truth_table[_pin_p][2], truth_table[_pin_p][1], truth_table[_pin_p][0]);
-        bsp_d_trigger_set_channel(&d_6, 0, en); // R&D+ EN1
+        //printf("_pin_p: %d\r\n",_pin_p);
+        //printf( "A0:%d, A1:%d, A2:%d\r\n",truth_table[_pin_p][2], truth_table[_pin_p][1], truth_table[_pin_p][0]);
+       // bsp_d_trigger_set_channel(&d_6, 0, en); // R&D+ EN1
     }
     else if (_pin_p_group == 1)
     {
@@ -194,7 +195,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 1, en); // R&D+ EN2
+        //bsp_d_trigger_set_channel(&d_6, 1, en); // R&D+ EN2
     }
     else if (_pin_p_group == 2)
     {
@@ -202,7 +203,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 2, en); // R&D+ EN3
+        //bsp_d_trigger_set_channel(&d_6, 2, en); // R&D+ EN3
     }
     else if (_pin_p_group == 3)
     {
@@ -210,7 +211,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 3, en); // R&D+ EN4
+        //bsp_d_trigger_set_channel(&d_6, 3, en); // R&D+ EN4
     }
     else if (_pin_p_group == 4)
     {
@@ -218,7 +219,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 4, en); // R&D+ EN5
+       // bsp_d_trigger_set_channel(&d_6, 4, en); // R&D+ EN5
     }
     else if (_pin_p_group == 5)
     {
@@ -226,7 +227,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 5, en); // R&D+ EN6
+        //bsp_d_trigger_set_channel(&d_6, 5, en); // R&D+ EN6
     }
     else if (_pin_p_group == 6)
     {
@@ -234,7 +235,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 6, en); // R&D+ EN7
+        //bsp_d_trigger_set_channel(&d_6, 6, en); // R&D+ EN7
     }
     else if (_pin_p_group == 7)
     {
@@ -242,7 +243,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 3, truth_table[_pin_p][1]); // R&D+A1
         bsp_d_trigger_set_channel(&d_5, 4, truth_table[_pin_p][0]); // R&D+A2
 
-        bsp_d_trigger_set_channel(&d_6, 7, en); // R&D+ EN8
+        //bsp_d_trigger_set_channel(&d_6, 7, en); // R&D+ EN8
     }
 
     if (_pin_n_group == 0)
@@ -250,10 +251,10 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 5, truth_table[_pin_n][2]); // R&D-A0
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
-        printf("_pin_n: %d\r\n",_pin_n);
-        printf( "A0:%d, A1:%d, A2:%d\r\n",truth_table[_pin_n][2], truth_table[_pin_n][1], truth_table[_pin_n][0]);
+        //printf("_pin_n: %d\r\n",_pin_n);
+        //printf( "A0:%d, A1:%d, A2:%d\r\n",truth_table[_pin_n][2], truth_table[_pin_n][1], truth_table[_pin_n][0]);
 
-        bsp_d_trigger_set_channel(&d_7, 0, en); // R&D- EN1
+        //bsp_d_trigger_set_channel(&d_7, 0, en); // R&D- EN1
     }
     else if (_pin_n_group == 1)
     {
@@ -261,7 +262,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 1, en); // R&D- EN2
+        //bsp_d_trigger_set_channel(&d_7, 1, en); // R&D- EN2
     }
     else if (_pin_n_group == 2)
     {
@@ -269,7 +270,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 2, en); // R&D- EN3
+        //bsp_d_trigger_set_channel(&d_7, 2, en); // R&D- EN3
     }
     else if (_pin_n_group == 3)
     {
@@ -277,7 +278,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 3, en); // R&D- EN4
+        //bsp_d_trigger_set_channel(&d_7, 3, en); // R&D- EN4
     }
     else if (_pin_n_group == 4)
     {
@@ -285,7 +286,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 4, en); // R&D- EN5
+        //bsp_d_trigger_set_channel(&d_7, 4, en); // R&D- EN5
     }
     else if (_pin_n_group == 5)
     {
@@ -293,7 +294,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 5, en); // R&D- EN6
+        //bsp_d_trigger_set_channel(&d_7, 5, en); // R&D- EN6
     }
     else if (_pin_n_group == 6)
     {
@@ -301,7 +302,7 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 6, en); // R&D- EN7
+        //bsp_d_trigger_set_channel(&d_7, 6, en); // R&D- EN7
     }
     else if (_pin_n_group == 7)
     {
@@ -309,7 +310,15 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n , uint8_t en)
         bsp_d_trigger_set_channel(&d_5, 6, truth_table[_pin_n][1]); // R&D-A1
         bsp_d_trigger_set_channel(&d_5, 7, truth_table[_pin_n][0]); // R&D-A2
 
-        bsp_d_trigger_set_channel(&d_7, 7, en); // R&D- EN8
+        //bsp_d_trigger_set_channel(&d_7, 7, en); // R&D- EN8
+    }
+    for(uint8_t i=0;i<8;i++)
+    {
+        if(i==_pin_p_group) bsp_d_trigger_set_channel(&d_6, _pin_p_group, en);
+        else  bsp_d_trigger_set_channel(&d_6, i, 0); // R&D
+        if(i==_pin_n_group) bsp_d_trigger_set_channel(&d_7, _pin_n_group, en);
+        else  bsp_d_trigger_set_channel(&d_7, i, 0); // R&D
+
     }
 }
 #if 0

@@ -96,15 +96,14 @@ void sample_data_cali()
                 rt_value = 0.1f;
             else if (r_level_selected == OHM_4_point_7_K)
                 rt_value = 4.7f;
-    //0.271600
             if(latest_sample_raw_data[i] >= 0.27160f)
             {
-                printf("Warning: raw data %f may be out of range for resistance calculation\r\n", latest_sample_raw_data[i]);
+                //printf("Warning: raw data %f may be out of range for resistance calculation\r\n", latest_sample_raw_data[i]);
                 latest_sample_data[i] = 999999;//防止除数为0或者负数
             }
             else
             {
-                latest_sample_data[i] = (latest_sample_raw_data[i]*rt_value)/(0.27160-latest_sample_raw_data[i]);
+                latest_sample_data[i] = (latest_sample_raw_data[i]*rt_value)/(0.2743-latest_sample_raw_data[i]);
                 //单位为k
             }
             cali_data = latest_sample_data[i];
