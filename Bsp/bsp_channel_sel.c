@@ -100,7 +100,7 @@ void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index)
         bsp_d_trigger_set_channel(&d_4, 1, truth_table[ai0_index][0]); // A2
                               // EN常高
         ch0_flag = ai0_index;
-        printf("selected: A2=%d, A1=%d, A0=%d\r\n", truth_table[ai0_index][2], truth_table[ai0_index][1], truth_table[ai0_index][0]);
+        printf("selected: A0=%d, A1=%d, A2=%d\r\n", truth_table[ai0_index][2], truth_table[ai0_index][1], truth_table[ai0_index][0]);
     }
 }
 // ANCHOR -  ADS1256 AI1选通采样通道
@@ -662,9 +662,24 @@ void bsp_select_24pin_channel(uint16_t pin , uint8_t en)
         bsp_d_trigger_set_channel(&d_1, 0, truth_table[_pin][2]); // 408A0  24pin分8组,该组的pin几打开几通道连接
         bsp_d_trigger_set_channel(&d_1, 1, truth_table[_pin][1]); // 408A1
         bsp_d_trigger_set_channel(&d_1, 2, truth_table[_pin][0]); // 408A2
-        if (_pin_group == 0)  bsp_d_trigger_set_channel(&d_1, 3, 1); // 408EN1
-        else if (_pin_group == 1) bsp_d_trigger_set_channel(&d_1, 4, 1); // 408EN2
-        else if (_pin_group == 2) bsp_d_trigger_set_channel(&d_1, 5, 1); // 408EN3
+        
+        if (_pin_group == 0)  {
+            bsp_d_trigger_set_channel(&d_1, 3, 1); // 408EN1
+            bsp_d_trigger_set_channel(&d_1, 4, 0);
+            bsp_d_trigger_set_channel(&d_1, 5, 0);
+        }
+        else if (_pin_group == 1) 
+        {
+            bsp_d_trigger_set_channel(&d_1, 3, 0); // 408EN1
+            bsp_d_trigger_set_channel(&d_1, 4, 1);
+            bsp_d_trigger_set_channel(&d_1, 5, 0);
+        }
+        else if (_pin_group == 2) 
+        {
+            bsp_d_trigger_set_channel(&d_1, 3, 0); // 408EN1
+            bsp_d_trigger_set_channel(&d_1, 4, 0);
+            bsp_d_trigger_set_channel(&d_1, 5, 1);
+        }
     }
     else
     {

@@ -267,9 +267,9 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->ad_data.ch0_offset[0] = 0.0f;
     cal->ad_data.ch0_gain[1] = 5.0f;
     cal->ad_data.ch0_offset[1] = 0.0f;
-    cal->ad_data.ch0_gain[2] = 5.0f;
+    cal->ad_data.ch0_gain[2] = -5.0f;
     cal->ad_data.ch0_offset[2] = 0.0f;
-    cal->ad_data.ch0_gain[3] = 5.0f;
+    cal->ad_data.ch0_gain[3] = -5.0f;
     cal->ad_data.ch0_offset[3] = 0.0f;
     cal->ad_data.ch0_gain[4] = 5.0f;
     cal->ad_data.ch0_offset[4] = 0.0f;
