@@ -484,7 +484,6 @@ void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi)
 void SPI2_Slave_OnError_IT(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance != SPI2) return;
-    printf("SPI error: code=%d\r\n", hspi->ErrorCode);
     __HAL_SPI_CLEAR_OVRFLAG(hspi);     // 清 OVR
     HAL_SPI_Abort(hspi);               // 终止当前事务（同步版更直接）
 }

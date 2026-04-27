@@ -140,6 +140,9 @@ void HardFault_Handler(void)
   if (SCB->SHCSR & SCB_SHCSR_BUSFAULTENA_Msk) {
     MIPI_CMD_ERROR("BusFault\r\n");
   }
+  register uint32_t lr asm("lr");
+  register uint32_t sp_val asm("sp");
+  MIPI_CMD_ERROR("LR = 0x%08X, SP = 0x%08X\r\n", lr, sp_val);
 
 
   while (1);
@@ -711,7 +714,12 @@ void I2C2_ER_IRQHandler(void)
   HAL_I2C_ErrorCallback(&hi2c2);
 }
 
-
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    // 这里可以加断点、打印、重启等
+    printf("Stack overflow in task: %s\r\n", pcTaskName);
+    // 或者点灯、记录日志等
+}
 
 
 

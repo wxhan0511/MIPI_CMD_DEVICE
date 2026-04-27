@@ -73,7 +73,7 @@ void MX_FREERTOS_Init(void)
   //master_tx_task_init();
   //master_rx_task_init();
   //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  widget_main_task_init(); //LVGL UI task
+  //widget_main_task_init(); //LVGL UI task
   //power_task_init();
   task_sample_init();
 
