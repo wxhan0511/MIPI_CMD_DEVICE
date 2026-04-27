@@ -63,8 +63,8 @@ static uint8_t tx_buf[64] = {0};
 extern volatile TEST_R_D_RES_LEVEL r_level_selected;
 extern ads1256_dev_t dev_vol;
 #define WAIT_ADC_1_IDLE                 \
-    while (dev_vol.step_cnt != 0) { osDelay(10); } \
-    while (dev_vol.step_cnt != 6) { osDelay(10); } \
+    while (dev_vol.step_cnt != 0) { osDelay(1); } \
+    while (dev_vol.step_cnt != 6) { osDelay(1); } \
 extern volatile uint8_t r_en;
 extern volatile TEST_R_D_RES_LEVEL cal_r;
 extern __IO uint32_t            uwDutyCycle;
@@ -343,7 +343,7 @@ void task_sample_run()
                 bsp_rd_select_mode(R_MODE);
                 M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, r_level);
                 bsp_ads1256_ch2_select(0);
-                M_SPI_DEBUG("Waiting for ADS1256 channel 2 sub channel 0 data ready...\r\n");
+
                
                 t0 = HAL_GetTick();
                 while (latest_sample_ch_sel[2] != 0 ) // 等待ADS1256通道2的数据准备好
@@ -359,8 +359,6 @@ void task_sample_run()
                 }
                 while(dev_vol.work_channel != 2){osDelay(1);};
                 WAIT_ADC_1_IDLE
-                float temp_val = latest_sample_raw_data[2];
-                M_SPI_DEBUG("temp_val: %f\r\n", temp_val);
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
                 //bsp_close_64pin_channel();//attention:测完电阻后要关闭64pin的通道,避免干扰其他测量
                 M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
@@ -398,9 +396,10 @@ void task_sample_run()
                     M_SPI_DEBUG("change gear 10M ohm\r\n");
                     bsp_rd_select_r_level(OHM_10_M);
                 }
+                dev_vol.channel_en =0b00000100; //只使能通道2
                 while(dev_vol.work_channel != 2){osDelay(1);};
-                WAIT_ADC_1_IDLE
-                //printf("temp_val:%f\r\n",temp_val);
+                bsp_delay_ms(5000);//等待稳定,IC内部为电路,不是纯电阻,需要等待稳定
+                dev_vol.channel_en =0b11111111; //使能所有通道
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
                 M_SPI_DEBUG("cal_r: %d, r_level_selected: %d\r\n", cal_r, r_level_selected);
                 M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);

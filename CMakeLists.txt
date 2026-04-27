@@ -47,7 +47,7 @@ else ()
     message(STATUS "Minimal optimization, debug info included")
     add_compile_options(-O0 -g)
 endif ()
-
+add_compile_options(-Wa,-alh=build.lst)
 include_directories(Core/Inc) 
 include_directories(Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include)
 include_directories(Middlewares/Third_Party/FreeRTOS/Source/include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F)

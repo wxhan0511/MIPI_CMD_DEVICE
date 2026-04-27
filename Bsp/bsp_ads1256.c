@@ -33,7 +33,7 @@ ads1256_dev_t dev_vol = {
     .work_channel = 0,
     .sample_res_gear = {0, 0, 0, 0, 0, 0, 0, 0},
     .step_cnt = 1,
-    .sample_cnt = 0,
+    .sample_cnt = 50,
     .r_en=0,
 };
 
@@ -368,7 +368,11 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
 
         bsp_ads1256_read_data(
             handle, &handle->data_buffer[handle->work_channel][handle->sample_cnt[handle->work_channel]]);
-        // printf("%d %d: %d \r\n", handle->work_channel,handle->sample_cnt,handle->data_buffer[handle->work_channel][handle->sample_cnt]);
+        raw_data =  handle->data_buffer[handle->work_channel][0] * ADC_RATIO * 0.000001;
+        // printf("channel %d raw data %f \r\n", handle->work_channel, raw_data);
+        // printf("%d \r\n",handle->data_buffer[handle->work_channel][0]);
+ 
+        //printf("%d %d: %d \r\n", handle->work_channel,handle->sample_cnt,handle->data_buffer[handle->work_channel][handle->sample_cnt]);
     }
     else if (handle->step_cnt == 3)
     {
@@ -402,10 +406,12 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
             for (uint8_t i = 0; i < AVG_CNT; i++)
             {
                 sum += handle->data_buffer[handle->last_channel][i];
-                // printf("%d \r\n",handle->data_buffer[handle->last_channel][i]);
             }
 
             handle->data_buffer_avg[handle->last_channel] = sum / AVG_CNT;
+            // printf("sum:%f / AVG_CNT:%d \r\n", sum, AVG_CNT);
+            // printf("channel %d avg data %f \r\n", handle->last_channel, handle->data_buffer_avg[handle->last_channel]);
+            // printf("channel %d avg data %f \r\n", handle->last_channel, handle->data_buffer_avg[handle->last_channel]* ADC_RATIO * 0.000001);
             handle->sample_cnt[handle->last_channel] = 0;
             // printf("channel %d ,vol %f \r\n",handle->last_channel,handle->data_buffer_avg[handle->last_channel]);
         }
@@ -419,8 +425,7 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
             {
                 raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
             }
-            first_loop_flag[handle->last_channel] = 0;
-            //printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
+            printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
             // AD_DATA_DEBUG("channel %d raw data %f \r\n",handle->last_channel,raw_data);
 
             // const double compare = bsp_adc_vol_convert_64pin(handle->vol_gear,raw_data,handle->single_vol_cali_en);

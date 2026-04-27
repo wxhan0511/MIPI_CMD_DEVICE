@@ -83,7 +83,7 @@ void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level)
         bsp_d_trigger_set_channel(&d_8, 2, truth_table[r_level][0]); // A2
         bsp_d_trigger_set_channel(&d_8, 3, 1);                       // EN
     }
-    //printf("selected r level: %d\r\n", r_level);
+    M_SPI_DEBUG("selected r level: %d\r\n", r_level);
     r_level_selected = r_level;
 }
 void bsp_close_rd_select_channel()
