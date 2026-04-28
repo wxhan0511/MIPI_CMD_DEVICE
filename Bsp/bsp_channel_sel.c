@@ -61,7 +61,7 @@ void bsp_channel_sel_init(void)
 //  @param mode mode = 0 为 二极管 ，1为电阻
 void bsp_rd_select_mode(const R_D_MODE mode)
 {
-    bsp_d_trigger_set_channel(&d_8, 5, mode);
+    if (mode == D_MODE || mode == R_MODE)   bsp_d_trigger_set_channel(&d_8, 5, mode);
     r_d_mode = mode;
 }
 //ANCHOR - 电流档位设置

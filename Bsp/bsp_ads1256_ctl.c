@@ -103,11 +103,42 @@ void sample_data_cali()
             }
             else
             {
-                latest_sample_data[i] = (latest_sample_raw_data[i]*rt_value)/(0.2743-latest_sample_raw_data[i]);
-                //单位为k
+                latest_sample_data[i] = (latest_sample_raw_data[i]*rt_value*1000)/(0.27-latest_sample_raw_data[i]);
+                printf("cal_r: %d, rt_value: %f m, raw data: %f, resistance: %f m\r\n", cal_r, rt_value/1000, latest_sample_raw_data[i], latest_sample_data[i]/1000000);
+                
             }
-            cali_data = latest_sample_data[i];
+            cali_data = latest_sample_data[i] / 1000;//转换成k
             
+            if(cali_data > 0.01 && cali_data <= 0.1 && r_level_selected != OHM_100_OHM)
+            {
+                M_SPI_DEBUG("change gear 100 ohm\r\n");
+                bsp_rd_select_r_level(OHM_100_OHM);
+            }
+            else if(cali_data > 0.1 && cali_data <= 1 && r_level_selected != OHM_1_K)
+            {
+                M_SPI_DEBUG("change gear 1k ohm\r\n");
+                bsp_rd_select_r_level(OHM_1_K);
+            }
+            else if(cali_data > 1 && cali_data <= 10 && r_level_selected != OHM_10_K)
+            {
+                M_SPI_DEBUG("change gear 10k ohm\r\n");
+                bsp_rd_select_r_level(OHM_10_K);    
+            }
+            else if(cali_data > 10 && cali_data <= 100 && r_level_selected != OHM_100_K)
+            {
+                M_SPI_DEBUG("change gear 100k ohm\r\n");
+                bsp_rd_select_r_level(OHM_100_K);
+            }
+            else if(cali_data > 100 && cali_data <= 1000 && r_level_selected != OHM_1_M)
+            {
+                M_SPI_DEBUG("change gear 1M ohm\r\n");
+                bsp_rd_select_r_level(OHM_1_M);
+            }
+            else if(cali_data > 1000 && cali_data <= 10000 && r_level_selected != OHM_10_M)
+            {
+                M_SPI_DEBUG("change gear 10M ohm\r\n");
+                bsp_rd_select_r_level(OHM_10_M);
+            }
         }
         else
         {

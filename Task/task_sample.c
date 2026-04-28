@@ -343,7 +343,7 @@ void task_sample_run()
                 bsp_rd_select_mode(R_MODE);
                 M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, r_level);
                 bsp_ads1256_ch2_select(0);
-
+                dev_vol.channel_en =0b00000100; //只使能通道2
                
                 t0 = HAL_GetTick();
                 while (latest_sample_ch_sel[2] != 0 ) // 等待ADS1256通道2的数据准备好
@@ -357,47 +357,9 @@ void task_sample_run()
                     }
                     osDelay(1);
                 }
+             
                 while(dev_vol.work_channel != 2){osDelay(1);};
                 WAIT_ADC_1_IDLE
-                memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
-                //bsp_close_64pin_channel();//attention:测完电阻后要关闭64pin的通道,避免干扰其他测量
-                M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
-                M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
-                M_SPI_DEBUG("cal_r: %d, r_level_selected: %d\r\n", cal_r, r_level_selected);
-                double cali_data = latest_sample_data[2];
-                            //default gear 10K
-                if(cali_data > 0.01 && cali_data <= 0.1 && r_level_selected != OHM_100_OHM)
-                {
-                    M_SPI_DEBUG("change gear 100 ohm\r\n");
-                    bsp_rd_select_r_level(OHM_100_OHM);
-                }
-                else if(cali_data > 0.1 && cali_data <= 1 && r_level_selected != OHM_1_K)
-                {
-                    M_SPI_DEBUG("change gear 1k ohm\r\n");
-                    bsp_rd_select_r_level(OHM_1_K);
-                }
-                else if(cali_data > 1 && cali_data <= 10 && r_level_selected != OHM_10_K)
-                {
-                    M_SPI_DEBUG("change gear 10k ohm\r\n");
-                    bsp_rd_select_r_level(OHM_10_K);    
-                }
-                else if(cali_data > 10 && cali_data <= 100 && r_level_selected != OHM_100_K)
-                {
-                    M_SPI_DEBUG("change gear 100k ohm\r\n");
-                    bsp_rd_select_r_level(OHM_100_K);
-                }
-                else if(cali_data > 100 && cali_data <= 1000 && r_level_selected != OHM_1_M)
-                {
-                    M_SPI_DEBUG("change gear 1M ohm\r\n");
-                    bsp_rd_select_r_level(OHM_1_M);
-                }
-                else if(cali_data > 1000 && cali_data <= 10000 && r_level_selected != OHM_10_M)
-                {
-                    M_SPI_DEBUG("change gear 10M ohm\r\n");
-                    bsp_rd_select_r_level(OHM_10_M);
-                }
-                dev_vol.channel_en =0b00000100; //只使能通道2
-                while(dev_vol.work_channel != 2){osDelay(1);};
                 bsp_delay_ms(5000);//等待稳定,IC内部为电路,不是纯电阻,需要等待稳定
                 dev_vol.channel_en =0b11111111; //使能所有通道
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
@@ -405,7 +367,8 @@ void task_sample_run()
                 M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
                 M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
                 printf("pin_p: %d, pin_n: %d, resistance: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
-                bsp_rd_select_pin(pin_p, pin_n,0);
+                bsp_rd_select_mode(R_D_MODE_NULL);
+                //bsp_rd_select_pin(pin_p, pin_n,0);
                 break;
             case GET_DIODE:
                 pin_p = rx_buf[2];

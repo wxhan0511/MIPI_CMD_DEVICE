@@ -119,32 +119,96 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-  
-  /* USER CODE END HardFault_IRQn 0 */
-  MIPI_CMD_DEBUG("HardFault_Handler\r\n");
-  //先判断是MSP还是PSP，再打印 SP偏移6*4 字节处的PC值
+  // 定义故障状态寄存器变量
+  uint32_t hfsr = SCB->HFSR;    // 硬故障总状态寄存器
+  uint32_t cfsr = SCB->CFSR;    // 配置故障状态寄存器（包含Mem/Bus/Usage三类错误）
+  uint32_t mmfar = SCB->MMFAR;  // 内存管理错误地址寄存器
+  uint32_t bfar = SCB->BFAR;    // 总线错误地址寄存器
+
+  // 打印HardFault标题
+  MIPI_CMD_DEBUG("\r\n\r\n==================== HardFault ====================\r\n");
+  MIPI_CMD_ERROR("HFSR = 0x%08X\r\n", hfsr);
+  MIPI_CMD_ERROR("CFSR = 0x%08X\r\n", cfsr);
+
+  // 拆分三类错误状态
+  uint8_t mmfsr = (cfsr >> 0) & 0xFF;   // 内存管理错误状态
+  uint8_t bfsr  = (cfsr >> 8) & 0xFF;   // 总线错误状态
+  uint16_t ufsr = (cfsr >> 16) & 0xFFFF;// 用法错误状态
+
+  // ==============================================
+  // 内存管理错误解析（打印英文，注释中文）
+  // ==============================================
+  if (mmfsr != 0) {
+    MIPI_CMD_ERROR("[MemManage Fault]\r\n");
+    if (mmfsr & (1 << 0)) MIPI_CMD_ERROR("  IACCVIOL: Instruction access violation\r\n");
+    if (mmfsr & (1 << 1)) MIPI_CMD_ERROR("  DACCVIOL: Data access violation\r\n");
+    if (mmfsr & (1 << 2)) MIPI_CMD_ERROR("  MUNSTKERR: Unstacking error\r\n");
+    if (mmfsr & (1 << 3)) MIPI_CMD_ERROR("  MSTKERR: Stacking error\r\n");
+    if (mmfsr & (1 << 4)) MIPI_CMD_ERROR("  MLSPERR: Lazy state preservation error\r\n");
+    if (mmfsr & (1 << 6)) MIPI_CMD_ERROR("  MMARVALID: MMFAR address valid\r\n");
+
+    // 若错误地址有效，则打印出错地址
+    if (mmfsr & (1 << 6)) {
+      MIPI_CMD_ERROR("  Fault Address MMFAR = 0x%08X\r\n", mmfar);
+    }
+  }
+
+  // ==============================================
+  // 总线错误解析（打印英文，注释中文）
+  // ==============================================
+  if (bfsr != 0) {
+    MIPI_CMD_ERROR("[BusFault]\r\n");
+    if (bfsr & (1 << 0)) MIPI_CMD_ERROR("  IBUSERR: Instruction bus error(PC runaway)\r\n");
+    if (bfsr & (1 << 1)) MIPI_CMD_ERROR("  PRECISERR: Precise data bus error\r\n");
+    if (bfsr & (1 << 2)) MIPI_CMD_ERROR("  IMPRECISERR: Imprecise data bus error\r\n");
+    if (bfsr & (1 << 3)) MIPI_CMD_ERROR("  UNSTKERR: Unstacking error\r\n");
+    if (bfsr & (1 << 4)) MIPI_CMD_ERROR("  STKERR: Stacking error\r\n");
+    if (bfsr & (1 << 5)) MIPI_CMD_ERROR("  LSPERR: Lazy state preservation error\r\n");
+    if (bfsr & (1 << 6)) MIPI_CMD_ERROR("  BFARVALID: BFAR address valid\r\n");
+
+    // 若错误地址有效，则打印出错地址
+    if (bfsr & (1 << 6)) {
+      MIPI_CMD_ERROR("  Fault Address BFAR = 0x%08X\r\n", bfar);
+    }
+  }
+
+  // ==============================================
+  // 用法错误解析（打印英文，注释中文）
+  // ==============================================
+  if (ufsr != 0) {
+    MIPI_CMD_ERROR("[UsageFault]\r\n");
+    if (ufsr & (1 << 0))  MIPI_CMD_ERROR("  UNDEFINSTR: Undefined instruction\r\n");
+    if (ufsr & (1 << 1))  MIPI_CMD_ERROR("  INVSTATE: Invalid state\r\n");
+    if (ufsr & (1 << 2))  MIPI_CMD_ERROR("  INVPC: Invalid EXC_RETURN\r\n");
+    if (ufsr & (1 << 3))  MIPI_CMD_ERROR("  NOCP: No coprocessor\r\n");
+    if (ufsr & (1 << 8))  MIPI_CMD_ERROR("  UNALIGNED: Unaligned access\r\n");
+    if (ufsr & (1 << 9))  MIPI_CMD_ERROR("  DIVBYZERO: Divide by zero\r\n");
+  }
+
+  // ==============================================
+  // 硬故障总标志解析
+  // ==============================================
+  if (hfsr & (1 << 1))  MIPI_CMD_ERROR("  VECTBL: Vector table read fault\r\n");
+  if (hfsr & (1 << 30)) MIPI_CMD_ERROR("  FORCED: Forced HardFault\r\n");
+  if (hfsr & (1 << 31)) MIPI_CMD_ERROR("  DEBUGEVT: Debug event\r\n");
+
+  // ==============================================
+  // 获取当前栈指针（MSP/PSP自动判断）
+  // ==============================================
   uint32_t *sp;
   __ASM volatile(
-      "TST lr, #4 \n"
+      "TST lr, #4 \n"      // 判断LR的bit2，确定使用MSP还是PSP
       "ITE EQ \n"
-      "MRSEQ %0, MSP \n"
-      "MRSNE %0, PSP \n"
-      : "=r"(sp));
-  MIPI_CMD_ERROR("PC = 0x%08X\r\n", sp[6]);
-  if (SCB->SHCSR & SCB_SHCSR_MEMFAULTENA_Msk) {
-    MIPI_CMD_ERROR("MemManage\r\n");
-  }
-  if (SCB->SHCSR & SCB_SHCSR_USGFAULTENA_Msk) {
-    MIPI_CMD_ERROR("UsageFault\r\n");
-  }
-  if (SCB->SHCSR & SCB_SHCSR_BUSFAULTENA_Msk) {
-    MIPI_CMD_ERROR("BusFault\r\n");
-  }
-  register uint32_t lr asm("lr");
-  register uint32_t sp_val asm("sp");
-  MIPI_CMD_ERROR("LR = 0x%08X, SP = 0x%08X\r\n", lr, sp_val);
+      "MRSEQ %0, MSP \n"   // 等于0时使用MSP
+      "MRSNE %0, PSP \n"   // 等于1时使用PSP
+      : "=r"(sp)
+  );
 
+  // 打印触发HardFault的PC指针（栈中偏移6*4位置）
+  MIPI_CMD_ERROR("\r\n>>>>>> Fault PC = 0x%08X <<<<<<\r\n", sp[6]);
+  MIPI_CMD_ERROR("=====================================================\r\n");
 
+  /* USER CODE END HardFault_IRQn 0 */
   while (1);
 }
 
