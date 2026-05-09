@@ -1,0 +1,152 @@
+采样电流id表
+//power:0,VCC → ch_index、d_trigger_ch_index       
+// power:1,IOVCC → ch_index、d_trigger_ch_index
+// power:2,VSP
+// power:3,VSN
+// power:4,AVDD
+// power:5,VDD
+// power:6,ELVDD
+// power:7,ELVSS
+// power:8,AD_I_BLAS_I
+// power:9,AD_I_BLAS_V
+// power:10,AD_I_BL
+采样电压id表
+//power:0,VCC  
+// power:1,IOVCC
+// power:2,VSP
+// power:3,VSN
+// power:4,AVDD
+// power:5,VDD
+// power:6,ELVDD
+// power:7,ELVSS
+// power:8,AD_V_V+ADJ
+// power:9,AD_R&D 
+// power:10,AD_24PinV
+// power:11,AD_V_BLAS_I
+// power:12,BLAS_V
+// power:13,AD_V_BL 
+// power:14,AD_V_V-ADJ 
+设置电压id表
+//power:0,VCC  
+// power:1,IOVCC
+// power:2,VSP
+// power:3,VSN	         注意:读写均为负值
+// power:4,AVDD
+// power:5,VDD
+// power:6,ELVDD
+// power:7,ELVSS                注意:读写均为负值
+// power:8,VCC_LIMREF      无需使能
+// power:9,IOVCC_LIMREF     无需使能
+// power:10,VSP_LIMREF      无需使能
+// power:11,VSN_LIMREF      无需使能
+// power:12,AVDD_LIMREF     无需使能
+// power:13,VDD_LIMREF      无需使能
+// power:14,ELVDD_LIMREF     无需使能
+// power:15,ELVSS_LIMREF    无需使能
+// power:16,V_LEVEL_SHIFT   无需使能
+// power:17,REF_FREQ        无需使能
+// power:18,V_ADJP          无需使能
+// power:19V_ADJN           无需使能 注意:读写均为负值
+
+
+
+
+//版本0.0.0.0为debug版本,电源未使能则也可以读到电压电流,否则读到0
+power.read_version()
+
+meter.get_24pin_voltage(1)
+power.get_power_voltage(1)
+power.set_all_power_en(1,0,1,0,1,0,1,1)
+power.set_power_en(1,0)
+power.get_power_voltage(1)
+power.get_power_voltage(0)
+power.get_power_voltage(1)
+power.set_all_power_en(1,0,1,0,1,0,1,1)
+power.set_power_en(1,0)
+power.get_power_current(0)
+//设置8路电压
+power.set_power_en(0,0)
+power.set_power_en(1,0)
+power.set_power_en(2,0)
+power.set_power_en(3,0)
+power.set_power_en(4,0)
+power.set_power_en(5,0)
+power.set_power_en(6,0)
+power.set_power_en(7,0)
+i=7
+while( i>0 )
+do
+    power.set_power_en(i,1)
+    power.set_power_voltage(i,2000+500*i) 
+    i=i-1
+end
+//TODO:上下限
+//电阻二极管测试
+//    OHM_NULL = 0,
+//    OHM_10_M,
+//    OHM_1_M,
+//    OHM_100_K,
+//    OHM_10_K,
+//    OHM_1_K,
+//    OHM_100_OHM,
+//    OHM_4_point_7_K,
+// pin_p和pin_n从1开始计数,不能选一样的
+meter.get_resistance(29,31,2)   // pin_p ,pin_n (1-64) ,r_level(如上) 接屏幕接口(p2,p3,注意方向)
+meter.get_diode(29,31)            // pin_p ,pin_n (1-64)  接屏幕接口(p2,p3,注意方向) 二极管长脚正 ,pin17是地
+//电阻测试
+1.红表笔接VDDI,黑表笔接测量pin；
+2红表笔接测量的pin,.黑表笔接地，
+i=1
+while( i<65 )
+do
+    meter.get_resistance(4,i)
+    meter.get_resistance(i,6)  
+    i=i+1
+end
+方法1
+local numbers = {
+    1,2, 8, 9, 10, 11, 12, 13, 14, 15,
+    18, 19, 20, 17, 22, 23, 24, 26, 27,
+    29, 30, 32, 33, 35, 36, 38, 39
+}
+for i = 1, #numbers do
+    meter.get_resistance(4,numbers[i])
+end
+方法2
+local numbers = {
+    1,2, 4, 8, 9, 10, 11, 12, 13, 14, 15,
+    18, 19, 20, 17, 22, 23, 24, 26, 27,
+    29, 30, 32, 33, 35, 36, 38, 39
+}
+for i = 1, #numbers do
+    meter.get_resistance(numbers[i],6)
+end
+meter.get_resistance(2,6,6)//大概需要五六次采样到的电阻才稳定
+//二极管测试
+local numbers = {
+    1,2, 4, 8, 9, 10, 11, 12, 13, 14, 15,
+    18, 19, 20, 17, 22, 23, 24, 26, 27,
+    29, 30, 32, 33, 35, 36, 38, 39
+}
+for i = 1, #numbers do
+    meter.get_diode(6,numbers[i])
+    meter.get_diode(numbers[i],6)
+end
+
+//24pin电压测试
+meter.get_24pin_voltage(1)   //pin_num (1-24)  GC4.0接口强化板接5.0电源板J2 pin  强化板40pin为1脚 注意地要接5.0
+i=24
+while( i>0 )
+do
+    meter.get_24pin_voltage(i) 
+    i=i-1
+end
+
+//24pin 频率测量
+meter.get_freq(1,3000)  ////pin_num (1-24) ,测量频率高电平电压值,    接法:GC4.0接口强化板 接5.0电源板J2 pin ,强化板40pin为1脚
+
+//levelshift
+power.set_power_voltage(16,1800)  //已做校准,精度很好
+
+//blasi电流
+power.get_power_current(8)

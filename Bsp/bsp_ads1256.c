@@ -35,6 +35,7 @@ ads1256_dev_t dev_vol = {
     .step_cnt = 1,
     .sample_cnt = 0,
     .r_en=0,
+    .res_cali_en = 1,
 };
 
 ads1256_dev_t dev_cur = {

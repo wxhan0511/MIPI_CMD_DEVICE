@@ -70,9 +70,9 @@ void bsp_init()
 {
     bsp_retarget_init(&huart3);
     bsp_print_version_info();
-    bsp_lcd_reset(&lcd);
-    
+
     bsp_init_dwt();
+    bsp_lcd_reset(&lcd);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     
@@ -132,6 +132,7 @@ void bsp_init()
     bsp_blasi_pwm_init();
     enableTim1PWMOutput();//step2
     enableTim2PWMOutput();
+
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
      //bsp_CCP_Init();
@@ -150,7 +151,7 @@ void bsp_led_pwm_init(void)
     HAL_TIM_PWM_DeInit(&htim1);
     uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
     uint16_t psc =15;//分频
-    uint16_t pulse =525;//比较值
+    uint16_t pulse =10;//比较值 推荐占空比1%,50%特别亮
     uint16_t pulses_num = 11000;
     TIM1_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM1 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
@@ -165,7 +166,7 @@ void bsp_blasi_pwm_init(void)
     HAL_TIM_PWM_DeInit(&htim2);
     uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
     uint16_t psc =15;//分频
-    uint16_t pulse =525;//比较值
+    uint16_t pulse =10;//比较值
     uint16_t pulses_num = 11000;
     TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
@@ -307,7 +308,47 @@ void test_pwm(void)
     enableTim1PWMOutput();//step2
     enableTim2PWMOutput();
     app_delay(5000);
-    //disableTim1PWMOutput();//step3
+    disableTim1PWMOutput();
+    disableTim2PWMOutput();
+    //百1占空比5s
+
+    HAL_TIM_IC_DeInit(&htim1);
+    HAL_TIM_PWM_DeInit(&htim1);
+    HAL_TIM_IC_DeInit(&htim2);
+    HAL_TIM_PWM_DeInit(&htim2);
+    uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    uint16_t psc =15;//分频
+    uint16_t pulse =30;//比较值
+    uint16_t pulses_num = 11000;
+    TIM1_PWM_Init(arr,psc,pulse);
+    TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
+    enableTim1PWMOutput();//step2
+    enableTim2PWMOutput();
+    app_delay(5000);
+    disableTim1PWMOutput();
+    disableTim2PWMOutput();
+    //百3占空比5s
+    
+    
+    HAL_TIM_IC_DeInit(&htim1);
+    HAL_TIM_PWM_DeInit(&htim1);
+    HAL_TIM_IC_DeInit(&htim2);
+    HAL_TIM_PWM_DeInit(&htim2);
+    arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    psc =15;//分频
+    pulse =50;//比较值
+    pulses_num = 11000;
+    TIM1_PWM_Init(arr,psc,pulse);
+    TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
+    enableTim1PWMOutput();//step2
+    enableTim2PWMOutput();
+    app_delay(5000);
+    disableTim1PWMOutput();
+    disableTim2PWMOutput();
+    //百5占空比5s
+
 }
 //ANCHOR - DEMO CCP TEST FUNCTIONS
 void test_ccp(void)

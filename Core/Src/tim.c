@@ -34,9 +34,9 @@ TIM_SlaveConfigTypeDef   sSlaveConfig;
 /* Captured Value */
 __IO uint32_t            uwIC2Value = 0;
 /* Duty Cycle Value */
-__IO uint32_t            uwDutyCycle = 0;
+uint32_t            uwDutyCycle = 0;
 /* Frequency Value */
-__IO uint32_t            uwFrequency = 0;
+uint32_t            uwFrequency = 0;
 uint8_t get_freq_flag = 0;
 
 uint32_t sample_count = 0;

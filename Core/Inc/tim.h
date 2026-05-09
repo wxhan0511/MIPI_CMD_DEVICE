@@ -54,9 +54,9 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern __IO uint32_t            uwIC2Value;
 /* Duty Cycle Value */
-extern __IO uint32_t            uwDutyCycle;
+extern uint32_t            uwDutyCycle;
 /* Frequency Value */
-extern __IO uint32_t            uwFrequency;
+extern uint32_t            uwFrequency;
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

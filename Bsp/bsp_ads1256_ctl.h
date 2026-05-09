@@ -100,6 +100,7 @@ float raw_data_queue_get_data(uint16_t index);
 uint8_t raw_data_queue_get_index(uint16_t index);
 void sample_data_cali();
 extern volatile  uint8_t latest_sample_ch_sel[8];
+int wait_adc_one_round(uint32_t timeout_ms);
 #ifdef __cplusplus
 }
 #endif

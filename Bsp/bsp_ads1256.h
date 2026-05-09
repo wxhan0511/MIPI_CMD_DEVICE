@@ -93,6 +93,7 @@ typedef struct ads1256_dev
 	BSP_STATUS (*write_byte)(const struct ads1256_dev *handle,uint8_t data);
 	BSP_STATUS (*read_byte)(const struct ads1256_dev *handle,uint8_t *data);
 	uint8_t r_en;
+	uint8_t res_cali_en;
 }ads1256_dev_t;
 
 

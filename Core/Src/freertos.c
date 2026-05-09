@@ -61,19 +61,24 @@ const osTimerAttr_t led_timer_attributes = {
  */
 void MX_FREERTOS_Init(void)
 {
-  //show_mutexHandle = osMutexNew(&show_mutex_attributes);
-  //led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
+  show_mutexHandle = osMutexNew(&show_mutex_attributes);
+  led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
 
 #ifdef GTB
   //server_gtb_init();
 #endif
   //slave_rx_task_init();
   //slave_tx_task_init();
-
+ 
   //master_tx_task_init();
   //master_rx_task_init();
-  //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  //widget_main_task_init(); //LVGL UI task
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  if (defaultTaskHandle == NULL) {
+   printf("osThreadNew defaultTask FAILED\r\n");
+ } else {
+   printf("osThreadNew defaultTask OK handle=%p kernelState=%d\r\n", defaultTaskHandle, (int)osKernelGetState());
+ }
+  widget_main_task_init(); //LVGL UI task
   //power_task_init();
   task_sample_init();
 
@@ -94,7 +99,9 @@ void StartDefaultTask(void *argument)
   // osDelay(2000);
 
   // widget_main_task_init();
-  osTimerStart(led_timerHandle, 500);
+  printf("StartDefaultTask running\r\n");
+  //osTimerStart(led_timerHandle, 500);
+  printf("StartDefaultTask running\r\n");
   uint8_t key_flag = 0;
   uint8_t key_flag_1 = 0;
   uint8_t page0_flag = 0;
@@ -110,7 +117,7 @@ void StartDefaultTask(void *argument)
   {
     osDelay(10);
     lv_tick_inc(10);
-    if(1)
+    if(0)
     {
       // 临界区外获取信号量是安全的
       if(osMutexAcquire(show_mutexHandle, osWaitForever) == osOK) 
@@ -129,7 +136,6 @@ void StartDefaultTask(void *argument)
         {
           lv_screen_load_anim(page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
           printf("Current page is PAGE_2\r\n");
-          
         }
         printf("wait acquire show_mutex\r\n");
        

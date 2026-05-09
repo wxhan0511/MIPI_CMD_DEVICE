@@ -197,7 +197,7 @@ void HardFault_Handler(void)
   // ==============================================
   uint32_t *sp;
   __ASM volatile(
-      "TST lr, #4 \n"      // 判断LR的bit2，确定使用MSP还是PSP
+      "TST lr, #4 \n"      // 判断LR的bit4，确定使用MSP还是PSP
       "ITE EQ \n"
       "MRSEQ %0, MSP \n"   // 等于0时使用MSP
       "MRSNE %0, PSP \n"   // 等于1时使用PSP

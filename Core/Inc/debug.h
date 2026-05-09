@@ -45,7 +45,7 @@ extern "C" {
 #define M_SPI_INFO(fmt, ...)    printf(fmt, ##__VA_ARGS__)
 #define M_SPI_WARN(fmt, ...)    printf(fmt, ##__VA_ARGS__)
 #define M_SPI_ERROR(fmt, ...)   printf( fmt, ##__VA_ARGS__)
-#define M_SPI_DEBUG_ENABLE 1
+#define M_SPI_DEBUG_ENABLE 0
 #if M_SPI_DEBUG_ENABLE
     #define M_SPI_PRINTF(fmt, ...)  printf("[M_SPI] " fmt, ##__VA_ARGS__)
     #define M_SPI_DEBUG(fmt, ...)   printf( fmt, ##__VA_ARGS__)

@@ -6,7 +6,7 @@
 
 #include <math.h>
 
-
+#include "bsp_ads1256.h"
 #include "bsp_dwt.h"
 #include "task_sample.h"
 extern uint8_t freq_ch_vol_check_flag;
@@ -14,9 +14,7 @@ extern uint8_t freq_ch_vol_check_flag;
 volatile uint8_t ch0_flag = 8;
 volatile uint8_t ch1_flag = 8;
 volatile uint8_t ch2_flag = 8;
-
 volatile R_D_MODE r_d_mode = 0;
-volatile TEST_R_D_RES_LEVEL r_level_selected = OHM_NULL;
 
 const static uint8_t truth_table[8][3] = {
     {0, 0, 0}, // A2 A1 A0
@@ -84,7 +82,7 @@ void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level)
         bsp_d_trigger_set_channel(&d_8, 3, 1);                       // EN
     }
     M_SPI_DEBUG("selected r level: %d\r\n", r_level);
-    r_level_selected = r_level;
+    dev_vol.sample_res_gear_rd  = r_level;
 }
 void bsp_close_rd_select_channel()
 {

@@ -62,11 +62,10 @@ static uint8_t rx_buf[64] = {0};
 static uint8_t tx_buf[64] = {0};
 extern volatile TEST_R_D_RES_LEVEL r_level_selected;
 extern ads1256_dev_t dev_vol;
+//一轮完整的采样流程：
 #define WAIT_ADC_1_IDLE                 \
-    while (dev_vol.step_cnt != 0) { osDelay(1); } \
-    while (dev_vol.step_cnt != 6) { osDelay(1); } \
+    while (dev_vol.step_cnt != 6) { osDelay(10); } \
 extern volatile uint8_t r_en;
-extern volatile TEST_R_D_RES_LEVEL cal_r;
 extern __IO uint32_t            uwDutyCycle;
 /* Frequency Value */
 extern __IO uint32_t            uwFrequency;
@@ -107,11 +106,11 @@ uint8_t sample_vol_map[15][2] = {
 
 void task_sample_run()
 {
-
-
     SPI2_Slave_StartRx_IT();   // 启动SPI2从机64字节接收
     M_INT_HIGH();
     uint32_t t0=0;
+    uint32_t t_temp_start=0;
+    uint32_t t_temp_end=0;
     uint8_t power_id = 0;
     uint8_t en =0;
     uint8_t sample_vol_id= 0;
@@ -129,6 +128,14 @@ void task_sample_run()
     TEST_R_D_RES_LEVEL r_level = OHM_10_M;
     static const uint8_t power_order[8] = {0, 1, 2, 3, 8, 9, 10, 11};
     static const uint8_t set_power_order[20] = {0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15,16,17,18,19};
+/*PE14 PulseA,P10 pin6 for time testing*/
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = PULSE_A_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(PULSE_A_GPIO_Port, &GPIO_InitStruct);
+/*end*/
     for (;;)
     {
          if (spi_rx_flag == 1)
@@ -332,21 +339,24 @@ void task_sample_run()
                 enableTim2PWMOutput();
                 
                 break;
+            //档位,时间,算法需与4.0采样板保持一致
             case GET_RESISTANCE:
                 pin_p = rx_buf[2];
                 pin_n = rx_buf[3];
-                r_level = rx_buf[4];
-                cal_r = OHM_NULL;
-
-                bsp_rd_select_r_level(r_level);
-                bsp_rd_select_pin(pin_p, pin_n,1);
-                bsp_rd_select_mode(R_MODE);
-                M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, r_level);
-                bsp_ads1256_ch2_select(0);
+                dev_vol.sample_res_gear_rd = OHM_100_OHM;
                 dev_vol.channel_en =0b00000100; //只使能通道2
-               
+                bsp_ads1256_ch2_select(0);//先选择通道2的子通道0
+                bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
+                bsp_rd_select_mode(R_MODE);
+                bsp_rd_select_pin(pin_p, pin_n,1);
+                t_temp_start = HAL_GetTick();
+                HAL_GPIO_WritePin(PULSE_A_GPIO_Port, PULSE_A_Pin, GPIO_PIN_SET); //测试用
+                printf("t_temp_start: %lu\r\n", t_temp_start);
+                
+                M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
+
                 t0 = HAL_GetTick();
-                while (latest_sample_ch_sel[2] != 0 ) // 等待ADS1256通道2的数据准备好
+                while (latest_sample_ch_sel[2] != 0 ) // 等待ADS1256通道2的子通道切到0,且最新采样数据已准备好
                 {
                     if ((HAL_GetTick() - t0) >= 5000U)
                     {
@@ -357,18 +367,26 @@ void task_sample_run()
                     }
                     osDelay(1);
                 }
-             
-                while(dev_vol.work_channel != 2){osDelay(1);};
-                WAIT_ADC_1_IDLE
-                bsp_delay_ms(5000);//等待稳定,IC内部为电路,不是纯电阻,需要等待稳定
-                dev_vol.channel_en =0b11111111; //使能所有通道
+                wait_adc_one_round(1000);//至少等6轮,从档六开始切
+                wait_adc_one_round(1000);
+                wait_adc_one_round(1000);
+                wait_adc_one_round(1000);
+                wait_adc_one_round(1000);
+                wait_adc_one_round(1000);
+                wait_adc_one_round(1000);
+                // bsp_delay_ms(100);
+                HAL_GPIO_WritePin(PULSE_A_GPIO_Port, PULSE_A_Pin, GPIO_PIN_RESET); //测试用
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
-                M_SPI_DEBUG("cal_r: %d, r_level_selected: %d\r\n", cal_r, r_level_selected);
+                t_temp_end = HAL_GetTick();
+                printf("t_temp_end: %lu\r\n", t_temp_end);
+                printf("resistance measurement time: %lu ms\r\n", t_temp_end - t_temp_start);
                 M_SPI_DEBUG( "GET RESISTANCE: %f\r\n", latest_sample_data[2]);
                 M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
-                printf("pin_p: %d, pin_n: %d, resistance: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
+                printf("pin_p: %d, pin_n: %d, resistance: %f m\r\n", pin_p, pin_n, latest_sample_data[2]/1000000);
+                printf("final sample_res_gear_rd: %d\r\n", dev_vol.sample_res_gear_rd);
                 bsp_rd_select_mode(R_D_MODE_NULL);
-                //bsp_rd_select_pin(pin_p, pin_n,0);
+                bsp_rd_select_pin(pin_p, pin_n,0);
+                dev_vol.channel_en =0b11111111; //使能所有通道
                 break;
             case GET_DIODE:
                 pin_p = rx_buf[2];
@@ -376,11 +394,10 @@ void task_sample_run()
                 bsp_rd_select_r_level(OHM_4_point_7_K);
                 bsp_rd_select_pin(pin_p, pin_n,1);
                 bsp_rd_select_mode(D_MODE);
-                M_SPI_DEBUG("GET_DIODE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, r_level);
-                                pin_p = rx_buf[2];
+                M_SPI_DEBUG("GET_DIODE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
                 bsp_ads1256_ch2_select(0);
                 while(dev_vol.work_channel != 2){osDelay(1);};
-                WAIT_ADC_1_IDLE
+                wait_adc_one_round(1000);
 
                 M_SPI_DEBUG("Waiting for ADS1256 channel 2 sub channel 0 data ready...\r\n");
                 t0 = HAL_GetTick();
@@ -397,7 +414,7 @@ void task_sample_run()
                 }
 
                 memcpy(&tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
-                //bsp_close_64pin_channel();//attention:测完电阻后要关闭64pin的通道,避免干扰其他测量
+                
                 M_SPI_DEBUG( "GET DIODE: %f\r\n", latest_sample_data[2]);
                 printf("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
                 bsp_rd_select_pin(pin_p, pin_n,0);
