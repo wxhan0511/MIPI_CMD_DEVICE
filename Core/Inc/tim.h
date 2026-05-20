@@ -47,16 +47,13 @@ void disableTim1PWMOutput(void);
 void enableTim2PWMOutput(void);
 void disableTim2PWMOutput(void);
 void app_delay(uint32_t delay_ms);
+void TIM1_Calculate_Results(void);
 /* USER CODE BEGIN EFP */
 /* USER CODE BEGIN Prototypes */
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
-extern __IO uint32_t            uwIC2Value;
-/* Duty Cycle Value */
-extern uint32_t            uwDutyCycle;
-/* Frequency Value */
-extern uint32_t            uwFrequency;
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

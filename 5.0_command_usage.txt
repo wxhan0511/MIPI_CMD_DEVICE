@@ -55,24 +55,24 @@
 power.read_version()
 
 meter.get_24pin_voltage(1)
-power.get_power_voltage(1)
+power.get_voltage(1)
 power.set_all_power_en(1,0,1,0,1,0,1,1)
-power.set_power_en(1,0)
-power.get_power_voltage(1)
-power.get_power_voltage(0)
-power.get_power_voltage(1)
+power.set_en(1,0)
+power.get_voltage(1)
+power.get_voltage(0)
+power.get_voltage(1)
 power.set_all_power_en(1,0,1,0,1,0,1,1)
 power.set_power_en(1,0)
 power.get_power_current(0)
 //设置8路电压
-power.set_power_en(0,0)
-power.set_power_en(1,0)
-power.set_power_en(2,0)
-power.set_power_en(3,0)
-power.set_power_en(4,0)
-power.set_power_en(5,0)
-power.set_power_en(6,0)
-power.set_power_en(7,0)
+power.set_en(0,0)
+power.set_en(1,0)
+power.set_en(2,0)
+power.set_en(3,0)
+power.set_en(4,0)
+power.set_en(5,0)
+power.set_en(6,0)
+power.set_en(7,0)
 i=7
 while( i>0 )
 do
@@ -91,7 +91,7 @@ end
 //    OHM_100_OHM,
 //    OHM_4_point_7_K,
 // pin_p和pin_n从1开始计数,不能选一样的
-meter.get_resistance(29,31,2)   // pin_p ,pin_n (1-64) ,r_level(如上) 接屏幕接口(p2,p3,注意方向)
+meter.get_resistance(29,31)   // pin_p ,pin_n (1-64) ,r_level(如上) 接屏幕接口(p2,p3,注意方向)
 meter.get_diode(29,31)            // pin_p ,pin_n (1-64)  接屏幕接口(p2,p3,注意方向) 二极管长脚正 ,pin17是地
 //电阻测试
 1.红表笔接VDDI,黑表笔接测量pin；
