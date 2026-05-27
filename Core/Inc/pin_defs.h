@@ -117,7 +117,7 @@ extern "C"
 #define DAC_BSY1_Pin GPIO_PIN_1
 #define DAC_BSY1_GPIO_Port GPIOB
 
-#define DAC_LDAC2_Pin GPIO_PIN_5   
+#define DAC_LDAC2_Pin GPIO_PIN_5
 #define DAC_LDAC2_GPIO_Port GPIOB
 #define DAC_BSY2_Pin GPIO_PIN_7
 #define DAC_BSY2_GPIO_Port GPIOB
@@ -199,7 +199,7 @@ extern "C"
  * OE Pin Definitions
  * ============================================================================ */
 #define OE_GPIO_Port GPIOA
-#define OE_Pin GPIO_PIN_12  
+#define OE_Pin GPIO_PIN_12
 #define DAC_LS_GPIO_Port GPIOA
 #define DAC_LS_Pin GPIO_PIN_4
 
@@ -214,12 +214,11 @@ extern "C"
  * Pulse Pin Definitions
  * ============================================================================ */
 #define PULSE_A_Pin GPIO_PIN_14
-#define PULSE_A_GPIO_Port GPIOE
+#define PULSE_A_GPIO_Port GPIOC
 #define PULSE_B_Pin GPIO_PIN_15
 #define PULSE_B_GPIO_Port GPIOE
 
-
-#define LCD_BL_EN_Pin  GPIO_PIN_5
+#define LCD_BL_EN_Pin GPIO_PIN_5
 #define LCD_BL_EN_GPIO_Port GPIOE
 #ifdef __cplusplus
 }

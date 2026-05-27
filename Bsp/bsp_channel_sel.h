@@ -21,14 +21,14 @@ typedef enum
     BIAS_P_MODE = 0,
     BIAS_1V_MODE,
     BIAS_N_MODE,
-}BIAS_MODE;
+} BIAS_MODE;
 
 typedef enum
 {
     D_MODE = 0,
     R_MODE = 1,
     R_D_MODE_NULL = 2,
-}R_D_MODE;
+} R_D_MODE;
 
 typedef enum
 {
@@ -65,19 +65,19 @@ typedef enum
     CUR_VSP = 5,
     CUR_VSN = 6,
     VOL_S = 7,
-}TEST_CUR_CHANNEL;
+} TEST_CUR_CHANNEL;
 
 typedef enum
 {
     GEAR_uA = 0,
     GEAR_mA = 1,
-}TEST_CUR_GEAR;
+} TEST_CUR_GEAR;
 
 typedef enum
 {
     VOL_TEST_V_BIG = 1,
     VOL_TEST_V_SMALL = 0,
-}TEST_VOL_GEAR;
+} TEST_VOL_GEAR;
 
 typedef enum
 {
@@ -89,9 +89,9 @@ typedef enum
     AVDD_RLY,
     VDD_RLY,
     ELVDD_RLY,
-}RLY_INDEX;
+} RLY_INDEX;
 
-//ADS1256选通宏
+// ADS1256选通宏
 typedef enum
 {
     VCC_V = 0,
@@ -103,27 +103,27 @@ typedef enum
     AVDD_V,
     VSP_V,
 
-}AI0_INDEX;
+} AI0_INDEX;
 typedef enum
 {
     AD_V = 0,
-    ELVDD_I=2,
-    ELVSS_I=3,
-    AD_I_BLAS_I=4,
-    AD_I_BLAS_V=5,
-    AD_I_BL=6,
-    AVDD_I=7,
-}AI1_INDEX;
+    ELVDD_I = 2,
+    ELVSS_I = 3,
+    AD_I_BLAS_I = 4,
+    AD_I_BLAS_V = 5,
+    AD_I_BL = 6,
+    AVDD_I = 7,
+} AI1_INDEX;
 typedef enum
 {
     AD_R_D = 0,
-    AD_24PinV=2,
-    AD_V_VBAT=3,
-    AD_V_BLAS_I=4,
-    BLAS_V=5,
-    AD_V_BL=6,
-    AD_V_N=7,
-}AI2_INDEX;
+    AD_24PinV = 2,
+    AD_V_VBAT = 3,
+    AD_V_BLAS_I = 4,
+    BLAS_V = 5,
+    AD_V_BL = 6,
+    AD_V_N = 7,
+} AI2_INDEX;
 
 extern volatile uint8_t ch0_flag;
 extern volatile uint8_t ch1_flag;
@@ -131,49 +131,60 @@ extern volatile uint8_t ch2_flag;
 
 /* Exported macro ------------------------------------------------------------*/
 
-//ANCHOR - 电源控制宏
-#define VSN_ENABLE_POWEREN_N_1()    bsp_d_trigger_set_channel(&d_3, 0, 0);
-#define VSN_DISABLE_POWEREN_N_1()   bsp_d_trigger_set_channel(&d_3, 0, 1);
-#define ELVSS_ENABLE_POWEREN_N_2()    bsp_d_trigger_set_channel(&d_3, 1, 0);
-#define ELVSS_DISABLE_POWEREN_N_2()   bsp_d_trigger_set_channel(&d_3, 1, 1);
-#define ELVDD_ENABLE_POWEREN_P_6()    bsp_d_trigger_set_channel(&d_3, 2 , 1);
-#define ELVDD_DISABLE_POWEREN_P_6()   bsp_d_trigger_set_channel(&d_3, 2 , 0);
-#define VDD_ENABLE_POWEREN_P_5()    bsp_d_trigger_set_channel(&d_3, 3, 1);
-#define VDD_DISABLE_POWEREN_P_5()   bsp_d_trigger_set_channel(&d_3, 3, 0);
-#define AVDD_ENABLE_POWEREN_P_4()    bsp_d_trigger_set_channel(&d_3, 4, 1);
-#define AVDD_DISABLE_POWEREN_P_4()   bsp_d_trigger_set_channel(&d_3, 4, 0);
-#define VSP_ENABLE_POWEREN_P_3()    bsp_d_trigger_set_channel(&d_3, 5, 1);
-#define VSP_DISABLE_POWEREN_P_3()   bsp_d_trigger_set_channel(&d_3, 5,0);
-#define IOVCC_ENABLE_POWEREN_P_2()    bsp_d_trigger_set_channel(&d_3, 6, 1);
-#define IOVCC_DISABLE_POWEREN_P_2()   bsp_d_trigger_set_channel(&d_3, 6, 0);
-#define VCC_ENABLE_POWEREN_P_1()    bsp_d_trigger_set_channel(&d_3, 7, 1);
-#define VCC_DISABLE_POWEREN_P_1()   bsp_d_trigger_set_channel(&d_3, 7, 0);
-//ANCHOR - level shifter控制宏
-#define LEVEL_SHIFT_ENABLE()    bsp_d_trigger_set_channel(&d_8, 4, 1);
-#define LEVEL_SHIFT_DISABLE()   bsp_d_trigger_set_channel(&d_8, 4, 0);
+// ANCHOR - 电源控制宏
+#define VSN_ENABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 0, 0);
+#define VSN_DISABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 0, 1);
+#define ELVSS_ENABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 1, 0);
+#define ELVSS_DISABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 1, 1);
+#define ELVDD_ENABLE_POWEREN_P_6() bsp_d_trigger_set_channel(&d_3, 2, 1);
+#define ELVDD_DISABLE_POWEREN_P_6() bsp_d_trigger_set_channel(&d_3, 2, 0);
+#define VDD_ENABLE_POWEREN_P_5() bsp_d_trigger_set_channel(&d_3, 3, 1);
+#define VDD_DISABLE_POWEREN_P_5() bsp_d_trigger_set_channel(&d_3, 3, 0);
+#define AVDD_ENABLE_POWEREN_P_4() bsp_d_trigger_set_channel(&d_3, 4, 1);
+#define AVDD_DISABLE_POWEREN_P_4() bsp_d_trigger_set_channel(&d_3, 4, 0);
+#define VSP_ENABLE_POWEREN_P_3() bsp_d_trigger_set_channel(&d_3, 5, 1);
+#define VSP_DISABLE_POWEREN_P_3() bsp_d_trigger_set_channel(&d_3, 5, 0);
+#define IOVCC_ENABLE_POWEREN_P_2() bsp_d_trigger_set_channel(&d_3, 6, 1);
+#define IOVCC_DISABLE_POWEREN_P_2() bsp_d_trigger_set_channel(&d_3, 6, 0);
+#define VCC_ENABLE_POWEREN_P_1() bsp_d_trigger_set_channel(&d_3, 7, 1);
+#define VCC_DISABLE_POWEREN_P_1() bsp_d_trigger_set_channel(&d_3, 7, 0);
+
+#define VSN_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 0);
+#define ELVSS_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 1);
+#define ELVDD_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 2);
+#define VDD_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 3);
+#define AVDD_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 4);
+#define VSP_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 5);
+#define IOVCC_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 6);
+#define VCC_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 7);
+#define LEVEL_SHIFT_STATUS bsp_d_trigger_get_channel_state(&d_8, 4);
+
+// ANCHOR - level shifter控制宏
+#define LEVEL_SHIFT_ENABLE() bsp_d_trigger_set_channel(&d_8, 4, 1);
+#define LEVEL_SHIFT_DISABLE() bsp_d_trigger_set_channel(&d_8, 4, 0);
 
 /* Exported functions prototypes ---------------------------------------------*/
 
 void bsp_channel_sel_init(void);
-//电阻二极管
+// 电阻二极管
 void bsp_rd_select_mode(const R_D_MODE mode);
 void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level);
 void bsp_close_rd_select_channel();
-void bsp_rd_select_pin(uint16_t pin_p,  uint16_t pin_n , uint8_t en);
-//电压
+void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n, uint8_t en);
+// 电压
 static void bsp_vol_select_pin_8_to_1(const uint16_t pin_group);
 void bsp_vol_select_pin_64_to_1(const uint16_t pin, const uint8_t en);
 void bsp_bias_p_select_pin(const uint8_t group, const uint16_t pin);
 void bsp_bias_n_select_pin(const uint8_t group, const uint16_t pin);
-//测试模式选择
+// 测试模式选择
 void bsp_test_select_mode(const TEST_MODE mode);
 void bsp_limit_current_reset();
 
-void bsp_rly_gear_set(TEST_CUR_GEAR gear ,RLY_INDEX rly_index);
-void bsp_select_24pin_channel(uint16_t pin , uint8_t en);
+void bsp_rly_gear_set(TEST_CUR_GEAR gear, RLY_INDEX rly_index);
+void bsp_select_24pin_channel(uint16_t pin, uint8_t en);
 void bsp_close_24pin_channel();
 void bsp_close_40pin_channel();
 void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index);
 void bsp_ads1256_ch1_select(const AI1_INDEX ai1_index);
 void bsp_ads1256_ch2_select(const AI2_INDEX ai2_index);
-#endif //BSP_CHANNEL_SEL_H
+#endif // BSP_CHANNEL_SEL_H

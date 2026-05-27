@@ -12,12 +12,13 @@
 #include "bsp.h"
 #include "task_manage.h"
 
-typedef enum {
+typedef enum
+{
     POWER_CMD_STATUS_SUCCESS = 0,
-    POWER_CMD_STATUS_FAILED,          
-    POWER_CMD_STATUS_BUSY, 
-    POWER_CMD_STATUS_TIMEOUT,                 
-    POWER_CMD_STATUS_MAX              
+    POWER_CMD_STATUS_FAILED,
+    POWER_CMD_STATUS_BUSY,
+    POWER_CMD_STATUS_TIMEOUT,
+    POWER_CMD_STATUS_MAX
 } PowerCmdStatus_E;
 
 typedef enum
@@ -37,36 +38,41 @@ typedef enum
     GET_FREQUENCY = 0x1C,
     SEL_PIN_24 = 0x1D,
     SEL_PIN_PN = 0x1E,
-    GET_24PIN_VOLTAGE = 0x1F
+    GET_24PIN_VOLTAGE = 0x1F,
+    NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 
-typedef struct {
+typedef struct
+{
     uint8_t frame_header;
-    uint8_t cmd_type;                 
+    uint8_t cmd_type;
     uint8_t power_id;
-    uint8_t reserved[1];                
-    union {
-        uint8_t bytes[4];        
-        float float_value;       
+    uint8_t reserved[1];
+    union
+    {
+        uint8_t bytes[4];
+        float float_value;
     } value;
-                        
+
 } SetPowerDataFrame_S;
 
-typedef struct {
-    uint8_t frame_header;             
-    uint8_t cmd_type;                 
-    uint8_t power_id;               
-    PowerCmdStatus_E cmd_status;      
-    union {
-        uint8_t bytes[12];            
-        float float_value[3];         
-    } value;               
+typedef struct
+{
+    uint8_t frame_header;
+    uint8_t cmd_type;
+    uint8_t power_id;
+    PowerCmdStatus_E cmd_status;
+    union
+    {
+        uint8_t bytes[12];
+        float float_value[3];
+    } value;
 } GetPowerDataFrame_S;
 
 typedef union
 {
-    uint8_t bytes[4];            
-    float float_value; 
+    uint8_t bytes[4];
+    float float_value;
 } LimitValue_U;
 
 typedef struct
@@ -77,7 +83,7 @@ typedef struct
 
     GetPowerDataFrame_S get_power_data_frame;
     SetPowerDataFrame_S set_power_data_frame;
-    PowerCmdStatus_E cmd_status; 
+    PowerCmdStatus_E cmd_status;
     LimitValue_U limit_value;
     uint8_t power_switch[8]; // 8个电源开关状态
 
@@ -88,12 +94,22 @@ typedef struct
     uint8_t h0;
     uint8_t h1;
 } protocol_header_t;
-
+typedef struct
+{
+    __attribute__((aligned(4))) float vol_channel[8];
+    __attribute__((aligned(4))) float cur_channel[8];
+    __attribute__((aligned(4))) uint8_t vol_gear[8];
+    __attribute__((aligned(4))) uint8_t cur_gear[8];
+    __attribute__((aligned(4))) float print_vol_channel[8];
+    __attribute__((aligned(4))) float print_cur_channel[8];
+    __attribute__((aligned(4))) uint8_t print_vol_gear[8];
+    __attribute__((aligned(4))) uint8_t print_cur_gear[8];
+} sample_data_t;
+// ANCHOR - 任务相关
 void task_sample_init(void);
 void task_sample_run();
-/* 在 SPI 中断回调里调用（ISR上下文） */
-void task_sample_spi_frame_isr(const uint8_t *rx, uint16_t len);
-
-/* 供 SPI 层取当前要回传的帧 */
-void task_sample_get_tx_frame(uint8_t *out, uint16_t len);
+void task_sample_suspend(void);
+void task_sample_resume(void);
+void task_sample_task_mutex_acquire(void);
+void task_sample_task_mutex_release(void);
 #endif /* _TASK_SAMPLE_H_ */

@@ -38,7 +38,7 @@ static void bsp_test_latch(void);
 void test_pwm(void);
 void test_ccp(void);
 extern SPI_HandleTypeDef hspi2;
-uint8_t id = 0x01; 
+uint8_t id = 0x01;
 
 /**
  * @brief Firmware name stored in specific section
@@ -75,7 +75,7 @@ void bsp_init()
     bsp_lcd_reset(&lcd);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
-    
+
     bsp_d_trigger_init(d_1);
     bsp_d_trigger_init(d_2);
     bsp_d_trigger_init(d_3);
@@ -84,12 +84,12 @@ void bsp_init()
     bsp_d_trigger_init(d_6);
     bsp_d_trigger_init(d_7);
     bsp_d_trigger_init(d_8);
-    bsp_d_trigger_set(enabled); //验证通过
+    bsp_d_trigger_set(enabled); // 验证通过
     bsp_close_24pin_channel();
     bsp_close_40pin_channel();
-    //VSN的电流不对,测一下
-    
-    bsp_rly_gear_set(GEAR_mA, VSN_RLY); //⚠️⚠️⚠️需放最前
+    // VSN的电流不对,测一下
+
+    bsp_rly_gear_set(GEAR_mA, VSN_RLY); // ⚠️⚠️⚠️需放最前
     bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
     bsp_rly_gear_set(GEAR_mA, VCC_RLY);
     bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
@@ -98,87 +98,81 @@ void bsp_init()
     bsp_rly_gear_set(GEAR_mA, VDD_RLY);
     bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
 
-    
-    //bsp_test_spi_flash();
+    // bsp_test_spi_flash();
     calibration_set_defaults();
     W25Q256JVEQ_INFO("Default calibration values have been set\r\n");
-    //calibration_save();
-    //calibration_load();
-    
+    // calibration_save();
+    // calibration_load();
+
     // while(1);
     // M_CS_Pin_L();
     // HAL_SPI_Transmit(&hspi2, (uint8_t*)"Hello Flash", 11, HAL_MAX_DELAY);
     // M_CS_Pin_H();
-    
-/*-------------ADC START---------------------------*/
+
+    /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
-/*-------------ADC END---------------------------*/
-    
-    //Master mode and listening are mutually exclusive 
+    /*-------------ADC END---------------------------*/
+
+    // Master mode and listening are mutually exclusive
 #ifdef I2C_SLAVE_I2C2_LISTEN
     HAL_I2C_DisableListen_IT(&hi2c2);
 #endif
-/*-------------DAC and LIMIT CURRENT START----------*/
-    
+    /*-------------DAC and LIMIT CURRENT START----------*/
+
     bsp_dac_init();
-    
-    
+
 /*-------------DAC and LIMIT CURRENT END------------*/
 #ifdef I2C_SLAVE_I2C2_LISTEN
     HAL_I2C_EnableListen_IT(&hi2c2);
 #endif
     /*-------------PWM START----------------*/
-    bsp_led_pwm_init();//step1
-    bsp_blasi_pwm_init();
-    enableTim1PWMOutput();//step2
+    bsp_led_pwm_init(10);   // step1
+    bsp_blasi_pwm_init(10); // step1
+    enableTim1PWMOutput();  // step2
     enableTim2PWMOutput();
 
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
-     //bsp_CCP_Init();
-    //test_ccp();
+    // bsp_CCP_Init();
+    // test_ccp();
     /*-------------CCP END----------------*/
-    
-    //MX_USB_OTG_HS_PCD_Init();
-    //MX_USB_DEVICE_Init();
+
+    // MX_USB_OTG_HS_PCD_Init();
+    // MX_USB_DEVICE_Init();
     MIPI_CMD_INFO("------------- bsp init finish -------------\r\n");
-    
 }
 
-void bsp_led_pwm_init(void)
+void bsp_led_pwm_init(uint8_t pulse)
 {
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
-    uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    uint16_t psc =15;//分频
-    uint16_t pulse =10;//比较值 推荐占空比1%,50%特别亮
+    uint16_t arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    uint16_t psc = 15;   // 分频
+    // uint16_t pulse =10;//比较值 推荐占空比1%,50%特别亮
     uint16_t pulses_num = 11000;
-    TIM1_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM1_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM1 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
-    //TIM1_Generate_N_Pulses(pulses_num);//非使能
+    // TIM1_Generate_N_Pulses(pulses_num);//非使能
     printf("generate %d pulses\r\n", pulses_num);
-    //推荐10KHz，占空比分辨率0.1%
-    
+    // 推荐10KHz，占空比分辨率0.1%
 }
-void bsp_blasi_pwm_init(void)
+void bsp_blasi_pwm_init(uint8_t pulse)
 {
     HAL_TIM_IC_DeInit(&htim2);
     HAL_TIM_PWM_DeInit(&htim2);
-    uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    uint16_t psc =15;//分频
-    uint16_t pulse =10;//比较值
+    uint16_t arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    uint16_t psc = 15;   // 分频
+    // uint16_t pulse = 10; // 比较值
     uint16_t pulses_num = 11000;
-    TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
-    //推荐10KHz，占空比分辨率0.1%
-    
+    // 推荐10KHz，占空比分辨率0.1%
 }
 void bsp_CCP_Init(void)
 {
     TIM1_CCP_Init();
     MIPI_CMD_INFO("------------- bsp tim1 ccp init finish -------------\r\n");
 }
-
 
 /**
  * @brief Print system version information
@@ -190,13 +184,12 @@ static void bsp_print_version_info(void)
     MIPI_CMD_INFO("MIPI CMD DEVICE Board System Information\r\n");
     MIPI_CMD_INFO("================================================\r\n");
     MIPI_CMD_INFO("Firmware Name: %s\r\n", fw_name);
-    MIPI_CMD_INFO("Software Version: %d.%d.%d.%d\r\n", 
-                       sw_version[0], sw_version[1], sw_version[2], sw_version[3]);
+    MIPI_CMD_INFO("Software Version: %d.%d.%d.%d\r\n",
+                  sw_version[0], sw_version[1], sw_version[2], sw_version[3]);
     MIPI_CMD_INFO("Hardware Name: %s\r\n", hw_name);
-    MIPI_CMD_INFO("Hardware Version: %d.%d.%d.%d\r\n", 
-                       hw_version[0], hw_version[1], hw_version[2], hw_version[3]);
+    MIPI_CMD_INFO("Hardware Version: %d.%d.%d.%d\r\n",
+                  hw_version[0], hw_version[1], hw_version[2], hw_version[3]);
     MIPI_CMD_INFO("================================================\r\n");
-
 }
 
 /**
@@ -208,7 +201,7 @@ static HAL_StatusTypeDef bsp_init_adc_system(void)
     /* Configure ADS1256 device parameters */
     dev_vol.work_channel = 0;
     dev_vol.channel_en = 0b11111111; // sample all 8 channels
-    dev_vol.auto_change_gear = 0;   /* Disable auto gear change */
+    dev_vol.auto_change_gear = 0;    /* Disable auto gear change */
 #ifdef IC_POWER_BOARD_ADS1256
     dev_ic_power_board.work_channel = 0;
     dev_ic_power_board.channel_en = 0b11111111;
@@ -231,57 +224,63 @@ static HAL_StatusTypeDef bsp_init_adc_system(void)
     bsp_select_sample_gear(dev_vol.sample_res_gear);
 #endif
     HAL_NVIC_SetPriority(EXTI2_IRQn, 2, 0);
-    HAL_NVIC_EnableIRQ(EXTI2_IRQn);//ADC_DRDY_1 PA2
+    HAL_NVIC_EnableIRQ(EXTI2_IRQn); // ADC_DRDY_1 PA2
     MIPI_CMD_INFO("------------- bsp init ads1256 finish -------------\r\n");
 }
 
-//ANCHOR - FLASH STRESS TEST
+// ANCHOR - FLASH STRESS TEST
 static void bsp_test_spi_flash(void)
 {
     MIPI_CMD_INFO("=== SPI Flash Stress Test Start ===\r\n");
     MIPI_CMD_INFO("Target: 32MB Flash, 4KB Sector-based Reliability Test\r\n");
-    
-    uint32_t test_cycles = 20;      // 测试循环次数
-    uint32_t sector_count = 10;     // 每轮随机选择的扇区数
+
+    uint32_t test_cycles = 20;  // 测试循环次数
+    uint32_t sector_count = 10; // 每轮随机选择的扇区数
     static uint8_t write_buf[Flash_SectorSize];
     static uint8_t read_buf[Flash_SectorSize];
     uint32_t total_errors = 0;
     uint32_t start_time = HAL_GetTick();
 
-    for (uint32_t cycle = 1; cycle <= test_cycles; cycle++) {
+    for (uint32_t cycle = 1; cycle <= test_cycles; cycle++)
+    {
         MIPI_CMD_INFO("Cycle [%lu/%lu] running...\r\n", cycle, test_cycles);
-        
-        for (uint32_t s = 0; s < sector_count; s++) {
+
+        for (uint32_t s = 0; s < sector_count; s++)
+        {
             // 随机选择一个扇区地址 (必须是 4KB 对齐)
             // 使用 HAL_GetTick() 作为简单的随机源
             uint32_t random_val = (HAL_GetTick() * (s + 1) * cycle);
             uint32_t sector_addr = (random_val % (Flash_TotalSize / Flash_SectorSize)) * Flash_SectorSize;
-            
+
             // 1. 擦除扇区
             bsp_flash_erase_sector(sector_addr);
-            
+
             // 2. 准备随机/变化的数据模式
-            for (uint32_t i = 0; i < Flash_SectorSize; i++) {
+            for (uint32_t i = 0; i < Flash_SectorSize; i++)
+            {
                 write_buf[i] = (uint8_t)(cycle + s + i);
             }
-            
+
             // 3. 写入数据
             // 注意：bsp_flash_write 的第三个参数是 uint16_t, Flash_SectorSize 是 4096 (OK)
             bsp_flash_write(write_buf, sector_addr, Flash_SectorSize);
-            
+
             // 4. 读取校验
             memset(read_buf, 0, Flash_SectorSize);
             bsp_flash_read(read_buf, sector_addr, Flash_SectorSize);
-            
+
             // 5. 比对数据
             uint32_t sector_errors = 0;
-            for (uint32_t i = 0; i < Flash_SectorSize; i++) {
-                if (read_buf[i] != write_buf[i]) {
+            for (uint32_t i = 0; i < Flash_SectorSize; i++)
+            {
+                if (read_buf[i] != write_buf[i])
+                {
                     sector_errors++;
                 }
             }
-            
-            if (sector_errors > 0) {
+
+            if (sector_errors > 0)
+            {
                 total_errors += sector_errors;
                 MIPI_CMD_ERROR("Error at Sector 0x%08lX: %lu bytes mismatch!\r\n", sector_addr, sector_errors);
             }
@@ -292,69 +291,69 @@ static void bsp_test_spi_flash(void)
     MIPI_CMD_INFO("=== Stress Test Finished ===\r\n");
     MIPI_CMD_INFO("Total Duration: %lu ms\r\n", end_time - start_time);
     MIPI_CMD_INFO("Total Tested Sectors: %lu\r\n", test_cycles * sector_count);
-    if (total_errors == 0) {
+    if (total_errors == 0)
+    {
         MIPI_CMD_INFO("Result: PASS (No errors detected)\r\n");
-    } else {
+    }
+    else
+    {
         MIPI_CMD_ERROR("Result: FAIL (%lu total byte errors)\r\n", total_errors);
     }
 }
 
-
-//ANCHOR - DEMO PWM TEST FUNCTIONS
+// ANCHOR - DEMO PWM TEST FUNCTIONS
 void test_pwm(void)
 {
-    bsp_led_pwm_init();//step1
-    bsp_blasi_pwm_init();
-    enableTim1PWMOutput();//step2
+    bsp_led_pwm_init(10); // step1
+    bsp_blasi_pwm_init(10);
+    enableTim1PWMOutput(); // step2
     enableTim2PWMOutput();
     app_delay(5000);
     disableTim1PWMOutput();
     disableTim2PWMOutput();
-    //百1占空比5s
+    // 百1占空比5s
 
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
     HAL_TIM_IC_DeInit(&htim2);
     HAL_TIM_PWM_DeInit(&htim2);
-    uint16_t arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    uint16_t psc =15;//分频
-    uint16_t pulse =30;//比较值
+    uint16_t arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    uint16_t psc = 15;   // 分频
+    uint16_t pulse = 30; // 比较值
     uint16_t pulses_num = 11000;
-    TIM1_PWM_Init(arr,psc,pulse);
-    TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM1_PWM_Init(arr, psc, pulse);
+    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
-    enableTim1PWMOutput();//step2
+    enableTim1PWMOutput(); // step2
     enableTim2PWMOutput();
     app_delay(5000);
     disableTim1PWMOutput();
     disableTim2PWMOutput();
-    //百3占空比5s
-    
-    
+    // 百3占空比5s
+
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
     HAL_TIM_IC_DeInit(&htim2);
     HAL_TIM_PWM_DeInit(&htim2);
-    arr =1050;//周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    psc =15;//分频
-    pulse =50;//比较值
+    arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
+    psc = 15;   // 分频
+    pulse = 50; // 比较值
     pulses_num = 11000;
-    TIM1_PWM_Init(arr,psc,pulse);
-    TIM2_PWM_Init(arr,psc,pulse);//arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM1_PWM_Init(arr, psc, pulse);
+    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
-    enableTim1PWMOutput();//step2
+    enableTim1PWMOutput(); // step2
     enableTim2PWMOutput();
     app_delay(5000);
     disableTim1PWMOutput();
     disableTim2PWMOutput();
-    //百5占空比5s
-
+    // 百5占空比5s
 }
-//ANCHOR - DEMO CCP TEST FUNCTIONS
+// ANCHOR - DEMO CCP TEST FUNCTIONS
 void test_ccp(void)
 {
-    bsp_CCP_Init();//step1
-    enableTim1CaptureCompareInterrupt();//step2
+    bsp_CCP_Init();                      // step1
+    enableTim1CaptureCompareInterrupt(); // step2
     app_delay(5000);
-    disableTim1CaptureCompareInterrupt();//step3
+    disableTim1CaptureCompareInterrupt(); // step3
 }

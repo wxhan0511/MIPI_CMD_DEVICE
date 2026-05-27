@@ -12,27 +12,25 @@
 #define __LED_TASK_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Includes ------------------------------------------------------------------*/
 #include "cmsis_os2.h"
-/* Exported types ------------------------------------------------------------*/
-extern osTimerId_t led_timerHandle;
-extern const osTimerAttr_t led_timer_attributes;
+    /* Exported types ------------------------------------------------------------*/
+    extern osTimerId_t led_timerHandle;
+    extern const osTimerAttr_t led_timer_attributes;
 
-/* Exported constants --------------------------------------------------------*/
+    /* Exported constants --------------------------------------------------------*/
 
-/* Exported macro ------------------------------------------------------------*/
+    /* Exported macro ------------------------------------------------------------*/
 
-/* Exported functions prototypes ---------------------------------------------*/
+    /* Exported functions prototypes ---------------------------------------------*/
 
 #ifdef __cplusplus
 }
 #endif
 
 void led_timer_callback(void *argument);
-
 #endif /* __LED_TASK_H */
-
-

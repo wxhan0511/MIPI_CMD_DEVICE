@@ -16,4 +16,6 @@ typedef enum
 
 void com_handle_i2c(const uint8_t *rx, uint8_t *tx);
 void com_handle_i2c_init(void);
-#endif //COM_HANDLE_H
+BSP_STATUS
+com_handle_spi(const uint8_t *rx, uint8_t *tx);
+#endif // COM_HANDLE_H

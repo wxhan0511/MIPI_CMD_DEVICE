@@ -444,7 +444,22 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle)
 
   if (tim_baseHandle->Instance == TIM1)
   {
+    /* 1. 使能时钟 */
     __HAL_RCC_TIM1_CLK_ENABLE();
+    __HAL_RCC_GPIOE_CLK_ENABLE();
+
+    /* 2. 配置 PE11 (TIM1_CH2) 为复用功能，用于脉冲计数 */
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+    
+    /* 3. 配置 NVIC (为了门限法的溢出统计) */
+    HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
   }
   if (tim_baseHandle->Instance == TIM2)
   {
@@ -615,7 +630,89 @@ static uint32_t TIM1_GetCaptureClockHz(void)
   }
   return pclk2 * 2U;
 }
-#if 0
+
+/**
+ * @brief 将 TIM1 配置为外部时钟模式 (用于测高频)
+ */
+/**
+ * @brief 将 TIM1 配置为外部时钟模式 (用于测高频)
+ */
+void TIM1_GateMode_Init(void)
+{
+  HAL_TIM_Base_DeInit(&htim1);
+  
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 0xFFFF; // 必须是 65535
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  HAL_TIM_Base_Init(&htim1);
+
+  // 配置为外部时钟模式 1，由 PE11 (TIM1_CH2) 提供计数脉冲
+  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_EXTERNAL1; 
+  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2; 
+  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
+  sSlaveConfig.TriggerFilter = 0;
+  HAL_TIM_SlaveConfigSynchronization(&htim1, &sSlaveConfig);
+
+  tim1_mode = TIM1_MODE_CAP_MEAS; 
+  tim1_ovf_cnt = 0;
+
+  // 开启溢出中断处理
+  HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+
+  __HAL_TIM_URS_ENABLE(&htim1);
+  __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+}
+/**
+ * @brief 全量程自适应频率测量
+ * @return 0: 成功, -1: 超时
+ */
+/**
+ * @brief 门限法测量频率 (范围: 2MHz - 50MHz)
+ * @return 0: 成功, -1: 频率低于 2MHz
+ */
+int Measure_Frequency_Adaptive(void)
+{
+    // 强制关闭捕获中断
+    HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
+    __HAL_TIM_DISABLE_IT(&htim1, TIM_IT_CC1 | TIM_IT_CC2);
+    tim1_mode = TIM1_MODE_CAP_MEAS; // 设置为测量模式以触发溢出累加
+
+    // 初始化外部时钟模式
+    TIM1_GateMode_Init(); 
+    
+    uint64_t valid_sum = 0;
+    
+    // 连续测量 12 次，抛弃前 2 次，取后 10 次
+    for (int i = 0; i < 12; i++)
+    {
+        tim1_ovf_cnt = 0;
+        __HAL_TIM_SET_COUNTER(&htim1, 0);
+        
+        HAL_TIM_Base_Start_IT(&htim1);
+        osDelay(100); // 10ms 门限
+        uint32_t count = __HAL_TIM_GET_COUNTER(&htim1);
+        uint32_t ovfs = tim1_ovf_cnt; 
+        HAL_TIM_Base_Stop_IT(&htim1);
+
+        if (i >= 2)
+        {
+            valid_sum += ((uint64_t)count + (uint64_t)ovfs * 65536);
+        }
+    }
+    uint32_t avg_freq = (uint32_t)((valid_sum *0.009662149) * 100);
+
+
+    uwFrequency = avg_freq;
+    uwDutyCycle = 50; // 门限法无法测高频占空比，固定 50
+    get_freq_flag = 1;
+    return 0;
+    
+}
+#if 1
 /**
  * @brief  Input Capture callback in non blocking mode
  * @param  htim: TIM IC handle
@@ -665,7 +762,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
   }
 }
 #endif
-#if 1
+#if 0
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)

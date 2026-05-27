@@ -14,10 +14,10 @@
 static lv_obj_t *label_power_name[7];
 static lv_obj_t *label_power_name_page3[4];
 static const char *power_name[7] = {
-    "    Name", "      vsn", "      vsp", "      vcc", "      iovcc",
-    "      vdd", "      led"};
+    "    Name", "      vcc", "      iovcc", "      vsp", "      vsn",
+    "      avdd", "      vdd"};
 static const char *power_name_page3[4] = {
-    "    Name", "      elvss", "      avdd", "      elvdd"};
+    "    Name", "      elvdd", "      elvss", "      v+adj"};
 
 char *protocol_name[20] =
     {
@@ -139,26 +139,26 @@ void ui_main_protocol_group_init(lv_obj_t *page, lcd_protocol_label_group_t *lab
 {
     // 协议标签创建
     lv_obj_t *label_protocol = lv_label_create(page);
-    ui_label_init(label_protocol, x_line_0, y_line_0, 80, label_height, "	- Protocol");//5,10
+    ui_label_init(label_protocol, x_line_0, y_line_0, 80, label_height, "	- Protocol"); // 5,10
 
     // 协议名称标签创建
-    label_group->label_protocol = lv_label_create(page);//5+80,10
+    label_group->label_protocol = lv_label_create(page); // 5+80,10
     ui_label_init(label_group->label_protocol, x_line_0 + data_step, y_line_0, 150, label_height, protocol_name[19]);
 
     // 速度标签创建
-    lv_obj_t *label_speed = lv_label_create(page);//5,10+20
+    lv_obj_t *label_speed = lv_label_create(page); // 5,10+20
     ui_label_init(label_speed, x_line_1, y_line_1, 80, label_height, "	- Speed");
 
     // Pixel Clock 标签创建
-    lv_obj_t *label_pclk = lv_label_create(page);//5+80,10+20
+    lv_obj_t *label_pclk = lv_label_create(page); // 5+80,10+20
     ui_label_init(label_pclk, x_line_1 + data_step, y_line_1, 60, label_height, "PCLK");
 
     // Pixel Clock 数据标签创建
-    label_group->label_speed_pclk = lv_label_create(page);//5+80+50,10+20
+    label_group->label_speed_pclk = lv_label_create(page); // 5+80+50,10+20
     ui_label_init(label_group->label_speed_pclk, x_line_1 + data_step + 50, y_line_1, 80, label_height, "NULL");
 
     // MIPI HS 标签创建
-    lv_obj_t *label_hs = lv_label_create(page);//5+80,50
+    lv_obj_t *label_hs = lv_label_create(page); // 5+80,50
     ui_label_init(label_hs, x_line_2, y_line_2, 80, label_height, "	- HS");
 
     // MIPI HS 数据标签创建
@@ -167,7 +167,7 @@ void ui_main_protocol_group_init(lv_obj_t *page, lcd_protocol_label_group_t *lab
 
     // MIPI LP 标签创建
     lv_obj_t *label_lp = lv_label_create(page);
-    ui_label_init(label_lp, x_line_2  + 130, y_line_2, 80, label_height, "LP");
+    ui_label_init(label_lp, x_line_2 + 130, y_line_2, 80, label_height, "LP");
 
     // MIPI LP 数据标签创建
     label_group->label_speed_lp = lv_label_create(page);
@@ -213,11 +213,11 @@ void ui_main_protocol_group_rotate_init(lv_obj_t *page, lcd_protocol_label_group
 
     // MIPI HS 数据标签创建
     label_group->label_speed_hs = lv_label_create(page);
-    ui_label_init(label_group->label_speed_hs, x_line_2 +  50, y_line_2, 80, label_height, "NULL");
+    ui_label_init(label_group->label_speed_hs, x_line_2 + 50, y_line_2, 80, label_height, "NULL");
 
     // MIPI LP 标签创建
     lv_obj_t *label_lp = lv_label_create(page);
-    ui_label_init(label_lp, x_line_2+ 130, y_line_2, 80, label_height, "LP");
+    ui_label_init(label_lp, x_line_2 + 130, y_line_2, 80, label_height, "LP");
 
     // MIPI LP 数据标签创建
     label_group->label_speed_lp = lv_label_create(page);
@@ -232,48 +232,48 @@ void ui_main_protocol_group_rotate_init(lv_obj_t *page, lcd_protocol_label_group
     ui_label_init(label_group->label_state, x_line_3 + data_step, y_line_3, 150, label_height, "Power off");
 }
 
-void ui_main_sample_data_group_init(lv_obj_t* page,sample_data_label_group_t* label_group)
+void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *label_group)
 {
 #define STYLE_0 0
-# define STYLE_1 1
+#define STYLE_1 1
 #if STYLE_0
-    static lv_obj_t* line_v[7];
-    static lv_obj_t* line_h[7];
+    static lv_obj_t *line_v[7];
+    static lv_obj_t *line_h[7];
     for (int i = 0; i < 7; i++)
     {
-        //分割横线
+        // 分割横线
         line_v[i] = lv_line_create(lv_screen_active());
-        lv_line_set_points(line_v[i], (lv_point_precise_t*)line_v_points, 2);
+        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
         lv_obj_set_size(line_v[i], 300, 4);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
-        //电压名称标签
+        // 电压名称标签
         label_power_name[i] = lv_label_create(lv_screen_active());
         ui_label_init(label_power_name[i], 5, 92 + 20 * i, 80, label_height, power_name[i]);
     }
 
-    //名称标签
-    lv_obj_t* vol_name_label = lv_label_create(lv_screen_active());
+    // 名称标签
+    lv_obj_t *vol_name_label = lv_label_create(lv_screen_active());
     ui_label_init(vol_name_label, 5 + 89, 92, 80, label_height, "    Vol");
 
-    lv_obj_t* cur_name_label = lv_label_create(lv_screen_active());
+    lv_obj_t *cur_name_label = lv_label_create(lv_screen_active());
     ui_label_init(cur_name_label, 5 + 85 * 2, 92, 80, label_height, "    Cur");
 
-    lv_obj_t* threshold_name_label = lv_label_create(lv_screen_active());
+    lv_obj_t *threshold_name_label = lv_label_create(lv_screen_active());
     ui_label_init(threshold_name_label, 5 + 80 * 3, 92, 80, label_height, "Threshold");
 
-    //分割竖线
+    // 分割竖线
     for (int i = 0; i < 3; i++)
     {
         line_h[i] = lv_line_create(lv_screen_active());
-        lv_line_set_points(line_h[i], (lv_point_precise_t*)line_h_points, 2);
+        lv_line_set_points(line_h[i], (lv_point_precise_t *)line_h_points, 2);
         lv_obj_set_pos(line_h[i], 80 * (i + 1), 90);
         lv_obj_set_size(line_h[i], 4, 140);
         lv_obj_set_style_line_color(line_h[i], lv_color_hex(0x000000), LV_PART_MAIN);
     }
 
-    //采样数据标签
+    // 采样数据标签
     for (int i = 0; i < 6; i++)
     {
         label_group->label_power_vol[i] = lv_label_create(lv_screen_active());
@@ -282,66 +282,64 @@ void ui_main_sample_data_group_init(lv_obj_t* page,sample_data_label_group_t* la
         ui_label_init(label_group->label_power_cur[i], 10 + 83 * 2, 94 + 20 * (i + 1), 76, 16, "null");
     }
 #elif STYLE_1
-    static lv_obj_t* line_v[7];
-    static lv_obj_t* line_h[7];
+    static lv_obj_t *line_v[7];
+    static lv_obj_t *line_h[7];
     for (int i = 0; i < 7; i++)
     {
-        //分割横线
+        // 分割横线
         line_v[i] = lv_line_create(page);
-        lv_line_set_points(line_v[i], (lv_point_precise_t*)line_v_points, 2);
+        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
         lv_obj_set_size(line_v[i], 310, 4);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
-        //电压名称标签
+        // 电压名称标签
         label_power_name[i] = lv_label_create(page);
         ui_label_init(label_power_name[i], 5, 92 + 20 * i, 80, label_height, power_name[i]);
     }
 
-    //名称标签
-    lv_obj_t* vol_name_label = lv_label_create(page);
-    ui_label_init(vol_name_label, 80+30, 92, 120, label_height, "    Vol");
+    // 名称标签
+    lv_obj_t *vol_name_label = lv_label_create(page);
+    ui_label_init(vol_name_label, 80 + 30, 92, 120, label_height, "    Vol");
 
-    lv_obj_t* cur_name_label = lv_label_create(page);
-    ui_label_init(cur_name_label, 200+30, 92, 120, label_height, "    Cur");
+    lv_obj_t *cur_name_label = lv_label_create(page);
+    ui_label_init(cur_name_label, 200 + 30, 92, 120, label_height, "    Cur");
 
     line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t*)line_h_points, 2);
+    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
     lv_obj_set_pos(line_h[0], 80, 90);
     lv_obj_set_size(line_h[0], 4, 140);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t*)line_h_points, 2);
-    lv_obj_set_pos(line_h[1], 120+80, 90);
+    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[1], 120 + 80, 90);
     lv_obj_set_size(line_h[1], 4, 140);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    //采样数据标签
+    // 采样数据标签
     for (int i = 0; i < 6; i++)
     {
         label_group->label_power_vol[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_vol[i], 80+30, 94 + 20 * (i + 1), 76, 16, "null");
+        ui_label_init(label_group->label_power_vol[i], 80 + 30, 94 + 20 * (i + 1), 76, 16, "null");
         label_group->label_power_cur[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_cur[i], 200+30, 94 + 20 * (i + 1), 76, 16, "null");
+        ui_label_init(label_group->label_power_cur[i], 200 + 30, 94 + 20 * (i + 1), 76, 16, "null");
     }
 #endif
-
 }
-
 
 void ui_main_sample_data_group_rotate_init(lv_obj_t *page, sample_data_label_group_t *label_group)
 {
     // 恢复为竖屏布局 (宽 240, 高 320)
     // 布局逻辑参考自 ui_main_sample_data_group_init 的 STYLE_1
 
-    static lv_obj_t *line_v[8];//横向分割线”对象
-    static lv_obj_t *line_h[2];//竖向分割线对象
+    static lv_obj_t *line_v[8]; // 横向分割线”对象
+    static lv_obj_t *line_h[2]; // 竖向分割线对象
     for (int i = 0; i < 7; i++)
     {
         // 分割横线
-        line_v[i] = lv_line_create(page);//在 page 对象上创建一个 lv_line（线条）对象
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);//设置线条的坐标点。line_v_points 包含起点和终点，由 2 个点组成。这决定了线条的长短和方向（横向）。
+        line_v[i] = lv_line_create(page);                                      // 在 page 对象上创建一个 lv_line（线条）对象
+        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2); // 设置线条的坐标点。line_v_points 包含起点和终点，由 2 个点组成。这决定了线条的长短和方向（横向）。
         /*设置线条的显示位置：
         X 坐标：固定为 5。
         Y 坐标：起始于 90，每组间隔 20 像素（即 90, 110, 130...）*/
@@ -350,10 +348,10 @@ void ui_main_sample_data_group_rotate_init(lv_obj_t *page, sample_data_label_gro
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
         // 电压名称标签
-        label_power_name[i] = lv_label_create(page);//创建并初始化名称标签
+        label_power_name[i] = lv_label_create(page); // 创建并初始化名称标签
         ui_label_init(label_power_name[i], 5, 92 + 20 * i, 70, label_height, power_name[i]);
     }
-    
+
     // 名称标签
     lv_obj_t *vol_name_label = lv_label_create(page);
     ui_label_init(vol_name_label, 75 + 10, 92, 80, label_height, "    Vol");
@@ -590,14 +588,22 @@ void ui_main_protocol_init(lcd_show_t *lcd_protocol)
     lcd_protocol->speed_pclk = "NULL";
     lcd_protocol->state = "Power off";
 }
-
+// ANCHOR - 刷新采样数据
 void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const lcd_show_t *lcd_protocol)
 {
     // osMutexAcquire(&show_mutexHandle,0);
     static char temp_str[100];
     for (int i = 0; i < 6; i++)
     {
-        if (fabs(lcd_protocol->voltage[i]) >= 1000)
+        if (isnan(lcd_protocol->voltage[i]))
+        {
+            sprintf(temp_str, "not sel");
+        }
+        if (lcd_protocol->voltage[i] == 0)
+        {
+            sprintf(temp_str, "--");
+        }
+        else if (fabs(lcd_protocol->voltage[i]) >= 1000)
         {
             sprintf(temp_str, "%.3f V", lcd_protocol->voltage[i] / 1000);
         }
@@ -612,7 +618,15 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
 
     for (int i = 0; i < 6; i++)
     {
-        if (fabs(lcd_protocol->current[i]) >= 1000000)
+        if (isnan(lcd_protocol->current[i]))
+        {
+            sprintf(temp_str, "not sel");
+        }
+        if (lcd_protocol->current[i] == 0)
+        {
+            sprintf(temp_str, "--");
+        }
+        else if (fabs(lcd_protocol->current[i]) >= 1000000)
         {
             sprintf(temp_str, "%.2f A", lcd_protocol->current[i] / 1000000);
         }
@@ -635,7 +649,15 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
     static char temp_str[100];
     for (int i = 6; i < 9; i++)
     {
-        if (fabs(lcd_protocol->voltage[i]) >= 1000)
+        if (isnan(lcd_protocol->voltage[i]))
+        {
+            sprintf(temp_str, "not sel");
+        }
+        if (lcd_protocol->voltage[i] == 0)
+        {
+            sprintf(temp_str, "--");
+        }
+        else if (fabs(lcd_protocol->voltage[i]) >= 1000)
         {
             sprintf(temp_str, "%.3f V", lcd_protocol->voltage[i] / 1000);
         }
@@ -650,7 +672,15 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
 
     for (int i = 6; i < 9; i++)
     {
-        if (fabs(lcd_protocol->current[i]) >= 1000000)
+        if (isnan(lcd_protocol->current[i]))
+        {
+            sprintf(temp_str, "not sel");
+        }
+        if (lcd_protocol->current[i] == 0)
+        {
+            sprintf(temp_str, "--");
+        }
+        else if (fabs(lcd_protocol->current[i]) >= 1000000)
         {
             sprintf(temp_str, "%.2f A", lcd_protocol->current[i] / 1000000);
         }
@@ -722,7 +752,7 @@ void ui_open_machine(open_machine_group_t *label_group)
     // lv_obj_set_style_text_color(page0, lv_color_hex(0x000000), LV_PART_MAIN);
 
     label_group->label_logo = lv_label_create(page0);
-    lv_label_set_text(label_group->label_logo, "GC4.0");
+    lv_label_set_text(label_group->label_logo, "GC5.0");
     lv_label_set_long_mode(label_group->label_logo, LV_LABEL_LONG_WRAP);
     lv_obj_set_pos(label_group->label_logo, 90, 100);
     lv_obj_set_size(label_group->label_logo, 200, 50);
@@ -768,7 +798,7 @@ void ui_page3_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p_group
 {
     // 背景主题
     page3 = lv_obj_create(NULL);
-    lv_obj_set_size(page3, LV_HOR_RES, LV_VER_RES);// 给 LVGL 的逻辑空间是 320x240
+    lv_obj_set_size(page3, LV_HOR_RES, LV_VER_RES); // 给 LVGL 的逻辑空间是 320x240
     lv_obj_set_style_bg_color(page3, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     lv_obj_set_style_text_color(page3, lv_color_hex(0x000000), LV_PART_MAIN);
 
@@ -839,7 +869,7 @@ void ui_sub_init(fw_version_label_group_t *version_group)
     ui_label_init(version_group->label_meter_hw_num, x_line_4 + 160, y_line_4, 160, label_height, "-.-.-.-");
     version_group->label_main_hw_num = lv_label_create(page2);
     ui_label_init(version_group->label_main_hw_num, x_line_5 + 160, y_line_5, 160, label_height, "-.-.-.-");
-        // 新增：lubancat IP 数据展示
+    // 新增：lubancat IP 数据展示
     version_group->label_lubancat_ip = lv_label_create(page2);
     ui_label_init(version_group->label_lubancat_ip, x_line_5 + 160, y_line_5 + label_height, 160, label_height, "0.0.0.0");
 
@@ -863,7 +893,6 @@ void widget_change()
     if (current_page == PAGE_0)
     {
         lv_screen_load_anim(page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-
     }
     else if (current_page == PAGE_1)
     {
@@ -872,17 +901,16 @@ void widget_change()
     else if (current_page == PAGE_2)
     {
         lv_screen_load_anim(page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-        
     }
     // 临界区外获取信号量是安全的
-    // if(osMutexAcquire(show_mutexHandle, osWaitForever) == osOK) 
+    // if(osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
     // {
     //     lv_display_t * disp1 = lv_display_get_default();
     //     if(disp1) {
     //         if(disp1) lv_display_set_rotation(disp1, LV_DISPLAY_ROTATION_90);
     //         lcd_write_cmd_8bit(0x36);     // 发送指令
     //         lcd_write_data_8bit(0x48);
- 
+
     //         printf("Display rotated to portrait mode.\r\n");
     //         if (current_page == PAGE_0) {
     //             printf("Current page is PAGE_0, updating page1 size.\r\n");
@@ -896,7 +924,7 @@ void widget_change()
     //             printf("Current page is PAGE_2, updating page2 size.\r\n");
     //             lv_obj_set_size(page2, 320, 240); // 更新页面尺寸以适应新的显示方向
     //         }
-            
+
     //         lv_obj_invalidate(lv_screen_active());
     //         lv_display_send_event(disp1, LV_EVENT_REFR_REQUEST, NULL);
     //         printf("set_display_portrait: lcd id=%u dir=%u w=%u h=%u\r\n",
@@ -911,28 +939,37 @@ void widget_change()
  */
 static void set_display_portrait(uint8_t page)
 {
-    if (osMutexAcquire(show_mutexHandle, osWaitForever) != osOK) return;
+    if (osMutexAcquire(show_mutexHandle, osWaitForever) != osOK)
+        return;
     lv_display_t *disp = lv_display_get_default();
 
     /* 使用驱动接口切回竖屏，驱动会更新 lcddev 状态 */
-    lcd_display_dir(0);            /* 0 = 竖屏 */
-    lcd_scan_dir(DFT_SCAN_DIR);   /* 默认扫描方向 */
+    lcd_display_dir(0);         /* 0 = 竖屏 */
+    lcd_scan_dir(DFT_SCAN_DIR); /* 默认扫描方向 */
 
     /* 同步 LVGL 方向 */
-    if (disp) lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0);
+    if (disp)
+        lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0);
 
     /* 更新各页面逻辑尺寸为竖屏 */
-    if (page == PAGE_0 && page1) lv_obj_set_size(page1, 240, 320);
-    if (page == PAGE_1 && page3) lv_obj_set_size(page3, 240, 320);
-    if (page == PAGE_2 && page2) lv_obj_set_size(page2, 240, 320);
+    if (page == PAGE_0 && page1)
+        lv_obj_set_size(page1, 240, 320);
+    if (page == PAGE_1 && page3)
+        lv_obj_set_size(page3, 240, 320);
+    if (page == PAGE_2 && page2)
+        lv_obj_set_size(page2, 240, 320);
 
     /* 如果存在为旋转创建的页面，也同步它们尺寸 */
-    if (rotate_page1) lv_obj_set_size(rotate_page1, 240, 320);
-    if (rotate_page2) lv_obj_set_size(rotate_page2, 240, 320);
-    if (rotate_page3) lv_obj_set_size(rotate_page3, 240, 320);
+    if (rotate_page1)
+        lv_obj_set_size(rotate_page1, 240, 320);
+    if (rotate_page2)
+        lv_obj_set_size(rotate_page2, 240, 320);
+    if (rotate_page3)
+        lv_obj_set_size(rotate_page3, 240, 320);
 
     lv_obj_invalidate(lv_screen_active());
-    if (disp) lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
+    if (disp)
+        lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
 
     /* 打印驱动状态以便调试 */
     printf("set_display_portrait: lcd id=%u dir=%u w=%u h=%u\r\n",

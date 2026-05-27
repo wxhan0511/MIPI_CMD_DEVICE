@@ -1,22 +1,3 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * File Name          : freertos.c
- * Description        : Code for freertos applications
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2025 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
@@ -40,20 +21,19 @@ void StartDefaultTask(void *argument);
 osMutexId_t show_mutexHandle;
 osStaticMutexDef_t show_mutex_control_block;
 const osMutexAttr_t show_mutex_attributes = {
-  .name = "show_mutex",
-  .cb_mem = &show_mutex_control_block,
-  .cb_size = sizeof(show_mutex_control_block),
+    .name = "show_mutex",
+    .cb_mem = &show_mutex_control_block,
+    .cb_size = sizeof(show_mutex_control_block),
 };
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 1024,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "defaultTask",
+    .stack_size = 1024,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 osTimerId_t led_timerHandle;
 const osTimerAttr_t led_timer_attributes = {
-  .name = "led_timer"
-};
+    .name = "led_timer"};
 /**
  * @brief  FreeRTOS initialization
  * @param  None
@@ -65,42 +45,37 @@ void MX_FREERTOS_Init(void)
   led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
 
 #ifdef GTB
-  //server_gtb_init();
+  // server_gtb_init();
 #endif
-  //slave_rx_task_init();
-  //slave_tx_task_init();
- 
-  //master_tx_task_init();
-  //master_rx_task_init();
+  // slave_rx_task_init();
+  // slave_tx_task_init();
+
+  // master_tx_task_init();
+  // master_rx_task_init();
+  // osTimerStart(led_timerHandle, 500);
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  if (defaultTaskHandle == NULL) {
-   printf("osThreadNew defaultTask FAILED\r\n");
- } else {
-   printf("osThreadNew defaultTask OK handle=%p kernelState=%d\r\n", defaultTaskHandle, (int)osKernelGetState());
- }
-  widget_main_task_init(); //LVGL UI task
-  //power_task_init();
+
+  widget_main_task_init(); // LVGL UI task
+  // power_task_init();
   task_sample_init();
-
-
-
+  task_com_init();
+  //  pwm_ctrl_task_init();
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  // osDelay(2000);
+  osDelay(2000);
 
-  // widget_main_task_init();
   printf("StartDefaultTask running\r\n");
-  //osTimerStart(led_timerHandle, 500);
+  osTimerStart(led_timerHandle, 500);
   printf("StartDefaultTask running\r\n");
   uint8_t key_flag = 0;
   uint8_t key_flag_1 = 0;
@@ -113,15 +88,15 @@ void StartDefaultTask(void *argument)
   extern lv_obj_t *page2;
   extern lv_obj_t *page3;
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
     osDelay(10);
     lv_tick_inc(10);
-    if(0)
+    if (!HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
     {
       // 临界区外获取信号量是安全的
-      if(osMutexAcquire(show_mutexHandle, osWaitForever) == osOK) 
-      { 
+      if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
+      {
         if (current_page == PAGE_0)
         {
           lv_screen_load_anim(page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
@@ -138,17 +113,22 @@ void StartDefaultTask(void *argument)
           printf("Current page is PAGE_2\r\n");
         }
         printf("wait acquire show_mutex\r\n");
-       
-        lv_display_t * disp = lv_display_get_default();
-        if(disp) {
-            if(disp) lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 依需求
-            lcd_write_cmd_8bit(0x36);     // 发送指令
-            lcd_write_data_8bit(0x28); //保持竖屏逻辑 BGR顺序
-            if (current_page == PAGE_0) lv_obj_set_size(page1, 320, 240); // 更新页面尺寸以适应新的显示方向
-            if (current_page == PAGE_1) lv_obj_set_size(page3, 320, 240); // 更新页面尺寸以适应新的显示方向
-            if (current_page == PAGE_2) lv_obj_set_size(page2, 320, 240); // 更新页面尺寸以适应新的显示方向
-            lv_obj_invalidate(lv_screen_active());
-            lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
+
+        lv_display_t *disp = lv_display_get_default();
+        if (disp)
+        {
+          if (disp)
+            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 依需求
+          lcd_write_cmd_8bit(0x36);                               // 发送指令
+          lcd_write_data_8bit(0x28);                              // 保持竖屏逻辑 BGR顺序
+          if (current_page == PAGE_0)
+            lv_obj_set_size(page1, 320, 240); // 更新页面尺寸以适应新的显示方向
+          if (current_page == PAGE_1)
+            lv_obj_set_size(page3, 320, 240); // 更新页面尺寸以适应新的显示方向
+          if (current_page == PAGE_2)
+            lv_obj_set_size(page2, 320, 240); // 更新页面尺寸以适应新的显示方向
+          lv_obj_invalidate(lv_screen_active());
+          lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
         }
         osMutexRelease(show_mutexHandle);
         key_flag_1 = 1;
@@ -161,48 +141,55 @@ void StartDefaultTask(void *argument)
 
       key_flag = 0;
     }
-    if(0)
+    if (!HAL_GPIO_ReadPin(PULSE_B_GPIO_Port, PULSE_B_Pin))
     {
-      osDelay(1000);
-      if(osMutexAcquire(show_mutexHandle, osWaitForever) == osOK) 
-      {  
-          if (current_page == 0) page0_flag = 1;
-          else current_page = current_page - 1; page0_flag = 0;
+      osDelay(10);
+      if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
+      {
+        if (current_page == 0)
+          page0_flag = 1;
+        else
+          current_page = current_page - 1;
+        page0_flag = 0;
 
+        if (current_page == PAGE_0)
+        {
+          lv_screen_load_anim(rotate_page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+        }
+        else if (current_page == PAGE_1)
+        {
+          lv_screen_load_anim(rotate_page3, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+        }
+        else if (current_page == PAGE_2)
+        {
+          lv_screen_load_anim(rotate_page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+        }
+        printf("wait acquire show_mutex\r\n");
+        // 临界区外获取信号量是安全的
+
+        lv_display_t *disp = lv_display_get_default();
+        if (disp)
+        {
+          if (disp)
+            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // 90 / 270 依需求
+          lcd_write_cmd_8bit(0x36);                                // 发送指令
+          lcd_write_data_8bit(0x48);                               // 0x48 = 0x40 + 0x08 → MX=1，BGR=1，MV=0，MY=0。启用 X 轴镜像（左右翻转）并把颜色顺序设为 BG
           if (current_page == PAGE_0)
-          {
-            lv_screen_load_anim(rotate_page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-          }
-          else if (current_page == PAGE_1)
-          {
-            lv_screen_load_anim(rotate_page3, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-            
-          }
-          else if (current_page == PAGE_2)
-          {
-            lv_screen_load_anim(rotate_page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-            
-          }
-          printf("wait acquire show_mutex\r\n");
-          // 临界区外获取信号量是安全的
+            lv_obj_set_size(rotate_page1, 240, 320); // 更新页面尺寸以适应新的显示方向
+          if (current_page == PAGE_1)
+            lv_obj_set_size(rotate_page3, 240, 320); // 更新页面尺寸以适应新的显示方向
+          if (current_page == PAGE_2)
+            lv_obj_set_size(rotate_page2, 240, 320); // 更新页面尺寸以适应新的显示方向
+          lv_obj_invalidate(lv_screen_active());
+          lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
+        }
+        osMutexRelease(show_mutexHandle);
 
-          lv_display_t * disp = lv_display_get_default();
-          if(disp) {
-              if(disp) lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // 90 / 270 依需求
-              lcd_write_cmd_8bit(0x36);     // 发送指令
-              lcd_write_data_8bit(0x48);    // 0x48 = 0x40 + 0x08 → MX=1，BGR=1，MV=0，MY=0。启用 X 轴镜像（左右翻转）并把颜色顺序设为 BG
-              if (current_page == PAGE_0) lv_obj_set_size(rotate_page1, 240, 320); // 更新页面尺寸以适应新的显示方向
-              if (current_page == PAGE_1) lv_obj_set_size(rotate_page3, 240, 320); // 更新页面尺寸以适应新的显示方向
-              if (current_page == PAGE_2) lv_obj_set_size(rotate_page2, 240, 320); // 更新页面尺寸以适应新的显示方向
-              lv_obj_invalidate(lv_screen_active());
-              lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
-          }
-          osMutexRelease(show_mutexHandle);
-          
-          key_flag_1 = 1;
+        key_flag_1 = 1;
 
-          if (page0_flag != 1)  current_page = current_page + 1;
-          osDelay(500);
+        if (page0_flag != 1)
+          current_page = current_page + 1;
+        osDelay(500);
       }
     }
     if (key_flag_1 == 1)
@@ -223,6 +210,3 @@ void StartDefaultTask(void *argument)
   /* USER CODE END StartDefaultTask */
 }
 /* USER CODE END Application */
-
-
-

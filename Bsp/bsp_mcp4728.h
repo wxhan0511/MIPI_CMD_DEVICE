@@ -5,9 +5,7 @@
 #ifndef BSP_MCP4728_H
 #define BSP_MCP4728_H
 
-#include <bsp.h>
-#include <bsp_i2c.h>
-#include "bsp_mcp4728.h" //for da_calibration_data_t
+#include "bsp_i2c.h"
 #include "bsp_d_trigger.h"
 #include <stdbool.h>
 
@@ -19,16 +17,6 @@ typedef enum
     DAC4_ADDR = 0xC6,
     DAC5_ADDR = 0xC8,
 } dac_address_t;
-
-typedef enum
-{
-    DAC_CHIP_1 = 0,
-    DAC_CHIP_2,
-    DAC_CHIP_3,
-    DAC_CHIP_4,
-    DAC_CHIP_5,
-    DAC_CHIP_MAX
-} dac_chip_index_t;
 
 typedef struct
 {

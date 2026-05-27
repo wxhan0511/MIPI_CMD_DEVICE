@@ -48,6 +48,7 @@ void enableTim2PWMOutput(void);
 void disableTim2PWMOutput(void);
 void app_delay(uint32_t delay_ms);
 void TIM1_Calculate_Results(void);
+int Measure_Frequency_Adaptive(void);
 /* USER CODE BEGIN EFP */
 /* USER CODE BEGIN Prototypes */
 extern TIM_HandleTypeDef htim1;

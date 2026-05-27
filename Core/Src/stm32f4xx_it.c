@@ -90,7 +90,7 @@ extern tp_config_t tp_config_hid;
 
 extern volatile uint8_t i2c1_rx_ready_flag;
 
-extern TIM_HandleTypeDef    htim8;
+extern TIM_HandleTypeDef htim8;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -120,10 +120,10 @@ void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
   // 定义故障状态寄存器变量
-  uint32_t hfsr = SCB->HFSR;    // 硬故障总状态寄存器
-  uint32_t cfsr = SCB->CFSR;    // 配置故障状态寄存器（包含Mem/Bus/Usage三类错误）
-  uint32_t mmfar = SCB->MMFAR;  // 内存管理错误地址寄存器
-  uint32_t bfar = SCB->BFAR;    // 总线错误地址寄存器
+  uint32_t hfsr = SCB->HFSR;   // 硬故障总状态寄存器
+  uint32_t cfsr = SCB->CFSR;   // 配置故障状态寄存器（包含Mem/Bus/Usage三类错误）
+  uint32_t mmfar = SCB->MMFAR; // 内存管理错误地址寄存器
+  uint32_t bfar = SCB->BFAR;   // 总线错误地址寄存器
 
   // 打印HardFault标题
   MIPI_CMD_DEBUG("\r\n\r\n==================== HardFault ====================\r\n");
@@ -131,24 +131,32 @@ void HardFault_Handler(void)
   MIPI_CMD_ERROR("CFSR = 0x%08X\r\n", cfsr);
 
   // 拆分三类错误状态
-  uint8_t mmfsr = (cfsr >> 0) & 0xFF;   // 内存管理错误状态
-  uint8_t bfsr  = (cfsr >> 8) & 0xFF;   // 总线错误状态
-  uint16_t ufsr = (cfsr >> 16) & 0xFFFF;// 用法错误状态
+  uint8_t mmfsr = (cfsr >> 0) & 0xFF;    // 内存管理错误状态
+  uint8_t bfsr = (cfsr >> 8) & 0xFF;     // 总线错误状态
+  uint16_t ufsr = (cfsr >> 16) & 0xFFFF; // 用法错误状态
 
   // ==============================================
   // 内存管理错误解析（打印英文，注释中文）
   // ==============================================
-  if (mmfsr != 0) {
+  if (mmfsr != 0)
+  {
     MIPI_CMD_ERROR("[MemManage Fault]\r\n");
-    if (mmfsr & (1 << 0)) MIPI_CMD_ERROR("  IACCVIOL: Instruction access violation\r\n");
-    if (mmfsr & (1 << 1)) MIPI_CMD_ERROR("  DACCVIOL: Data access violation\r\n");
-    if (mmfsr & (1 << 2)) MIPI_CMD_ERROR("  MUNSTKERR: Unstacking error\r\n");
-    if (mmfsr & (1 << 3)) MIPI_CMD_ERROR("  MSTKERR: Stacking error\r\n");
-    if (mmfsr & (1 << 4)) MIPI_CMD_ERROR("  MLSPERR: Lazy state preservation error\r\n");
-    if (mmfsr & (1 << 6)) MIPI_CMD_ERROR("  MMARVALID: MMFAR address valid\r\n");
+    if (mmfsr & (1 << 0))
+      MIPI_CMD_ERROR("  IACCVIOL: Instruction access violation\r\n");
+    if (mmfsr & (1 << 1))
+      MIPI_CMD_ERROR("  DACCVIOL: Data access violation\r\n");
+    if (mmfsr & (1 << 2))
+      MIPI_CMD_ERROR("  MUNSTKERR: Unstacking error\r\n");
+    if (mmfsr & (1 << 3))
+      MIPI_CMD_ERROR("  MSTKERR: Stacking error\r\n");
+    if (mmfsr & (1 << 4))
+      MIPI_CMD_ERROR("  MLSPERR: Lazy state preservation error\r\n");
+    if (mmfsr & (1 << 6))
+      MIPI_CMD_ERROR("  MMARVALID: MMFAR address valid\r\n");
 
     // 若错误地址有效，则打印出错地址
-    if (mmfsr & (1 << 6)) {
+    if (mmfsr & (1 << 6))
+    {
       MIPI_CMD_ERROR("  Fault Address MMFAR = 0x%08X\r\n", mmfar);
     }
   }
@@ -156,18 +164,27 @@ void HardFault_Handler(void)
   // ==============================================
   // 总线错误解析（打印英文，注释中文）
   // ==============================================
-  if (bfsr != 0) {
+  if (bfsr != 0)
+  {
     MIPI_CMD_ERROR("[BusFault]\r\n");
-    if (bfsr & (1 << 0)) MIPI_CMD_ERROR("  IBUSERR: Instruction bus error(PC runaway)\r\n");
-    if (bfsr & (1 << 1)) MIPI_CMD_ERROR("  PRECISERR: Precise data bus error\r\n");
-    if (bfsr & (1 << 2)) MIPI_CMD_ERROR("  IMPRECISERR: Imprecise data bus error\r\n");
-    if (bfsr & (1 << 3)) MIPI_CMD_ERROR("  UNSTKERR: Unstacking error\r\n");
-    if (bfsr & (1 << 4)) MIPI_CMD_ERROR("  STKERR: Stacking error\r\n");
-    if (bfsr & (1 << 5)) MIPI_CMD_ERROR("  LSPERR: Lazy state preservation error\r\n");
-    if (bfsr & (1 << 6)) MIPI_CMD_ERROR("  BFARVALID: BFAR address valid\r\n");
+    if (bfsr & (1 << 0))
+      MIPI_CMD_ERROR("  IBUSERR: Instruction bus error(PC runaway)\r\n");
+    if (bfsr & (1 << 1))
+      MIPI_CMD_ERROR("  PRECISERR: Precise data bus error\r\n");
+    if (bfsr & (1 << 2))
+      MIPI_CMD_ERROR("  IMPRECISERR: Imprecise data bus error\r\n");
+    if (bfsr & (1 << 3))
+      MIPI_CMD_ERROR("  UNSTKERR: Unstacking error\r\n");
+    if (bfsr & (1 << 4))
+      MIPI_CMD_ERROR("  STKERR: Stacking error\r\n");
+    if (bfsr & (1 << 5))
+      MIPI_CMD_ERROR("  LSPERR: Lazy state preservation error\r\n");
+    if (bfsr & (1 << 6))
+      MIPI_CMD_ERROR("  BFARVALID: BFAR address valid\r\n");
 
     // 若错误地址有效，则打印出错地址
-    if (bfsr & (1 << 6)) {
+    if (bfsr & (1 << 6))
+    {
       MIPI_CMD_ERROR("  Fault Address BFAR = 0x%08X\r\n", bfar);
     }
   }
@@ -175,41 +192,51 @@ void HardFault_Handler(void)
   // ==============================================
   // 用法错误解析（打印英文，注释中文）
   // ==============================================
-  if (ufsr != 0) {
+  if (ufsr != 0)
+  {
     MIPI_CMD_ERROR("[UsageFault]\r\n");
-    if (ufsr & (1 << 0))  MIPI_CMD_ERROR("  UNDEFINSTR: Undefined instruction\r\n");
-    if (ufsr & (1 << 1))  MIPI_CMD_ERROR("  INVSTATE: Invalid state\r\n");
-    if (ufsr & (1 << 2))  MIPI_CMD_ERROR("  INVPC: Invalid EXC_RETURN\r\n");
-    if (ufsr & (1 << 3))  MIPI_CMD_ERROR("  NOCP: No coprocessor\r\n");
-    if (ufsr & (1 << 8))  MIPI_CMD_ERROR("  UNALIGNED: Unaligned access\r\n");
-    if (ufsr & (1 << 9))  MIPI_CMD_ERROR("  DIVBYZERO: Divide by zero\r\n");
+    if (ufsr & (1 << 0))
+      MIPI_CMD_ERROR("  UNDEFINSTR: Undefined instruction\r\n");
+    if (ufsr & (1 << 1))
+      MIPI_CMD_ERROR("  INVSTATE: Invalid state\r\n");
+    if (ufsr & (1 << 2))
+      MIPI_CMD_ERROR("  INVPC: Invalid EXC_RETURN\r\n");
+    if (ufsr & (1 << 3))
+      MIPI_CMD_ERROR("  NOCP: No coprocessor\r\n");
+    if (ufsr & (1 << 8))
+      MIPI_CMD_ERROR("  UNALIGNED: Unaligned access\r\n");
+    if (ufsr & (1 << 9))
+      MIPI_CMD_ERROR("  DIVBYZERO: Divide by zero\r\n");
   }
 
   // ==============================================
   // 硬故障总标志解析
   // ==============================================
-  if (hfsr & (1 << 1))  MIPI_CMD_ERROR("  VECTBL: Vector table read fault\r\n");
-  if (hfsr & (1 << 30)) MIPI_CMD_ERROR("  FORCED: Forced HardFault\r\n");
-  if (hfsr & (1 << 31)) MIPI_CMD_ERROR("  DEBUGEVT: Debug event\r\n");
+  if (hfsr & (1 << 1))
+    MIPI_CMD_ERROR("  VECTBL: Vector table read fault\r\n");
+  if (hfsr & (1 << 30))
+    MIPI_CMD_ERROR("  FORCED: Forced HardFault\r\n");
+  if (hfsr & (1 << 31))
+    MIPI_CMD_ERROR("  DEBUGEVT: Debug event\r\n");
 
   // ==============================================
   // 获取当前栈指针（MSP/PSP自动判断）
   // ==============================================
   uint32_t *sp;
   __ASM volatile(
-      "TST lr, #4 \n"      // 判断LR的bit4，确定使用MSP还是PSP
+      "TST lr, #4 \n" // 判断LR的bit4，确定使用MSP还是PSP
       "ITE EQ \n"
-      "MRSEQ %0, MSP \n"   // 等于0时使用MSP
-      "MRSNE %0, PSP \n"   // 等于1时使用PSP
-      : "=r"(sp)
-  );
+      "MRSEQ %0, MSP \n" // 等于0时使用MSP
+      "MRSNE %0, PSP \n" // 等于1时使用PSP
+      : "=r"(sp));
 
   // 打印触发HardFault的PC指针（栈中偏移6*4位置）
   MIPI_CMD_ERROR("\r\n>>>>>> Fault PC = 0x%08X <<<<<<\r\n", sp[6]);
   MIPI_CMD_ERROR("=====================================================\r\n");
 
   /* USER CODE END HardFault_IRQn 0 */
-  while (1);
+  while (1)
+    ;
 }
 
 /**
@@ -287,15 +314,15 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
 /**
-  * @brief  This function handles TIM interrupt request.
-  * @param  None
-  * @retval None
-  */
+ * @brief  This function handles TIM interrupt request.
+ * @param  None
+ * @retval None
+ */
 void TIM1_CC_IRQHandler(void)
 {
   HAL_TIM_IRQHandler(&htim1);
-
 }
+
 /**
  * @brief This function handles EXTI line1 interrupt.
  */
@@ -390,8 +417,6 @@ void DMA1_Stream3_IRQHandler(void)
   /* USER CODE END DMA1_Stream3_IRQn 1 */
 }
 
-
-
 /**
  * @brief This function handles DMA1 stream5 global interrupt.
  */
@@ -443,7 +468,7 @@ void I2C2_EV_IRQHandler(void)
   /* USER CODE BEGIN I2C2_EV_IRQn 0 */
 
   /* USER CODE END I2C2_EV_IRQn 0 */
-  //I2C_DEBUG("I2C2_EV_IRQHandler\r\n");
+  // I2C_DEBUG("I2C2_EV_IRQHandler\r\n");
   HAL_I2C_EV_IRQHandler(&hi2c2);
   /* USER CODE BEGIN I2C2_EV_IRQn 1 */
 
@@ -476,44 +501,47 @@ void SPI2_IRQHandler(void)
 }
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    if(hspi->Instance == SPI2) {
-      M_INT_LOW();
-      spi_rx_flag = 1;
-      SPI2_Slave_OnRxCplt_IT(hspi);
-      
-    }
+  if (hspi->Instance == SPI2)
+  {
+    M_INT_LOW();
+    meter_com_flag = 1;
+    SPI2_Slave_OnRxCplt_IT(hspi);
+  }
 }
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    if (hspi->Instance == SPI2) {
-        M_INT_LOW();
-        SPI2_Slave_OnTxCplt_IT(hspi);
-        
-    }
+  if (hspi->Instance == SPI2)
+  {
+    M_INT_LOW();
+    SPI2_Slave_OnTxCplt_IT(hspi);
+  }
 }
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-     if(hspi == &hspi_tp){
-        
-         //printf("SPI2 TxRx Complete\r\n");
-     }
-    if(hspi->Instance == SPI3){
-     }
+  if (hspi == &hspi_tp)
+  {
 
+    // printf("SPI2 TxRx Complete\r\n");
+  }
+  if (hspi->Instance == SPI3)
+  {
+  }
 }
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
-    if (hspi->Instance == SPI2) {
-        // 处理错误
-        // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
-        // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
-        // #define HAL_SPI_ERROR_CRC               (0x00000002U)   /*!< CRC error                              */
-        // #define HAL_SPI_ERROR_OVR               (0x00000004U)   /*!< OVR error                              */
-        // #define HAL_SPI_ERROR_FRE               (0x00000008U)   /*!< FRE error                              */
-        // #define HAL_SPI_ERROR_DMA               (0x00000010U)   /*!< DMA transfer error                     */
-        // #define HAL_SPI_ERROR_FLAG              (0x00000020U)   /*!< Error on RXNE/TXE/BSY Flag             */
-        // #define HAL_SPI_ERROR_ABORT             (0x00000040U)   /*!< Error during SPI Abort procedure       */
-        SPI2_Slave_OnError_IT(hspi);    }
+  if (hspi->Instance == SPI2)
+  {
+    // 处理错误
+    // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
+    // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
+    // #define HAL_SPI_ERROR_CRC               (0x00000002U)   /*!< CRC error                              */
+    // #define HAL_SPI_ERROR_OVR               (0x00000004U)   /*!< OVR error                              */
+    // #define HAL_SPI_ERROR_FRE               (0x00000008U)   /*!< FRE error                              */
+    // #define HAL_SPI_ERROR_DMA               (0x00000010U)   /*!< DMA transfer error                     */
+    // #define HAL_SPI_ERROR_FLAG              (0x00000020U)   /*!< Error on RXNE/TXE/BSY Flag             */
+    // #define HAL_SPI_ERROR_ABORT             (0x00000040U)   /*!< Error during SPI Abort procedure       */
+    SPI2_Slave_OnError_IT(hspi);
+  }
 }
 /**
  * @brief This function handles USART3 global interrupt.
@@ -595,7 +623,7 @@ void DMA2_Stream2_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
 
   /* USER CODE END DMA2_Stream2_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
 
   /* USER CODE END DMA2_Stream2_IRQn 1 */
@@ -623,12 +651,11 @@ void DMA2_Stream7_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
 
   /* USER CODE END DMA2_Stream7_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
 
   /* USER CODE END DMA2_Stream7_IRQn 1 */
 }
-
 
 void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)
 {
@@ -638,12 +665,12 @@ void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)
   HAL_I2C_EnableListen_IT(hi2c);
 }
 
-//I2C device address callback function (The slave will only enter the function in response to the address sent by the host))
+// I2C device address callback function (The slave will only enter the function in response to the address sent by the host))
 void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)
 {
-  if(TransferDirection == I2C_DIRECTION_TRANSMIT) 
+  if (TransferDirection == I2C_DIRECTION_TRANSMIT)
   {
-      HAL_I2C_Slave_Seq_Receive_IT(hi2c, i2c1_rx_buf, 2, I2C_LAST_FRAME);
+    HAL_I2C_Slave_Seq_Receive_IT(hi2c, i2c1_rx_buf, 2, I2C_LAST_FRAME);
   }
   else
   {
@@ -685,18 +712,20 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
     first_byte_state = 1;
     offset = 0;
 #endif
-      if (I2C_IsSDALow(hi2c,GPIOB,GPIO_PIN_6,GPIO_PIN_7)) {
-        // 如果 SDA 被拉低，调用恢复函数
-        I2C_RecoverSDA(hi2c,GPIOB,GPIO_PIN_6,GPIO_PIN_7);
-      }
-      if (I2C_IsSCLLow(hi2c,GPIOB,GPIO_PIN_6,GPIO_PIN_7)) {
-        // 如果 SCL 被拉低，调用恢复函数
-        I2C_RecoverSCL(hi2c,GPIOB,GPIO_PIN_6,GPIO_PIN_7);
-      }
-      MX_I2C1_Init();
+    if (I2C_IsSDALow(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7))
+    {
+      // 如果 SDA 被拉低，调用恢复函数
+      I2C_RecoverSDA(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7);
+    }
+    if (I2C_IsSCLLow(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7))
+    {
+      // 如果 SCL 被拉低，调用恢复函数
+      I2C_RecoverSCL(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7);
+    }
+    MX_I2C1_Init();
 
     // 重新使能侦听模式，保证从机持续响应主机
-      HAL_I2C_EnableListen_IT(&hi2c1);
+    HAL_I2C_EnableListen_IT(&hi2c1);
   }
   // 处理其他I2C实例的错误
   else if (hi2c->Instance == hi2c2.Instance)
@@ -731,29 +760,28 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
     first_byte_state = 1;
     offset = 0;
 #endif
-    if (I2C_IsSDALow(&hi2c2,GPIOB,GPIO_PIN_10,GPIO_PIN_11)) {
+    if (I2C_IsSDALow(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11))
+    {
       // 如果 SDA 被拉低，调用恢复函数
-      I2C_RecoverSDA(&hi2c2,GPIOB,GPIO_PIN_10,GPIO_PIN_11);
+      I2C_RecoverSDA(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11);
     }
-    if (I2C_IsSCLLow(&hi2c2,GPIOB,GPIO_PIN_10,GPIO_PIN_11)) {
+    if (I2C_IsSCLLow(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11))
+    {
       // 如果 SCL 被拉低，调用恢复函数
-      I2C_RecoverSCL(&hi2c2,GPIOB,GPIO_PIN_10,GPIO_PIN_11);
+      I2C_RecoverSCL(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11);
     }
     MX_I2C2_Init();
     // 重新使能侦听模式，保证从机持续响应主机
     HAL_I2C_EnableListen_IT(&hi2c2);
-
   }
 }
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-
 }
 
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
-{     
-
+{
 }
 
 // I2C中断回调
@@ -767,7 +795,6 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
   printf("Master received ...\r\n");
 }
 
-
 void I2C1_ER_IRQHandler(void)
 {
   HAL_I2C_ErrorCallback(&hi2c1);
@@ -780,22 +807,21 @@ void I2C2_ER_IRQHandler(void)
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
-    // 这里可以加断点、打印、重启等
-    printf("Stack overflow in task: %s\r\n", pcTaskName);
-    // 或者点灯、记录日志等
+  // 这里可以加断点、打印、重启等
+  printf("Stack overflow in task: %s\r\n", pcTaskName);
+  // 或者点灯、记录日志等
 }
-
-
 
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    if (hspi == &hspi_tp) {
-        GTB_INFO("[SPI ABORTED]\r\n");
-    }
+  if (hspi == &hspi_tp)
+  {
+    GTB_INFO("[SPI ABORTED]\r\n");
+  }
 }
 /**
-  * @brief This function handles USB On The Go HS End Point 1 Out global interrupt.
-  */
+ * @brief This function handles USB On The Go HS End Point 1 Out global interrupt.
+ */
 void OTG_HS_EP1_OUT_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_HS_EP1_OUT_IRQn 0 */
@@ -808,8 +834,8 @@ void OTG_HS_EP1_OUT_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USB On The Go HS End Point 1 In global interrupt.
-  */
+ * @brief This function handles USB On The Go HS End Point 1 In global interrupt.
+ */
 void OTG_HS_EP1_IN_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_HS_EP1_IN_IRQn 0 */
@@ -823,12 +849,12 @@ void OTG_HS_EP1_IN_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 /**
-  * @brief This function handles USB On The Go HS global interrupt.
-  */
+ * @brief This function handles USB On The Go HS global interrupt.
+ */
 void OTG_HS_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_HS_IRQn 0 */
-  //TIME_DEBUG("INT: %lu ms\r\n", dwt_get_ms());
+  // TIME_DEBUG("INT: %lu ms\r\n", dwt_get_ms());
   /* USER CODE END OTG_HS_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
 
@@ -839,7 +865,7 @@ void OTG_HS_IRQHandler(void)
 /* USER CODE END 1 */
 void EXTI2_IRQHandler(void)
 {
-    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
 }
 // 电压电流采样回调函数
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -912,72 +938,67 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   if (GPIO_Pin == TSPI_INT_IN_Pin)
   {
-    
-    if((tp_config_hid.transfer_flag == false) && (tp_config_hid.int_trans == true))
-      {
-          tp_config_hid.int_flag = true;
-      }
 
-
+    if ((tp_config_hid.transfer_flag == false) && (tp_config_hid.int_trans == true))
+    {
+      tp_config_hid.int_flag = true;
+    }
 
 #if DEBUG_LIYI == 1
     if (test_flag == 1)
     {
-        bsp_DelayMS(1);
-        uint8_t data[4] = {0xFF,0xA3,0x00,0x00};
-        uint8_t ret_data[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        SSD_SEND_array(0X01, 2, (uint8_t*)&data);
-        uint8_t ret = 0;
-        ret = SSD_READ_ACK_Report_HS(0x01,0x14,1,&ret_data[0]);
-        printf("ret %d \r\n",ret);
-        SSD_READ_ACK_Report_HS(0x01,0x15,1,&ret_data[0]);
-        SSD_READ_ACK_Report_HS(0x01,0x16,1,&ret_data[2]);
-        SSD_READ_ACK_Report_HS(0x01,0x17,1,&ret_data[4]);
-        SSD_READ_ACK_Report_HS(0x01,0x18,1,&ret_data[6]);
-        SSD_READ_ACK_Report_HS(0x01,0x19,1,&ret_data[8]);
-        SSD_READ_ACK_Report_HS(0x01,0x1a,1,&ret_data[10]);
-        SSD_READ_ACK_Report_HS(0x01,0x1b,1,&ret_data[12]);
-        for (uint8_t i = 0; i < 8; i++)
-            printf("0x%x ",ret_data[2*i+1]);
-        printf("\r\n");
-        set_lcd_clock_freq(89*2, 0);
-        test_flag = 0;
+      bsp_DelayMS(1);
+      uint8_t data[4] = {0xFF, 0xA3, 0x00, 0x00};
+      uint8_t ret_data[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      SSD_SEND_array(0X01, 2, (uint8_t *)&data);
+      uint8_t ret = 0;
+      ret = SSD_READ_ACK_Report_HS(0x01, 0x14, 1, &ret_data[0]);
+      printf("ret %d \r\n", ret);
+      SSD_READ_ACK_Report_HS(0x01, 0x15, 1, &ret_data[0]);
+      SSD_READ_ACK_Report_HS(0x01, 0x16, 1, &ret_data[2]);
+      SSD_READ_ACK_Report_HS(0x01, 0x17, 1, &ret_data[4]);
+      SSD_READ_ACK_Report_HS(0x01, 0x18, 1, &ret_data[6]);
+      SSD_READ_ACK_Report_HS(0x01, 0x19, 1, &ret_data[8]);
+      SSD_READ_ACK_Report_HS(0x01, 0x1a, 1, &ret_data[10]);
+      SSD_READ_ACK_Report_HS(0x01, 0x1b, 1, &ret_data[12]);
+      for (uint8_t i = 0; i < 8; i++)
+        printf("0x%x ", ret_data[2 * i + 1]);
+      printf("\r\n");
+      set_lcd_clock_freq(89 * 2, 0);
+      test_flag = 0;
     }
 #endif
 
-    //printf("te signal \r\n");
-   // master_state.int_change_img_flag = 1;
+    // printf("te signal \r\n");
+    // master_state.int_change_img_flag = 1;
 
-//    if(master_state.int_change_img_flag == 1){
-//        //printf("---\r\n");
-//        tp_spi_cs_enable(false);
-//        bsp_DelayUS(delay_num);
-//        show_next_image(&image_status);
-//        master_state.int_change_img_flag = 0;
-//        tp_spi_cs_enable(true);
-//    }
-		
-		
-//    if(master_state.img_run_state == IMG_INT_MODE){
-//        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, exit_state);
-////        tp_spi_cs_enable(exit_state);
-////        exit_state = ~ exit_state;
-//        show_next_image(&master_status,&image_status);
-////        tp_spi_cs_enable(true);
+    //    if(master_state.int_change_img_flag == 1){
+    //        //printf("---\r\n");
+    //        tp_spi_cs_enable(false);
+    //        bsp_DelayUS(delay_num);
+    //        show_next_image(&image_status);
+    //        master_state.int_change_img_flag = 0;
+    //        tp_spi_cs_enable(true);
+    //    }
 
-//        exit_state = ~exit_state;
-//    }else if(master_state.img_run_state == IMG_SINGLE_INT_MODE){
-//        //printf("1111111111111\r\n");
-//        //if(master_state.int_change_img_flag == 1)
-//        {
-//            show_next_image(&master_status,&image_status);
-//            image_trigger_mode(0);
-//            //master_state.img_run_state = IMG_TRANSFER_END;
-//            printf("1111111111111\r\n");
-//        }
-//    }
+    //    if(master_state.img_run_state == IMG_INT_MODE){
+    //        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, exit_state);
+    ////        tp_spi_cs_enable(exit_state);
+    ////        exit_state = ~ exit_state;
+    //        show_next_image(&master_status,&image_status);
+    ////        tp_spi_cs_enable(true);
 
-    
+    //        exit_state = ~exit_state;
+    //    }else if(master_state.img_run_state == IMG_SINGLE_INT_MODE){
+    //        //printf("1111111111111\r\n");
+    //        //if(master_state.int_change_img_flag == 1)
+    //        {
+    //            show_next_image(&master_status,&image_status);
+    //            image_trigger_mode(0);
+    //            //master_state.img_run_state = IMG_TRANSFER_END;
+    //            printf("1111111111111\r\n");
+    //        }
+    //    }
   }
 }
 

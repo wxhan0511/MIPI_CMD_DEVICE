@@ -1,76 +1,63 @@
-//
-// Created by 17333 on 25-6-27.
-//
+/**
+ * @brief
+ */
 
+/* Includes ------------------------------------------------------------------*/
+#include <stdio.h>
+#include <string.h>
 #include "com_handle.h"
-#include "com_define.h"
+#include "task_sample.h"
+#include "spi.h"
+/* Private typedef -----------------------------------------------------------*/
 
+/* Private define ------------------------------------------------------------*/
 
-void com_handle_i2c(const uint8_t *rx, uint8_t *tx)
+/* Private macro -------------------------------------------------------------*/
+
+/* Private variables ---------------------------------------------------------*/
+extern uint8_t meter_tx_buf[SPI2_SLAVE_TX_LEN];
+extern uint8_t meter_rx_buf[SPI2_SLAVE_RX_LEN];
+extern SampleTask_S g_sample_task;
+
+/* Private function prototypes -----------------------------------------------*/
+
+/* Private functions ---------------------------------------------------------*/
+BSP_STATUS
+com_handle_spi(const uint8_t *rx, uint8_t *tx)
 {
 
-    //通过帧首判断模式
-//     if (rx[0] == FRAME_CMD_HEAD_RX)
-//     {
-//         //DATA Mode
-// #if METER_COM_DEBUG
-//         printf("[cmd mode]master 0x%x 0x%x 0x%x 0x%x \r\n",rx[0],rx[1],rx[2],rx[3]);
-//         printf("[cmd mode]slave 0x%x 0x%x 0x%x 0x%x \r\n",tx[0],tx[1],tx[2],tx[3]);
-// #endif
-//         task_sample_task_mutex_acquire();
-//         {
-//             //准备数据
-//             meter_com_mode = METER_CMD_MODE;
-//             if (rx[1] == 0x00)
-//             {
-//                 tx[1] = 0x00;
-//                 command_00(rx, tx);
-//             }else if (rx[1] == 0x10)
-//             {
-//                 tx[1] = 0x10;
-//                 command_10(rx, tx);
-//             }else if (rx[1] == 0x20)
-//             {
-//                 tx[1] = 0x20;
-//                 command_20(rx, tx);
-//             }else if (rx[1] == 0x30)
-//             {
-//                 tx[1] = 0x30;
-//                 command_30(rx, tx);
-//             }
-//             meter_tx_buf[0] = FRAME_DATA_HEAD_TX;
-//             bsp_meter_com_tx_rx(tx, (uint8_t*)rx, 64,0);
-//             METER_INT_H
-//         }
-//         task_sample_task_mutex_release();
-//     }
-//     else if (rx[0] == FRAME_DATA_HEAD_RX)
-//     {
-// #if METER_COM_DEBUG
-//         printf("[data mode]master 0x%x 0x%x 0x%x 0x%x \r\n",rx[0],rx[1],rx[2],rx[3]);
-//         printf("[data mode]slave 0x%x 0x%x 0x%x 0x%x \r\n",tx[0],tx[1],tx[2],tx[3]);
-// #endif
-//         {
-//             meter_com_mode = METER_DATA_MODE;
-//             tx[0] = FRAME_CMD_HEAD_TX;
-//             tx[1] = FRAME_CMD_SUCCESS_0;
-//             tx[2] = FRAME_CMD_SUCCESS_1;
-//             bsp_meter_com_tx_rx(tx, (uint8_t*)rx, 64,0);
-//             METER_INT_H
-//         }
-//
-//     }
-//     else
-//     {
-//         tx[0] = FRAME_ERROR_CODE;
-//         tx[METER_CMD_MODE] = FRAME_ERROR_CODE;
-//         // bsp_meter_com_rx_tx(rx->data, tx.data,METER_CMD_LEN);
-//         LOG_ERROR("meter com error %d \r\n",rx[0]);
-//         bsp_meter_com_tx_rx(tx, (uint8_t*)rx, 64,0);
-//
-//         METER_INT_H
-//         return BSP_ERROR;
-//     }
-
-    //printf("spi finish \r\n");
+    // 通过帧首判断模式
+    if (rx[0] == 0xA0)
+    {
+        task_sample_task_mutex_acquire(); // 获取采样任务的互斥锁，停止通信任务,采样任务处理完命令后恢复通信任务
+        {
+            // 处理接收的数据
+            g_sample_task.frame_header = meter_rx_buf[0];
+            g_sample_task.cmd_type = meter_rx_buf[1];
+            g_sample_task.cmd_status = POWER_CMD_STATUS_SUCCESS;
+            // 处理命令--------------------
+            task_sample_suspend();
+            task_sample_resume();
+            task_com_suspend(); // 暂停通信任务，等待采样任务处理完命令后调用task_com_resume()恢复通信任务
+            // 准备待发送数据
+            meter_tx_buf[0] = g_sample_task.frame_header;
+            meter_tx_buf[1] = g_sample_task.cmd_type;
+            // 发送数据给上位机
+            meter_com_flag = 0;
+            SPI2_Slave_Send_IT(meter_tx_buf, SPI2_SLAVE_TX_LEN);
+            M_INT_HIGH();
+        }
+        task_sample_task_mutex_release();
+    }
+    else
+    {
+        meter_tx_buf[0] = 0xFF;                    // 错误标志
+        meter_tx_buf[0] = 0xFF;                    // 错误标志
+        meter_tx_buf[0] = POWER_CMD_STATUS_FAILED; // 错误标志
+        SPI2_Slave_Send_IT(meter_tx_buf, SPI2_SLAVE_TX_LEN);
+        M_INT_HIGH();
+        return BSP_ERROR;
+    }
+    return BSP_OK;
 }
+/* Exported functions --------------------------------------------------------*/

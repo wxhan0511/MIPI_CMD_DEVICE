@@ -15,6 +15,4 @@ void widget_main_update_show_buf_vol(const double *vol);
 
 void widget_main_update_show_buf_cur(const double *cur);
 
-
-
-#endif //WIDGET_MAIN_H
+#endif // WIDGET_MAIN_H

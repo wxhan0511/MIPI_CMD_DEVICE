@@ -1,6 +1,5 @@
 #include "led_task.h"
-#include "main.h"
-
+#include "main.h" // 你的变量
 /* led_timer_callback function */
 /**
  * @brief  Function implementing the led_timer.
@@ -9,7 +8,6 @@
  */
 void led_timer_callback(void *argument)
 {
-  HAL_GPIO_TogglePin(GPIOE,GPIO_PIN_3);
+  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_3);
   uint16_t data;
-  
 }

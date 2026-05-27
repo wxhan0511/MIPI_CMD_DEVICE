@@ -21,10 +21,10 @@
 
 #include "bsp_d_trigger.h"
 
-#include "bsp_dwt.h"//for delay
+#include "bsp_dwt.h" //for delay
 
 #define D_TRIGGER_CHANNEL_NUM 8
-#define D_TRIGGER_DEVICE_NUM  8
+#define D_TRIGGER_DEVICE_NUM 8
 
 /* 每个D触发器8路通道状态缓存：bit0~bit7 对应 channel 0~7 */
 static uint8_t s_d_trigger_shadow[D_TRIGGER_DEVICE_NUM] = {0};
@@ -120,23 +120,22 @@ const d_trigger_t d_8 = {
  * @brief 初始化一路 D 触发器的时钟脚与 8 路数据脚
  * @param cfg 触发器配置（可传 d_1 ~ d_8）
  */
-void bsp_d_trigger_init( d_trigger_t cfg)
+void bsp_d_trigger_init(d_trigger_t cfg)
 {
 
-    //时钟引脚初始化
+    // 时钟引脚初始化
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = cfg.d_clk_pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(cfg.d_clk_group, &GPIO_InitStruct);
-    //数据引脚初始化
-    for(uint8_t i=0;i<D_TRIGGER_CHANNEL_NUM;i++)
+    // 数据引脚初始化
+    for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)
     {
         GPIO_InitStruct.Pin = cfg.d_pin[i];
         HAL_GPIO_Init(cfg.d_group[i], &GPIO_InitStruct);
     }
-
 }
 /**
  * @brief 总使能控制（OE）
@@ -149,14 +148,22 @@ void bsp_d_trigger_set(uint8_t state)
 }
 static int8_t bsp_d_trigger_get_index(const d_trigger_t *cfg)
 {
-    if (cfg == &d_1) return 0;
-    if (cfg == &d_2) return 1;
-    if (cfg == &d_3) return 2;
-    if (cfg == &d_4) return 3;
-    if (cfg == &d_5) return 4;
-    if (cfg == &d_6) return 5;
-    if (cfg == &d_7) return 6;
-    if (cfg == &d_8) return 7;
+    if (cfg == &d_1)
+        return 0;
+    if (cfg == &d_2)
+        return 1;
+    if (cfg == &d_3)
+        return 2;
+    if (cfg == &d_4)
+        return 3;
+    if (cfg == &d_5)
+        return 4;
+    if (cfg == &d_6)
+        return 5;
+    if (cfg == &d_7)
+        return 6;
+    if (cfg == &d_8)
+        return 7;
     return -1;
 }
 /**
@@ -169,10 +176,10 @@ static int8_t bsp_d_trigger_get_index(const d_trigger_t *cfg)
  *    bsp_d_trigger_init(d_2);
  *    bsp_d_trigger_set(1);
  *    bsp_d_trigger_set_channel(&d_2, 5, 1); // d_2 CH5 输出高
- */ 
+ */
 void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, const uint8_t enable)
 {
-    if(cfg == NULL || channel >= D_TRIGGER_CHANNEL_NUM)
+    if (cfg == NULL || channel >= D_TRIGGER_CHANNEL_NUM)
     {
         return;
     }
@@ -181,7 +188,7 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
     if (idx >= 0)
     {
         if (enable)
-            s_d_trigger_shadow[idx] |=  (uint8_t)(1U << channel);
+            s_d_trigger_shadow[idx] |= (uint8_t)(1U << channel);
         else
             s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
     }
@@ -192,18 +199,28 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         GPIO_PinState st = ((shadow >> i) & 0x01U) ? GPIO_PIN_SET : GPIO_PIN_RESET;
         HAL_GPIO_WritePin(cfg->d_group[i], cfg->d_pin[i], st);
     }
-    
-    //HAL_GPIO_WritePin(cfg->d_group[channel],cfg->d_pin[channel],enable);
-    //bsp_delay_us(20);
 
-    HAL_GPIO_WritePin(cfg->d_clk_group,cfg->d_clk_pin,GPIO_PIN_SET);
+    HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_SET);
 
     bsp_delay_us(20);
 
-    HAL_GPIO_WritePin(cfg->d_clk_group,cfg->d_clk_pin,GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_RESET);
     bsp_delay_us(20);
 }
 
+uint8_t bsp_d_trigger_get_channel_state(const d_trigger_t *cfg, const uint8_t channel)
+{
+    if (cfg == NULL || channel >= D_TRIGGER_CHANNEL_NUM)
+    {
+        return 0;
+    }
+    int8_t idx = bsp_d_trigger_get_index(cfg);
+    if (idx >= 0)
+    {
+        return (s_d_trigger_shadow[idx] >> channel) & 0x01U;
+    }
+    return 0;
+}
 
 void test_d_trigger()
 {
@@ -223,7 +240,7 @@ void test_d_trigger()
     bsp_d_trigger_init(d_8);
     bsp_d_trigger_set(1);
 
-    for (uint8_t i=0;i<8;i++)
+    for (uint8_t i = 0; i < 8; i++)
     {
         bsp_d_trigger_set_channel(&d_1, i, 0);
         bsp_d_trigger_set_channel(&d_2, i, 0);
@@ -235,7 +252,7 @@ void test_d_trigger()
         bsp_d_trigger_set_channel(&d_8, i, 0);
     }
 
-    for (uint8_t i=0;i<8;i++)
+    for (uint8_t i = 0; i < 8; i++)
     {
         bsp_d_trigger_set_channel(&d_1, i, 1);
         bsp_d_trigger_set_channel(&d_2, i, 1);

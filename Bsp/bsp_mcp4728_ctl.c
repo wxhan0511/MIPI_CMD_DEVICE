@@ -23,8 +23,6 @@
 #include "pin_defs.h"
 #include "utils.h"
 #include "bsp_channel_sel.h"
-
-#include "bsp_mcp4728_ctl.h"
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
@@ -50,34 +48,34 @@ i2c_dev_t i2c_bus_2 = {
 
 //
 dac_dev_t dac_chips[DAC_CHIP_MAX] = {
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_1, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_2, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
-    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1,1,1,1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}}};
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_1, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_2, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
+    {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}}};
 // 1. 定义映射表
 dac_config_table_t dac_config_table[20] = {
     //  上次电压地址                                      | 偏移地址                                               | 增益地址                                             | 芯片       | 名称         | 通道 | 反 | id | res | 使能                    | 禁能
-    {&g_calibration_manager.data.vcc_last_voltage,       &g_calibration_manager.data.da_data.vcc_set_offset,      &g_calibration_manager.data.da_data.vcc_set_gain,       DAC_CHIP_1, "VCC",           0,   0,   0,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV+1"},
-    {&g_calibration_manager.data.iovcc_last_voltage,     &g_calibration_manager.data.da_data.iovcc_set_offset,    &g_calibration_manager.data.da_data.iovcc_set_gain,     DAC_CHIP_1, "IOVCC",         1,   0,   1,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV+2"},
-    {&g_calibration_manager.data.vsp_last_voltage,       &g_calibration_manager.data.da_data.vsp_set_offset,      &g_calibration_manager.data.da_data.vsp_set_gain,       DAC_CHIP_1, "VSP",           2,   0,   2,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV+3"},
-    {&g_calibration_manager.data.vsn_last_voltage,       &g_calibration_manager.data.da_data.vsn_set_offset,      &g_calibration_manager.data.da_data.vsn_set_gain,       DAC_CHIP_1, "VSN",           3,   1,   3,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV-1"},
-    {&g_calibration_manager.data.vcc_ref_last,           &g_calibration_manager.data.da_data.vcc_ref_offset,      &g_calibration_manager.data.da_data.vcc_ref_gain,       DAC_CHIP_2, "VCC_LimRef",    0,   0,   4,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF1"},
-    {&g_calibration_manager.data.iovcc_ref_last,         &g_calibration_manager.data.da_data.iovcc_ref_offset,    &g_calibration_manager.data.da_data.iovcc_ref_gain,     DAC_CHIP_2, "IOVCC_LimRef",  1,   0,   5,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF2"},
-    {&g_calibration_manager.data.vsp_ref_last,           &g_calibration_manager.data.da_data.vsp_ref_offset,      &g_calibration_manager.data.da_data.vsp_ref_gain,       DAC_CHIP_2, "VSP_LimRef",    2,   0,   6,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF3"},
-    {&g_calibration_manager.data.vsn_ref_last,           &g_calibration_manager.data.da_data.vsn_ref_offset,      &g_calibration_manager.data.da_data.vsn_ref_gain,       DAC_CHIP_2, "VSN_LimRef",    3,   1,   7,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF-1"},
-    {&g_calibration_manager.data.avdd_last_voltage,      &g_calibration_manager.data.da_data.avdd_set_offset,     &g_calibration_manager.data.da_data.avdd_set_gain,      DAC_CHIP_3, "AVDD",          0,   0,   8,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV+4"},
-    {&g_calibration_manager.data.vdd_last_voltage,       &g_calibration_manager.data.da_data.vdd_set_offset,      &g_calibration_manager.data.da_data.vdd_set_gain,       DAC_CHIP_3, "VDD",           1,   0,   9,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV+5"},
-    {&g_calibration_manager.data.elvdd_last_voltage,     &g_calibration_manager.data.da_data.elvdd_set_offset,    &g_calibration_manager.data.da_data.elvdd_set_gain,     DAC_CHIP_3, "ELVDD",         2,   0,  10,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV+6"},
-    {&g_calibration_manager.data.elvss_last_voltage,     &g_calibration_manager.data.da_data.elvss_set_offset,    &g_calibration_manager.data.da_data.elvss_set_gain,     DAC_CHIP_3, "ELVSS",         3,   1,  11,  0,   bsp_power_single_enable, bsp_power_single_disable,"CtrlV-2"},
-    {&g_calibration_manager.data.avdd_ref_last,          &g_calibration_manager.data.da_data.avdd_ref_offset,     &g_calibration_manager.data.da_data.avdd_ref_gain,      DAC_CHIP_4, "AVDD_LimRef",   0,   0,  12,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF4"},
-    {&g_calibration_manager.data.vdd_ref_last,           &g_calibration_manager.data.da_data.vdd_ref_offset,      &g_calibration_manager.data.da_data.vdd_ref_gain,       DAC_CHIP_4, "VDD_LimRef",    1,   0,  13,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF5"},
-    {&g_calibration_manager.data.elvdd_ref_last,         &g_calibration_manager.data.da_data.elvdd_ref_offset,    &g_calibration_manager.data.da_data.elvdd_ref_gain,     DAC_CHIP_4, "ELVDD_LimRef",  2,   0,  14,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF6"},
-    {&g_calibration_manager.data.elvss_ref_last,         &g_calibration_manager.data.da_data.elvss_ref_offset,    &g_calibration_manager.data.da_data.elvss_ref_gain,     DAC_CHIP_4, "ELVSS_LimRef",  3,   1,  15,  0,   bsp_power_single_enable, bsp_power_single_disable,"LIMREF-2"},
-    {&g_calibration_manager.data.v_level_shift_last,     &g_calibration_manager.data.da_data.v_level_shift_offset, &g_calibration_manager.data.da_data.v_level_shift_gain, DAC_CHIP_5, "V_LEVEL_SHIFT", 3,   0,  16,  0,   bsp_power_single_enable, bsp_power_single_disable,"VLSHIFT"},
-    {&g_calibration_manager.data.ref_freq_last,          &g_calibration_manager.data.da_data.ref_freq_offset,     &g_calibration_manager.data.da_data.ref_freq_gain,      DAC_CHIP_5, "REF_FREQ",       2,   0,  17,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_REFFREQ"},
-    {&g_calibration_manager.data.vadj_p_last,            &g_calibration_manager.data.da_data.vadj_p_offset,       &g_calibration_manager.data.da_data.vadj_p_gain,        DAC_CHIP_5, "VADJ_P",         1,   0,  18,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_VADJP"},
-    {&g_calibration_manager.data.vadj_n_last,            &g_calibration_manager.data.da_data.vadj_n_offset,       &g_calibration_manager.data.da_data.vadj_n_gain,        DAC_CHIP_5, "VADJ_N",         0,   1,  19,  0,   bsp_power_single_enable, bsp_power_single_disable,"Ctrl_VADJN"},
+    {&g_calibration_manager.data.vcc_last_voltage, &g_calibration_manager.data.da_data.vcc_set_offset, &g_calibration_manager.data.da_data.vcc_set_gain, DAC_CHIP_1, "VCC", 0, 0, 0, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+1"},
+    {&g_calibration_manager.data.iovcc_last_voltage, &g_calibration_manager.data.da_data.iovcc_set_offset, &g_calibration_manager.data.da_data.iovcc_set_gain, DAC_CHIP_1, "IOVCC", 1, 0, 1, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+2"},
+    {&g_calibration_manager.data.vsp_last_voltage, &g_calibration_manager.data.da_data.vsp_set_offset, &g_calibration_manager.data.da_data.vsp_set_gain, DAC_CHIP_1, "VSP", 2, 0, 2, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+3"},
+    {&g_calibration_manager.data.vsn_last_voltage, &g_calibration_manager.data.da_data.vsn_set_offset, &g_calibration_manager.data.da_data.vsn_set_gain, DAC_CHIP_1, "VSN", 3, 1, 3, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV-1"},
+    {&g_calibration_manager.data.vcc_ref_last, &g_calibration_manager.data.da_data.vcc_ref_offset, &g_calibration_manager.data.da_data.vcc_ref_gain, DAC_CHIP_2, "VCC_LimRef", 0, 0, 4, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF1"},
+    {&g_calibration_manager.data.iovcc_ref_last, &g_calibration_manager.data.da_data.iovcc_ref_offset, &g_calibration_manager.data.da_data.iovcc_ref_gain, DAC_CHIP_2, "IOVCC_LimRef", 1, 0, 5, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF2"},
+    {&g_calibration_manager.data.vsp_ref_last, &g_calibration_manager.data.da_data.vsp_ref_offset, &g_calibration_manager.data.da_data.vsp_ref_gain, DAC_CHIP_2, "VSP_LimRef", 2, 0, 6, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF3"},
+    {&g_calibration_manager.data.vsn_ref_last, &g_calibration_manager.data.da_data.vsn_ref_offset, &g_calibration_manager.data.da_data.vsn_ref_gain, DAC_CHIP_2, "VSN_LimRef", 3, 1, 7, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF-1"},
+    {&g_calibration_manager.data.avdd_last_voltage, &g_calibration_manager.data.da_data.avdd_set_offset, &g_calibration_manager.data.da_data.avdd_set_gain, DAC_CHIP_3, "AVDD", 0, 0, 8, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+4"},
+    {&g_calibration_manager.data.vdd_last_voltage, &g_calibration_manager.data.da_data.vdd_set_offset, &g_calibration_manager.data.da_data.vdd_set_gain, DAC_CHIP_3, "VDD", 1, 0, 9, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+5"},
+    {&g_calibration_manager.data.elvdd_last_voltage, &g_calibration_manager.data.da_data.elvdd_set_offset, &g_calibration_manager.data.da_data.elvdd_set_gain, DAC_CHIP_3, "ELVDD", 2, 0, 10, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+6"},
+    {&g_calibration_manager.data.elvss_last_voltage, &g_calibration_manager.data.da_data.elvss_set_offset, &g_calibration_manager.data.da_data.elvss_set_gain, DAC_CHIP_3, "ELVSS", 3, 1, 11, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV-2"},
+    {&g_calibration_manager.data.avdd_ref_last, &g_calibration_manager.data.da_data.avdd_ref_offset, &g_calibration_manager.data.da_data.avdd_ref_gain, DAC_CHIP_4, "AVDD_LimRef", 0, 0, 12, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF4"},
+    {&g_calibration_manager.data.vdd_ref_last, &g_calibration_manager.data.da_data.vdd_ref_offset, &g_calibration_manager.data.da_data.vdd_ref_gain, DAC_CHIP_4, "VDD_LimRef", 1, 0, 13, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF5"},
+    {&g_calibration_manager.data.elvdd_ref_last, &g_calibration_manager.data.da_data.elvdd_ref_offset, &g_calibration_manager.data.da_data.elvdd_ref_gain, DAC_CHIP_4, "ELVDD_LimRef", 2, 0, 14, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF6"},
+    {&g_calibration_manager.data.elvss_ref_last, &g_calibration_manager.data.da_data.elvss_ref_offset, &g_calibration_manager.data.da_data.elvss_ref_gain, DAC_CHIP_4, "ELVSS_LimRef", 3, 1, 15, 0, bsp_power_single_enable, bsp_power_single_disable, "LIMREF-2"},
+    {&g_calibration_manager.data.v_level_shift_last, &g_calibration_manager.data.da_data.v_level_shift_offset, &g_calibration_manager.data.da_data.v_level_shift_gain, DAC_CHIP_5, "V_LEVEL_SHIFT", 3, 0, 16, 0, bsp_power_single_enable, bsp_power_single_disable, "VLSHIFT"},
+    {&g_calibration_manager.data.ref_freq_last, &g_calibration_manager.data.da_data.ref_freq_offset, &g_calibration_manager.data.da_data.ref_freq_gain, DAC_CHIP_5, "REF_FREQ", 2, 0, 17, 0, bsp_power_single_enable, bsp_power_single_disable, "Ctrl_REFFREQ"},
+    {&g_calibration_manager.data.vadj_p_last, &g_calibration_manager.data.da_data.vadj_p_offset, &g_calibration_manager.data.da_data.vadj_p_gain, DAC_CHIP_5, "VADJ_P", 1, 0, 18, 0, bsp_power_single_enable, bsp_power_single_disable, "Ctrl_VADJP"},
+    {&g_calibration_manager.data.vadj_n_last, &g_calibration_manager.data.da_data.vadj_n_offset, &g_calibration_manager.data.da_data.vadj_n_gain, DAC_CHIP_5, "VADJ_N", 0, 1, 19, 0, bsp_power_single_enable, bsp_power_single_disable, "Ctrl_VADJN"},
 };
 /* Private function prototypes -----------------------------------------------*/
 static void DAC_gpio_init(void);
@@ -118,8 +116,8 @@ void bsp_cali_and_set_power(uint8_t power_id)
 
     val = (val - *(cfg->offset)) / (*(cfg->gain));
     MIPI_CMD_DEBUG("%s,%s: vi = %.2f mV (vo=%.2f mV, offset=%.2f, gain=%.2f)\r\n",
-        cfg->name, cfg->name1, val, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
-    MIPI_CMD_DEBUG("channel = %d, last_voltage = %.2f mV\r\n", cfg->channel, *(cfg->last_voltage));  
+                   cfg->name, cfg->name1, val, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
+    MIPI_CMD_DEBUG("channel = %d, last_voltage = %.2f mV\r\n", cfg->channel, *(cfg->last_voltage));
     // 最大输出电压 4.096V
     dac_chips[cfg->chip].val[cfg->channel] = float_to_uint16_round(val);
     // dac_chips[cfg->chip].val[cfg->channel] = 1000;
@@ -131,26 +129,24 @@ void bsp_cali_and_set_power(uint8_t power_id)
     // bsp_dac_single_voltage_set(&dac_chips[0],3, 2000, 0);//(1500,-3219)(2000,-1235.7)
     // bsp_dac_single_voltage_set(&dac_chips[2],0, 1550, 0); //(1500,4894)(1550,4546)
     // bsp_dac_single_voltage_set(&dac_chips[2],1, 1400, 0);//(1500,2702)(1400,3535.7)
-    //bsp_dac_single_voltage_set(&dac_chips[2],2, 1100, 0);//(1500,2637.6)(1100,6000.6)
+    // bsp_dac_single_voltage_set(&dac_chips[2],2, 1100, 0);//(1500,2637.6)(1100,6000.6)
     // bsp_dac_single_voltage_set(&dac_chips[2],3, 1100, 0);//(1500,-3115.0)(1100,-5796)
-    //bsp_dac_single_voltage_set(&dac_chips[4],3, 1500, 0);//(1500,)       
+    // bsp_dac_single_voltage_set(&dac_chips[4],3, 1500, 0);//(1500,)
     // MIPI_CMD_DEBUG("%s,%s: last_voltage=%.2f mV, offset=%.2f, gain=%.2f\r\n",
     //     cfg->name, cfg->name1, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
-    //if (bsp_dac_single_voltage_set(&dac_chips[2], 0, 1000, 0) != BSP_OK)
+    // if (bsp_dac_single_voltage_set(&dac_chips[2], 0, 1000, 0) != BSP_OK)
     // {
     //     MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
     // }
-    
+
     if (bsp_dac_single_voltage_set(&dac_chips[cfg->chip], cfg->channel, dac_chips[cfg->chip].val[cfg->channel], 0) != BSP_OK)
     {
         MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
     }
-    //bsp_dac_single_voltage_set(&dac_chips[4],3, 2000, 0);//(1500,) 
+    // bsp_dac_single_voltage_set(&dac_chips[4],3, 2000, 0);//(1500,)
     single_mcp4728_sync_update(power_id);
 
     bsp_power_single_enable(power_id);
-
-    
 }
 void all_mcp4728_sync_update()
 {
@@ -163,14 +159,20 @@ void all_mcp4728_sync_update()
 void single_mcp4728_sync_update(uint8_t power_id)
 {
     // 非法值直接返回
-    if (power_id > 19) return;
+    if (power_id > 19)
+        return;
 
     // 按范围直接判断，减少冗余case
-    if (power_id < 4)      DAC_LDAC_1_L();
-    else if (power_id < 8) DAC_LDAC_2_L();
-    else if (power_id < 12) DAC_LDAC_3_L();
-    else if (power_id < 16) DAC_LDAC_4_L();
-    else                   DAC_LDAC_5_L(); // 16-19
+    if (power_id < 4)
+        DAC_LDAC_1_L();
+    else if (power_id < 8)
+        DAC_LDAC_2_L();
+    else if (power_id < 12)
+        DAC_LDAC_3_L();
+    else if (power_id < 16)
+        DAC_LDAC_4_L();
+    else
+        DAC_LDAC_5_L(); // 16-19
 }
 void bsp_dac_init()
 {
@@ -178,22 +180,22 @@ void bsp_dac_init()
     I2C_CTRL_init();
     HAL_I2C_DeInit(&hi2c2);
     HAL_I2C_Init(&hi2c2);
-    
+
     bsp_power_all_disable();
     bsp_limit_current_reset();
     g_calibration_manager.data.vsn_last_voltage = -5500.0f;
     g_calibration_manager.data.vsp_last_voltage = 5500.0f;
     g_calibration_manager.data.vcc_last_voltage = 3600.0f;
     g_calibration_manager.data.iovcc_last_voltage = 1800.0f;
-    g_calibration_manager.data.vcc_ref_last = 2000.0f;
-    g_calibration_manager.data.iovcc_ref_last = 2000.0f;
-    g_calibration_manager.data.vsp_ref_last = 2000.0f;
-    g_calibration_manager.data.vsn_ref_last = 2000.0f;
-    g_calibration_manager.data.avdd_ref_last = 5000.0f;
-    g_calibration_manager.data.vdd_ref_last = 5000.0f;
-    g_calibration_manager.data.elvdd_ref_last = 5000.0f;
-    g_calibration_manager.data.elvss_ref_last = 2000.0f;
-    g_calibration_manager.data.v_level_shift_last = 2500.0f;//0-2.5
+    g_calibration_manager.data.vcc_ref_last = 200.0f;
+    g_calibration_manager.data.iovcc_ref_last = 200.0f;
+    g_calibration_manager.data.vsp_ref_last = 200.0f;
+    g_calibration_manager.data.vsn_ref_last = 200.0f;
+    g_calibration_manager.data.avdd_ref_last = 200.0f;
+    g_calibration_manager.data.vdd_ref_last = 200.0f;
+    g_calibration_manager.data.elvdd_ref_last = 200.0f;
+    g_calibration_manager.data.elvss_ref_last = 200.0f;
+    g_calibration_manager.data.v_level_shift_last = 2500.0f; // 0-2.5
     // 打印恢复电压信息
     MIPI_CMD_INFO("Restore the voltage set last time\r\n");
     ADS1256_DEBUG("VSN : %f mV\r\n", g_calibration_manager.data.vsn_last_voltage);
@@ -226,25 +228,16 @@ void bsp_dac_init()
     {
         bsp_cali_and_set_power(i);
     }
-    //HAL_Delay(5000); // 等待DAC输出稳定
-    for( uint8_t i =0;i<20;i++)
+    // HAL_Delay(5000); // 等待DAC输出稳定
+    for (uint8_t i = 0; i < 20; i++)
     {
-       bsp_power_single_enable(i);
+        bsp_power_single_enable(i);
     }
-    
+
     LEVEL_SHIFT_ENABLE();
 
-    //使能不能切档位,常态是ma档
-    //测完ua再切回ma档
-
-    // bsp_rly_gear_set(GEAR_mA, VSN_RLY);
-    // bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
-    // bsp_rly_gear_set(GEAR_mA, VCC_RLY);
-    // bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
-    // bsp_rly_gear_set(GEAR_mA, VSP_RLY);
-    // bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
-    // bsp_rly_gear_set(GEAR_mA, VDD_RLY);
-    // bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
+    // 使能不能切档位,常态是ma档
+    // 测完ua再切回ma档
 }
 
 void mcp4728_device_init()

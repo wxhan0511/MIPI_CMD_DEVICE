@@ -1,5 +1,5 @@
 采样电流id表
-//power:0,VCC → ch_index、d_trigger_ch_index       
+//power:0,VCC → ch_index、d_trigger_ch_index
 // power:1,IOVCC → ch_index、d_trigger_ch_index
 // power:2,VSP
 // power:3,VSN
@@ -11,7 +11,7 @@
 // power:9,AD_I_BLAS_V
 // power:10,AD_I_BL
 采样电压id表
-//power:0,VCC  
+//power:0,VCC
 // power:1,IOVCC
 // power:2,VSP
 // power:3,VSN
@@ -20,14 +20,14 @@
 // power:6,ELVDD
 // power:7,ELVSS
 // power:8,AD_V_V+ADJ
-// power:9,AD_R&D 
+// power:9,AD_R&D
 // power:10,AD_24PinV
 // power:11,AD_V_BLAS_I
 // power:12,BLAS_V
-// power:13,AD_V_BL 
-// power:14,AD_V_V-ADJ 
+// power:13,AD_V_BL
+// power:14,AD_V_V-ADJ
 设置电压id表
-//power:0,VCC  
+//power:0,VCC
 // power:1,IOVCC
 // power:2,VSP
 // power:3,VSN	         注意:读写均为负值
@@ -74,10 +74,10 @@ power.set_en(5,0)
 power.set_en(6,0)
 power.set_en(7,0)
 i=7
-while( i>0 )
+while( i>-1 )
 do
     power.set_power_en(i,1)
-    power.set_power_voltage(i,2000+500*i) 
+    power.set_power_voltage(i,2000+500*i)
     i=i-1
 end
 //TODO:上下限
@@ -100,7 +100,7 @@ i=1
 while( i<65 )
 do
     meter.get_resistance(4,i)
-    meter.get_resistance(i,6)  
+    meter.get_resistance(i,6)
     i=i+1
 end
 方法1
@@ -138,12 +138,12 @@ meter.get_24pin_voltage(1)   //pin_num (1-24)  GC4.0接口强化板接5.0电源�
 i=24
 while( i>0 )
 do
-    meter.get_24pin_voltage(i) 
+    meter.get_24pin_voltage(i)
     i=i-1
 end
 
 //24pin 频率测量
-meter.get_freq(1,3000)  ////pin_num (1-24) ,测量频率高电平电压值,    接法:GC4.0接口强化板 接5.0电源板J2 pin ,强化板40pin为1脚
+meter.get_freq(1,3000)  ////pin_num (1-24) ,测量频率高电平电压值,    接法:GC4.0接口强化板 接5.0电源板J2 pin (下接触,上接触),强化板40pin为1脚
 
 //levelshift
 power.set_power_voltage(16,1800)  //已做校准,精度很好

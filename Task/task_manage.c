@@ -1,8 +1,9 @@
 #include "task_manage.h"
 
-osThreadId_t task_sample_handle;
-const osThreadAttr_t task_sample_attributes = {
-    .name = "task_sample_task",
-    .stack_size = 4096,
-    .priority = (osPriority_t) osPriorityHigh,
-  };
+/* Definitions for show_mutex */
+osThreadId_t pwmctrlTaskHandle;
+const osThreadAttr_t pwmTask_attributes = {
+    .name = "pwmTask",
+    .stack_size = 1024,
+    .priority = (osPriority_t)osPriorityNormal,
+};
