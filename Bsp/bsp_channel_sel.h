@@ -179,7 +179,7 @@ void bsp_bias_n_select_pin(const uint8_t group, const uint16_t pin);
 // 测试模式选择
 void bsp_test_select_mode(const TEST_MODE mode);
 void bsp_limit_current_reset();
-
+void bsp_lim_rst_set(uint8_t state);
 void bsp_rly_gear_set(TEST_CUR_GEAR gear, RLY_INDEX rly_index);
 void bsp_select_24pin_channel(uint16_t pin, uint8_t en);
 void bsp_close_24pin_channel();

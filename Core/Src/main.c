@@ -24,27 +24,26 @@
 #include "gtb_task.h"
 #include "crc.h"
 #include "fsmc.h"
-#include "bsp_mcp4728_ctl.h" 
+#include "bsp_mcp4728_ctl.h"
 #include "retarget.h"
 
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 
-
 int main(void)
 {
   HAL_Init();
   SystemClock_Config(); // sysclk=168M,pclk1=42M,pclk2=84M
-  MX_GPIO_Init(); //DA限流最好配到4V,能限流800ma
+  MX_GPIO_Init();       // DA限流最好配到4V,能限流800ma
   MX_DMA_Init();
   MX_I2C1_Init(); // PB6 PB7
   MX_I2C2_Init(); // PB10 PB11
   MX_CRC_Init();
   MX_FSMC_Init();
   MX_DAC_Init();
-  MX_SPI1_Init(); //ADS1256
-  MX_SPI2_Init();//M SPI
-  MX_SPI3_Init();//FLASH
+  MX_SPI1_Init(); // ADS1256
+  MX_SPI2_Init(); // M SPI
+  MX_SPI3_Init(); // FLASH
   MX_USART3_UART_Init();
   bsp_init();
 
@@ -129,5 +128,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-

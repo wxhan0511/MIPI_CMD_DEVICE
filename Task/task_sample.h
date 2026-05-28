@@ -39,6 +39,7 @@ typedef enum
     SEL_PIN_24 = 0x1D,
     SEL_PIN_PN = 0x1E,
     GET_24PIN_VOLTAGE = 0x1F,
+    SEL_LIM_GEAR = 0x20,
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 
@@ -112,4 +113,5 @@ void task_sample_suspend(void);
 void task_sample_resume(void);
 void task_sample_task_mutex_acquire(void);
 void task_sample_task_mutex_release(void);
+void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type);
 #endif /* _TASK_SAMPLE_H_ */

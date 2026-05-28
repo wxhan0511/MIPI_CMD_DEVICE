@@ -75,7 +75,6 @@ void bsp_init()
     bsp_lcd_reset(&lcd);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
-
     bsp_d_trigger_init(d_1);
     bsp_d_trigger_init(d_2);
     bsp_d_trigger_init(d_3);
@@ -87,7 +86,6 @@ void bsp_init()
     bsp_d_trigger_set(enabled); // 验证通过
     bsp_close_24pin_channel();
     bsp_close_40pin_channel();
-    // VSN的电流不对,测一下
 
     bsp_rly_gear_set(GEAR_mA, VSN_RLY); // ⚠️⚠️⚠️需放最前
     bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
@@ -150,6 +148,7 @@ void bsp_led_pwm_init(uint8_t pulse)
     uint16_t psc = 15;   // 分频
     // uint16_t pulse =10;//比较值 推荐占空比1%,50%特别亮
     uint16_t pulses_num = 11000;
+    printf("pulse value: %d\r\n", pulse);
     TIM1_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM1 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
     // TIM1_Generate_N_Pulses(pulses_num);//非使能

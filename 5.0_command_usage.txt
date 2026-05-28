@@ -150,3 +150,8 @@ power.set_power_voltage(16,1800)  //已做校准,精度很好
 
 //blasi电流
 power.get_power_current(8)
+
+
+//档位
+power.select_lim_gear(0,1)
+//全ua档 RST拉低,有一个是ma档,RST拉高

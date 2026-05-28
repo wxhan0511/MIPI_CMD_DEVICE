@@ -82,8 +82,17 @@ static inline int get_VSP_status(void) { return bsp_d_trigger_get_channel_state(
 static inline int get_IOVCC_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 6); }
 static inline int get_VCC_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 7); }
 
-typedef int (*power_status_func_t)(void);
+static inline int get_VCC_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, VCC_RLY); }
+static inline int get_IOVCC_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, IOVCC_RLY); }
+static inline int get_VSP_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, VSP_RLY); }
+static inline int get_VSN_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, VSN_RLY); }
+static inline int get_AVDD_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, AVDD_RLY); }
+static inline int get_VDD_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, VDD_RLY); }
+static inline int get_ELVDD_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, ELVDD_RLY); }
+static inline int get_ELVSS_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, ELVSS_RLY); }
 
+typedef int (*power_status_func_t)(void);
+typedef int (*lim_status_func_t)(void);
 power_status_func_t power_enable_status[8] = {
     get_VCC_status,
     get_IOVCC_status,
@@ -93,6 +102,15 @@ power_status_func_t power_enable_status[8] = {
     get_VDD_status,
     get_ELVDD_status,
     get_ELVSS_status};
+lim_status_func_t lim_gear_status[8] = {
+    get_VCC_lim_status,
+    get_IOVCC_lim_status,
+    get_VSP_lim_status,
+    get_VSN_lim_status,
+    get_AVDD_lim_status,
+    get_VDD_lim_status,
+    get_ELVDD_lim_status,
+    get_ELVSS_lim_status};
 // 0xff:不需要dtrigger次级选通
 uint8_t sample_cur_map[11][2] = {
     {3, 0xff}, // power:0,VCC → ch_index、d_trigger_ch_index
@@ -300,7 +318,7 @@ void task_sample_run()
             sample_vol_id = meter_rx_buf[2];
             M_SPI_DEBUG("sample_vol_id: %d\r\n", sample_vol_id);
 
-            meter_wait_v_c_ready(sample_vol_id, 0);
+            meter_wait_v_c_ready(sample_vol_id, (uint8_t)0);
             // 测完24pin和40pin关闭24pin和40pin的通道,避免干扰
             if (sample_vol_id == 10)
                 bsp_close_24pin_channel();
@@ -503,9 +521,77 @@ void task_sample_run()
         case SEL_PIN_PN:
             pin_p = meter_rx_buf[2];
             pin_n = meter_rx_buf[3];
-
             bsp_rd_select_pin(pin_p, pin_n, 1);
             M_SPI_DEBUG("SEL_PIN_PN: pin_p %d, pin_n %d\r\n", pin_p, pin_n);
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        case SEL_LIM_GEAR:
+            printf("SEL_LIM_GEAR\r\n");
+            uint8_t idx_lim_gear = meter_rx_buf[2];
+            uint8_t lim_gear = meter_rx_buf[3];
+            // 全ua档 RST拉低,有一个是ma档,RST拉高
+            uint8_t lim_gear_ua_count = 0;
+            for (uint8_t i = 0; i < 8; i++)
+                if (i != idx_lim_gear) // 其他档位
+                    if (!lim_gear_status[i]())
+                        lim_gear_ua_count++; // 统计其他档位中限流在ua档的数量
+            if (lim_gear_ua_count == 7 && lim_gear == 0)
+                bsp_lim_rst_set(0); // 8个档位都是ua档
+
+            if (lim_gear == 1)
+                bsp_lim_rst_set(1);
+
+            if (idx_lim_gear == 0)
+            {
+                bsp_rly_gear_set(lim_gear, VCC_RLY);
+                g_calibration_manager.data.da_data.vcc_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.vcc_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 1)
+            {
+                bsp_rly_gear_set(lim_gear, IOVCC_RLY);
+                g_calibration_manager.data.da_data.iovcc_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.iovcc_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 2)
+            {
+                bsp_rly_gear_set(lim_gear, VSP_RLY);
+                g_calibration_manager.data.da_data.vsp_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.vsp_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 3)
+            {
+                bsp_rly_gear_set(lim_gear, VSN_RLY);
+                g_calibration_manager.data.da_data.vsn_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.vsn_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 4)
+            {
+                bsp_rly_gear_set(lim_gear, AVDD_RLY);
+                g_calibration_manager.data.da_data.avdd_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.avdd_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 5)
+            {
+                bsp_rly_gear_set(lim_gear, VDD_RLY);
+                g_calibration_manager.data.da_data.vdd_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.vdd_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 6)
+            {
+                bsp_rly_gear_set(lim_gear, ELVDD_RLY);
+                g_calibration_manager.data.da_data.elvdd_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.elvdd_ref_offset = 0;
+            }
+            else if (idx_lim_gear == 7)
+            {
+                bsp_rly_gear_set(lim_gear, ELVSS_RLY);
+                g_calibration_manager.data.da_data.elvss_ref_gain = 0.1;
+                g_calibration_manager.data.da_data.elvss_ref_offset = 0;
+            }
+            printf("idx_lim_gear: %d, lim_gear: %d\r\n", idx_lim_gear, lim_gear);
+            printf("lim_gear_ua_count: %d\r\n", lim_gear_ua_count);
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;

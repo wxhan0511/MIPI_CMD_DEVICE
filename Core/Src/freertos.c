@@ -44,22 +44,13 @@ void MX_FREERTOS_Init(void)
   show_mutexHandle = osMutexNew(&show_mutex_attributes);
   led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
 
-#ifdef GTB
-  // server_gtb_init();
-#endif
-  // slave_rx_task_init();
-  // slave_tx_task_init();
-
-  // master_tx_task_init();
-  // master_rx_task_init();
-  // osTimerStart(led_timerHandle, 500);
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   widget_main_task_init(); // LVGL UI task
   // power_task_init();
   task_sample_init();
   task_com_init();
-  //  pwm_ctrl_task_init();
+  // pwm_ctrl_task_init();
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
