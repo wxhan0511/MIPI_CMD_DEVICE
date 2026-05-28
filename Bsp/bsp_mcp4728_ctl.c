@@ -179,23 +179,10 @@ void bsp_dac_init()
     mcp4728_device_init(); // Initialize 5 DAC addresses
     I2C_CTRL_init();
     HAL_I2C_DeInit(&hi2c2);
-    HAL_I2C_Init(&hi2c2);
+    HAL_I2C_Init(&hi2c2); // 用完模拟i2c需要重新初始化硬件i2c
 
     bsp_power_all_disable();
     bsp_limit_current_reset();
-    g_calibration_manager.data.vsn_last_voltage = -5500.0f;
-    g_calibration_manager.data.vsp_last_voltage = 5500.0f;
-    g_calibration_manager.data.vcc_last_voltage = 3600.0f;
-    g_calibration_manager.data.iovcc_last_voltage = 1800.0f;
-    g_calibration_manager.data.vcc_ref_last = 200.0f;
-    g_calibration_manager.data.iovcc_ref_last = 200.0f;
-    g_calibration_manager.data.vsp_ref_last = 200.0f;
-    g_calibration_manager.data.vsn_ref_last = 200.0f;
-    g_calibration_manager.data.avdd_ref_last = 200.0f;
-    g_calibration_manager.data.vdd_ref_last = 200.0f;
-    g_calibration_manager.data.elvdd_ref_last = 200.0f;
-    g_calibration_manager.data.elvss_ref_last = 200.0f;
-    g_calibration_manager.data.v_level_shift_last = 2500.0f; // 0-2.5
     // 打印恢复电压信息
     MIPI_CMD_INFO("Restore the voltage set last time\r\n");
     ADS1256_DEBUG("VSN : %f mV\r\n", g_calibration_manager.data.vsn_last_voltage);
@@ -228,16 +215,9 @@ void bsp_dac_init()
     {
         bsp_cali_and_set_power(i);
     }
-    // HAL_Delay(5000); // 等待DAC输出稳定
-    for (uint8_t i = 0; i < 20; i++)
-    {
-        bsp_power_single_enable(i);
-    }
 
     LEVEL_SHIFT_ENABLE();
 
-    // 使能不能切档位,常态是ma档
-    // 测完ua再切回ma档
 }
 
 void mcp4728_device_init()

@@ -14,11 +14,13 @@
 #include <stdio.h>
 #include "crc.h"
 #include "math.h"
+
+static HAL_StatusTypeDef calu_calibration_data();
 // Notice:mcp4728 2000和0值附近不要用,极限值附近计算校准参数有偏差
-const float vi[20][2] =
+static const float vi[20][2] =
     {
         {2000, 1500}, {1500, 1300}, {1500, 1200}, {1500, 2000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 1550}, {1500, 1400}, {1500, 1100}, {1500, 1100}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {2500, 2400}, {3000, 2000}};
-const float vo[20][2] =
+static const float vo[20][2] =
     {
         {1505.5, 4946}, {2623, 4003}, {2792.5, 5312}, {-3219, -1235.7}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {4894, 4546}, {2702, 3535.7}, {2637.6, 6000.6}, {-3115, -5796}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {8526, 9198}, {-18441, -14282}};
 /* Exported variables --------------------------------------------------------*/
@@ -118,7 +120,7 @@ HAL_StatusTypeDef calibration_flash_init(void)
         return HAL_ERROR;
     }
 }
-HAL_StatusTypeDef calu_calibration_data()
+static HAL_StatusTypeDef calu_calibration_data()
 {
     da_calibration_data_t *da = &g_calibration_manager.data.da_data;
 

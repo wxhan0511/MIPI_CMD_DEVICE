@@ -16,7 +16,7 @@ extern osMutexId_t show_mutexHandle;
 osThreadId_t widget_main_flush_task_handle;
 const osThreadAttr_t widget_main_flush_task_attributes = {
 	.name = "widget_main_flush_task_handle",
-	.stack_size = 1024 * 8,
+	.stack_size = 1024 * 4,
 	.priority = (osPriority_t)osPriorityAboveNormal,
 };
 

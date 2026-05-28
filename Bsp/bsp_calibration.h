@@ -1,5 +1,5 @@
-#ifndef __BSP_CALIBRATION_H
-#define __BSP_CALIBRATION_H
+#ifndef BSP_CALIBRATION_H
+#define BSP_CALIBRATION_H
 
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
@@ -7,18 +7,17 @@
 #include "bsp_spi_flash.h"
 #include "bsp_mcp4728.h"
 /* 校准数据魔数和版本 */
-#define CALIBRATION_MAGIC           0x505745FF  // "PWEC" - Power Enhancement Calibration
-#define CALIBRATION_VERSION         1
-#define CALIBRATION_MAX_VERSION     10
+#define CALIBRATION_MAGIC 0x505745FF // "PWEC" - Power Enhancement Calibration
+#define CALIBRATION_VERSION 1
+#define CALIBRATION_MAX_VERSION 10
 
 /* 存储地址配置 */
-#define W25Q256_CALIBRATION_START   0x00300000    // 校准数据区起始地址 (3MB位置)
-#define CALIBRATION_MAIN_ADDR       (W25Q256_CALIBRATION_START + 0x0000)     // 主校准数据
-#define CALIBRATION_BACKUP1_ADDR    (W25Q256_CALIBRATION_START + 0x1000)     // 备份 (4KB后)
+#define W25Q256_CALIBRATION_START 0x00300000                          // 校准数据区起始地址 (3MB位置)
+#define CALIBRATION_MAIN_ADDR (W25Q256_CALIBRATION_START + 0x0000)    // 主校准数据
+#define CALIBRATION_BACKUP1_ADDR (W25Q256_CALIBRATION_START + 0x1000) // 备份 (4KB后)
 
 /* 扇区大小定义 */
-#define CALIBRATION_SECTOR_SIZE     4096        // 扇区大小 4KB
-
+#define CALIBRATION_SECTOR_SIZE 4096 // 扇区大小 4KB
 
 typedef struct
 {
@@ -115,7 +114,7 @@ typedef struct
     float ch6_offset;
     float ch6_gain;
     float ch7_offset;
-    float ch7_gain;   
+    float ch7_gain;
 } ad_calibration_data_t;
 
 /**
@@ -123,15 +122,15 @@ typedef struct
  */
 typedef struct
 {
-    uint32_t magic;                 // 魔数标识: 0x50574543
-    uint32_t version;               // 版本号
-    uint32_t timestamp;             // 校准时间戳
-    
-    float vsn_last_voltage;       
+    uint32_t magic;     // 魔数标识: 0x50574543
+    uint32_t version;   // 版本号
+    uint32_t timestamp; // 校准时间戳
+
+    float vsn_last_voltage;
     float vsp_last_voltage;
     float iovcc_last_voltage;
-    float vcc_last_voltage; 
-    float elvss_last_voltage;       
+    float vcc_last_voltage;
+    float elvss_last_voltage;
     float elvdd_last_voltage;
     float vdd_last_voltage;
     float avdd_last_voltage;
@@ -150,38 +149,39 @@ typedef struct
     float vadj_p_last;
     float vadj_n_last;
 
-    da_calibration_data_t da_data;  // DA校准数据
-    ad_calibration_data_t ad_data;  // AD校准数据
-    
-    uint32_t reserved[4];           // 保留字段（用于扩展）
-    uint32_t crc32;                 // CRC32校验值（必须放在最后）
+    da_calibration_data_t da_data; // DA校准数据
+    ad_calibration_data_t ad_data; // AD校准数据
+
+    uint32_t reserved[4]; // 保留字段（用于扩展）
+    uint32_t crc32;       // CRC32校验值（必须放在最后）
 } calibration_data_t;
 
 /**
  * @brief 校准数据管理器
  */
-typedef struct {
-    calibration_data_t data;        // 校准数据
-    bool is_loaded;                 // 是否已加载
-    bool is_valid;                  // 数据是否有效
-    //填充
-    uint8_t padding[2];             // 字节对齐填充
+typedef struct
+{
+    calibration_data_t data; // 校准数据
+    bool is_loaded;          // 是否已加载
+    bool is_valid;           // 数据是否有效
+    // 填充
+    uint8_t padding[2]; // 字节对齐填充
 
-    uint32_t load_attempts;         // 加载尝试次数
-    uint32_t save_count;            // 保存次数
-    uint32_t last_error;            // 最后一次错误码
-    uint32_t flash_id;              // Flash ID
+    uint32_t load_attempts; // 加载尝试次数
+    uint32_t save_count;    // 保存次数
+    uint32_t last_error;    // 最后一次错误码
+    uint32_t flash_id;      // Flash ID
 } calibration_manager_t;
 
 /* 错误代码定义 */
-#define CAL_ERROR_NONE              0x00
-#define CAL_ERROR_MAGIC             0x01
-#define CAL_ERROR_VERSION           0x02
-#define CAL_ERROR_CRC               0x03
-#define CAL_ERROR_FLASH_READ        0x04
-#define CAL_ERROR_FLASH_WRITE       0x05
-#define CAL_ERROR_FLASH_ERASE       0x06
-#define CAL_ERROR_BACKUP_FAILED     0x07
+#define CAL_ERROR_NONE 0x00
+#define CAL_ERROR_MAGIC 0x01
+#define CAL_ERROR_VERSION 0x02
+#define CAL_ERROR_CRC 0x03
+#define CAL_ERROR_FLASH_READ 0x04
+#define CAL_ERROR_FLASH_WRITE 0x05
+#define CAL_ERROR_FLASH_ERASE 0x06
+#define CAL_ERROR_BACKUP_FAILED 0x07
 
 /* 全局变量声明 */
 extern calibration_manager_t g_calibration_manager;
@@ -201,17 +201,21 @@ uint32_t calibration_calculate_crc32(uint8_t *data, uint32_t length);
 HAL_StatusTypeDef calibration_verify_crc(calibration_data_t *cal_data);
 
 // Data Access Function
-calibration_data_t* calibration_get_data(void);
+calibration_data_t *calibration_get_data(void);
 bool calibration_is_valid(void);
-HAL_StatusTypeDef calu_calibration_data();
 
 // Flash操作函数
 HAL_StatusTypeDef calibration_flash_init(void);
-
 
 // 调试函数
 void calibration_print_info(void);
 void calibration_test_crc(void);
 void calibration_dump_data(uint32_t addr, uint32_t size);
-
-#endif /* __BSP_CALIBRATION_H */
+HAL_StatusTypeDef calibration_flash_init(void);
+extern calibration_manager_t g_calibration_manager;
+void calibration_test_crc(void);
+void calibration_dump_data(uint32_t addr, uint32_t size);
+bool calibration_is_valid(void);
+calibration_data_t *calibration_get_data(void);
+HAL_StatusTypeDef calibration_init(void);
+#endif /* BSP_CALIBRATION_H */

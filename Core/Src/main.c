@@ -33,8 +33,8 @@ void MX_FREERTOS_Init(void);
 int main(void)
 {
   HAL_Init();
-  SystemClock_Config(); // sysclk=168M,pclk1=42M,pclk2=84M
-  MX_GPIO_Init();       // DA限流最好配到4V,能限流800ma
+  SystemClock_Config();
+  MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2C1_Init(); // PB6 PB7
   MX_I2C2_Init(); // PB10 PB11
@@ -46,14 +46,6 @@ int main(void)
   MX_SPI3_Init(); // FLASH
   MX_USART3_UART_Init();
   bsp_init();
-
-  // while(1){
-  //     HAL_Delay(100);
-  //     enableTim1CaptureCompareInterrupt();
-  //     HAL_Delay(5000);
-  //     disableTim1CaptureCompareInterrupt();
-  // };
-  // test_gtb_task();
   osKernelInitialize(); /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init();
   osKernelStart();
@@ -61,7 +53,12 @@ int main(void)
   {
   }
 }
-
+/**
+ * @brief  sysclk=168M,pclk1=42M,pclk2=84M
+ * @param 参数名 参数描述
+ * @return 返回值描述
+ * @note 注意事项
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};

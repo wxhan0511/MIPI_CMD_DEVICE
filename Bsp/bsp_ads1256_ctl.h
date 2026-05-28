@@ -79,8 +79,8 @@ extern "C"
     extern volatile float latest_sample_raw_data[8];
     extern volatile double raw_data;
 /* Exported macro ------------------------------------------------------------*/
-#define RAW_DATA_QUEUE_SIZE (4092 / sizeof(float))
-#define RAW_DATA_INDEX_QUEUE_SIZE 4092
+#define RAW_DATA_QUEUE_SIZE (256 / sizeof(float))
+#define RAW_DATA_INDEX_QUEUE_SIZE 256
 #define ADC_DEBUG 1
 
 #define AVG_CNT 1

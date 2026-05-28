@@ -97,10 +97,10 @@ void bsp_init()
     bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
 
     // bsp_test_spi_flash();
-    calibration_set_defaults();
-    W25Q256JVEQ_INFO("Default calibration values have been set\r\n");
+    // calibration_set_defaults();
+    // W25Q256JVEQ_INFO("Default calibration values have been set\r\n");
     // calibration_save();
-    // calibration_load();
+    calibration_load();
 
     // while(1);
     // M_CS_Pin_L();
