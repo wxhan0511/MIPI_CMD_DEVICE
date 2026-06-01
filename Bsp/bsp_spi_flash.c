@@ -2,11 +2,9 @@
 #include "bsp_spi_flash.h"
 #include "spi.h"
 
-
-
 // static SPI_HandleTypeDef hspi_flash = {0};
 // SPI Flash 句柄和缓冲区
-static uint8_t s_spiBuf[4*1024];
+static uint8_t s_spiBuf[4 * 1024];
 static uint8_t g_spiTxBuf[SPI_BUFFER_SIZE];
 static uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
 
@@ -26,10 +24,10 @@ uint8_t bsp_spiTransfer(uint8_t *g_spiTxBuf, uint8_t *g_spiRxBuf, uint16_t g_spi
         return 0;
     }
     status = HAL_SPI_TransmitReceive(&hspi3, g_spiTxBuf, g_spiRxBuf, g_spiLen, 1000000);
-    if(status != HAL_OK)
+    if (status != HAL_OK)
     {
-        //Error_Handler(__FILE__, __LINE__);
-        printf("[spi flash] write error %d\r\n",status);
+        // Error_Handler(__FILE__, __LINE__);
+        printf("[spi flash] write error %d\r\n", status);
         return 0;
     }
     return 1;
@@ -42,20 +40,20 @@ uint32_t bsp_flash_read_id(void)
 {
     uint32_t uiID;
     uint8_t id1, id2, id3;
-    //uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
+    // uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
 
-    SF_CS_L();									/* ʹ��Ƭѡ */
-    g_spiTxBuf[0] = (CMD_RDID);								/* ���Ͷ�ID���� */
+    SF_CS_L();                  /* ʹ��Ƭѡ */
+    g_spiTxBuf[0] = (CMD_RDID); /* ���Ͷ�ID���� */
 
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 4);
 
-    id1 = g_spiRxBuf[1];					/* ��ID�ĵ�1���ֽ� */
-    id2 = g_spiRxBuf[2];					/* ��ID�ĵ�2���ֽ� */
-    id3 = g_spiRxBuf[3];					/* ��ID�ĵ�3���ֽ� */
-    SF_CS_H();									  /* ����Ƭѡ */
+    id1 = g_spiRxBuf[1]; /* ��ID�ĵ�1���ֽ� */
+    id2 = g_spiRxBuf[2]; /* ��ID�ĵ�2���ֽ� */
+    id3 = g_spiRxBuf[3]; /* ��ID�ĵ�3���ֽ� */
+    SF_CS_H();           /* ����Ƭѡ */
 
     uiID = ((uint32_t)id1 << 16) | ((uint32_t)id2 << 8) | id3;
-    //printf("[spi flash] read id %x\r\n",uiID);
+    // printf("[spi flash] read id %x\r\n",uiID);
     return uiID;
 }
 
@@ -64,37 +62,36 @@ uint32_t bsp_flash_read_id(void)
  */
 static void sf_WriteEnable(void)
 {
-    //uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
+    // uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
     uint8_t status;
-    SF_CS_L();									/* ʹ��Ƭѡ */
-    g_spiTxBuf[0] = (CMD_WREN);								/* �������� */
+    SF_CS_L();                  /* ʹ��Ƭѡ */
+    g_spiTxBuf[0] = (CMD_WREN); /* �������� */
     status = bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 1);
-    SF_CS_H();									/* ����Ƭѡ */
-    //printf("[spi flash] write enable %d \r\n",status);
+    SF_CS_H(); /* ����Ƭѡ */
+    // printf("[spi flash] write enable %d \r\n",status);
 }
 /**
  * @brief 等待SPI Flash写入/擦除操作完成
  */
 static void sf_WaitForWriteEnd(void)
 {
-    //uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
+    // uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
     uint8_t status;
-    while(1)
+    while (1)
     {
-        SF_CS_L();									/* ʹ��Ƭѡ */
-        g_spiTxBuf[0] = (CMD_RDSR);						/* ������� ��״̬�Ĵ��� */
-        g_spiTxBuf[1] = 0;		/* �޹����� */
+        SF_CS_L();                  /* ʹ��Ƭѡ */
+        g_spiTxBuf[0] = (CMD_RDSR); /* ������� ��״̬�Ĵ��� */
+        g_spiTxBuf[1] = 0;          /* �޹����� */
         status = bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 2);
-        SF_CS_H();									/* ����Ƭѡ */
-        
-        //q:status,g_spiRxBuf[1]分别为1,3,解释为什么
-        //a:status为1表示传输成功，g_spiRxBuf[1]为3表示写入进行中
-        if ((g_spiRxBuf[1] & WIP_FLAG) != SET)	/* �ж�״̬�Ĵ�����æ��־λ */
+        SF_CS_H(); /* ����Ƭѡ */
+
+        // q:status,g_spiRxBuf[1]分别为1,3,解释为什么
+        // a:status为1表示传输成功，g_spiRxBuf[1]为3表示写入进行中
+        if ((g_spiRxBuf[1] & WIP_FLAG) != SET) /* �ж�״̬�Ĵ�����æ��־λ */
         {
             break;
         }
     }
-    
 }
 /**
  * @brief 擦除指定地址所在的扇区
@@ -102,7 +99,7 @@ static void sf_WaitForWriteEnd(void)
  */
 void bsp_flash_erase_sector(uint32_t addr)
 {
-    //uint8_t g_spiTxBuf[5],g_spiRxBuf[5];
+    // uint8_t g_spiTxBuf[5],g_spiRxBuf[5];
     uint8_t g_spiLen;
     uint8_t status;
     sf_WriteEnable();
@@ -125,18 +122,18 @@ void bsp_flash_erase_sector(uint32_t addr)
  */
 void bsp_flash_erase_chip(void)
 {
-    //uint8_t g_spiTxBuf[5],g_spiRxBuf[5];
+    // uint8_t g_spiTxBuf[5],g_spiRxBuf[5];
     uint8_t g_spiLen;
 
     sf_WriteEnable();
-    //选中SPI Flash
+    // 选中SPI Flash
     SF_CS_L();
     g_spiLen = 0;
     g_spiTxBuf[g_spiLen++] = CMD_BE;
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, g_spiLen);
-    printf("[spi flash] chip erase %d\r\n",g_spiRxBuf[0]);
-    //g_spiRxBuf[0]为255表示擦除命令发送成功，等待擦除完成
-    //等待擦除完成
+    printf("[spi flash] chip erase %d\r\n", g_spiRxBuf[0]);
+    // g_spiRxBuf[0]为255表示擦除命令发送成功，等待擦除完成
+    // 等待擦除完成
     SF_CS_H();
     sf_WaitForWriteEnd();
 }
@@ -146,10 +143,10 @@ void bsp_flash_erase_chip(void)
  * @param _uiWriteAddr 写入起始地址
  * @param _usSize    写入字节数（必须为256的倍数）
  */
-void sf_PageWrite(uint8_t * _pBuf, uint32_t _uiWriteAddr, uint16_t _usSize)
+void sf_PageWrite(uint8_t *_pBuf, uint32_t _uiWriteAddr, uint16_t _usSize)
 {
-    //uint8_t g_spiTxBuf[SPI_BUFFER_SIZE];
-    //uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
+    // uint8_t g_spiTxBuf[SPI_BUFFER_SIZE];
+    // uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
     uint32_t g_spiLen;
     uint32_t i, j;
     uint8_t status;
@@ -174,7 +171,7 @@ void sf_PageWrite(uint8_t * _pBuf, uint32_t _uiWriteAddr, uint16_t _usSize)
         sf_WaitForWriteEnd();
 
         _uiWriteAddr += 256;
-        //printf("[spi flash] page write %x %d %d\r\n",_uiWriteAddr,_usSize,status);
+        // printf("[spi flash] page write %x %d %d\r\n",_uiWriteAddr,_usSize,status);
     }
 
     SF_CS_L();
@@ -182,30 +179,30 @@ void sf_PageWrite(uint8_t * _pBuf, uint32_t _uiWriteAddr, uint16_t _usSize)
     g_spiTxBuf[g_spiLen++] = (CMD_DISWR);
     status = bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, g_spiLen);
     SF_CS_H();
-    //printf("[spi flash] write protect %d\r\n",status);
+    // printf("[spi flash] write protect %d\r\n",status);
     sf_WaitForWriteEnd();
 }
-//读取SPI Flash的状态寄存器
+// 读取SPI Flash的状态寄存器
 uint8_t bsp_flash_read_status(void)
 {
     uint8_t status;
-    //uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
-    SF_CS_L();									
-    g_spiTxBuf[0] = (CMD_RDSR);								
+    // uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
+    SF_CS_L();
+    g_spiTxBuf[0] = (CMD_RDSR);
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 2);
-    status = g_spiRxBuf[1];					
+    status = g_spiRxBuf[1];
     SF_CS_H();
-    //while(1);									 
-    printf("[spi flash] read status %d\r\n",status);
     return status;
 }
 void QSPI_FLASH_Wait_Busy(void)
 {
-	volatile uint32_t _reg;
-	while(1){
-		_reg = bsp_flash_read_status();
-		if((_reg & 0x0101)==0) break;
-	}
+    volatile uint32_t _reg;
+    while (1)
+    {
+        _reg = bsp_flash_read_status();
+        if ((_reg & 0x0101) == 0)
+            break;
+    }
 }
 /**
  * @brief 从SPI Flash读取数据
@@ -213,16 +210,16 @@ void QSPI_FLASH_Wait_Busy(void)
  * @param read_addr 读取起始地址
  * @param read_size 读取字节数
  */
-void bsp_flash_read(uint8_t * p_buf, uint32_t read_addr, uint32_t read_size)
+void bsp_flash_read(uint8_t *p_buf, uint32_t read_addr, uint32_t read_size)
 {
-    //uint8_t g_spiTxBuf[5];
-    //uint8_t g_spiTxBuf_read[SPI_BUFFER_SIZE];
-    //uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
+    // uint8_t g_spiTxBuf[5];
+    // uint8_t g_spiTxBuf_read[SPI_BUFFER_SIZE];
+    // uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
     uint32_t g_spiLen;
     uint16_t rem;
     uint16_t i;
 
-    if ((read_size == 0) ||(read_addr + read_size) > Flash_TotalSize)
+    if ((read_size == 0) || (read_addr + read_size) > Flash_TotalSize)
     {
         return;
     }
@@ -265,9 +262,9 @@ void bsp_flash_read(uint8_t * p_buf, uint32_t read_addr, uint32_t read_size)
  */
 static uint8_t sf_CmpData(uint32_t _uiSrcAddr, uint8_t *_ucpTar, uint32_t _uiSize)
 {
-    //uint8_t g_spiTxBuf[5];
-    //uint8_t g_spiTxBuf_read[SPI_BUFFER_SIZE];
-    //uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
+    // uint8_t g_spiTxBuf[5];
+    // uint8_t g_spiTxBuf_read[SPI_BUFFER_SIZE];
+    // uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
     uint32_t g_spiLen;
 
     uint16_t i, j;
@@ -324,7 +321,7 @@ static uint8_t sf_CmpData(uint32_t _uiSrcAddr, uint8_t *_ucpTar, uint32_t _uiSiz
     SF_CS_H();
     return 0;
 
-    NOTEQ:
+NOTEQ:
     SF_CS_H();
     return 1;
 }
@@ -335,7 +332,7 @@ static uint8_t sf_CmpData(uint32_t _uiSrcAddr, uint8_t *_ucpTar, uint32_t _uiSiz
  * @param _usLen     长度
  * @retval 1 需要擦除，0 不需要
  */
-static uint8_t sf_NeedErase(uint8_t * _ucpOldBuf, uint8_t *_ucpNewBuf, uint16_t _usLen)
+static uint8_t sf_NeedErase(uint8_t *_ucpOldBuf, uint8_t *_ucpNewBuf, uint16_t _usLen)
 {
     uint16_t i;
     uint8_t ucOld;
@@ -360,9 +357,9 @@ static uint8_t sf_NeedErase(uint8_t * _ucpOldBuf, uint8_t *_ucpNewBuf, uint16_t 
 static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _usWrLen)
 {
     uint16_t i;
-    uint16_t j;					/* ������ʱ */
-    uint32_t uiFirstAddr;		/* ������ַ */
-    uint8_t ucNeedErase;		/* 1��ʾ��Ҫ���� */
+    uint16_t j;           /* ������ʱ */
+    uint32_t uiFirstAddr; /* ������ַ */
+    uint8_t ucNeedErase;  /* 1��ʾ��Ҫ���� */
     uint8_t cRet;
 
     if (_usWrLen == 0)
@@ -398,7 +395,7 @@ static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _
 
     if (_usWrLen == Flash_SectorSize)
     {
-        for	(i = 0; i < Flash_SectorSize; i++)
+        for (i = 0; i < Flash_SectorSize; i++)
         {
             s_spiBuf[i] = _ucpSrc[i];
         }
@@ -416,7 +413,7 @@ static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _
     {
         if (ucNeedErase == 1)
         {
-            bsp_flash_erase_sector(uiFirstAddr);		/* ����1������ */
+            bsp_flash_erase_sector(uiFirstAddr); /* ����1������ */
         }
 
         sf_PageWrite(s_spiBuf, uiFirstAddr, Flash_SectorSize);
@@ -435,7 +432,8 @@ static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _
             }
 
             /* ʧ�ܺ��ӳ�һ��ʱ�������� */
-            for (j = 0; j < 10000; j++);
+            for (j = 0; j < 10000; j++)
+                ;
         }
     }
 
@@ -449,18 +447,17 @@ static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _
  * @retval 1 成功，0 失败
  */
 
- 
-uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size)
+uint8_t bsp_flash_write(uint8_t *p_buf, uint32_t write_addr, uint16_t write_size)
 {
     uint16_t NumOfPage = 0, NumOfSingle = 0, Addr = 0, count = 0, temp = 0;
 
     Addr = write_addr % Flash_SectorSize;
     count = Flash_SectorSize - Addr;
-    NumOfPage =  write_size / Flash_SectorSize;
+    NumOfPage = write_size / Flash_SectorSize;
     NumOfSingle = write_size % Flash_SectorSize;
     QSPI_FLASH_Wait_Busy();
-    //printf("[spi flash] write: addr=0x%08lX, size=%u, Addr=%u, count=%u, NumOfPage=%u, NumOfSingle=%u\r\n",
-    //    write_addr, write_size, Addr, count, NumOfPage, NumOfSingle);
+    // printf("[spi flash] write: addr=0x%08lX, size=%u, Addr=%u, count=%u, NumOfPage=%u, NumOfSingle=%u\r\n",
+    //     write_addr, write_size, Addr, count, NumOfPage, NumOfSingle);
     if (Addr == 0)
     {
         if (NumOfPage == 0)
@@ -480,7 +477,7 @@ uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size
                     printf("[spi flash] sf_AutoWritePage failed: addr=0x%08lX, size=%u\r\n", write_addr, Flash_SectorSize);
                     return 0;
                 }
-                write_addr +=  Flash_SectorSize;
+                write_addr += Flash_SectorSize;
                 p_buf += Flash_SectorSize;
             }
             if (sf_AutoWritePage(p_buf, write_addr, NumOfSingle) == 0)
@@ -504,7 +501,7 @@ uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size
                     return 0;
                 }
 
-                write_addr +=  count;
+                write_addr += count;
                 p_buf += count;
 
                 if (sf_AutoWritePage(p_buf, write_addr, temp) == 0)
@@ -525,7 +522,7 @@ uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size
         else
         {
             write_size -= count;
-            NumOfPage =  write_size / Flash_SectorSize;
+            NumOfPage = write_size / Flash_SectorSize;
             NumOfSingle = write_size % Flash_SectorSize;
 
             if (sf_AutoWritePage(p_buf, write_addr, count) == 0)
@@ -534,7 +531,7 @@ uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size
                 return 0;
             }
 
-            write_addr +=  count;
+            write_addr += count;
             p_buf += count;
 
             while (NumOfPage--)
@@ -544,7 +541,7 @@ uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size
                     printf("[spi flash] sf_AutoWritePage failed: addr=0x%08lX, size=%u\r\n", write_addr, Flash_SectorSize);
                     return 0;
                 }
-                write_addr +=  Flash_SectorSize;
+                write_addr += Flash_SectorSize;
                 p_buf += Flash_SectorSize;
             }
 
@@ -560,8 +557,3 @@ uint8_t bsp_flash_write(uint8_t* p_buf, uint32_t write_addr, uint16_t write_size
     }
     return 1;
 }
-
-
-
-
-

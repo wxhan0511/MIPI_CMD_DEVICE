@@ -154,6 +154,12 @@ void bsp_close_64pin_channel()
     }
 }
 
+void bsp_sel_test_freq_ch(uint8_t state)
+{
+    bsp_d_trigger_set_channel(&d_1, 0, 0);
+    bsp_d_trigger_set_channel(&d_1, 6, state);
+}
+
 // ANCHOR -  选通64×64条测试路径,pin_p接V_R&D,pin_n接地
 //  @param pin_p 正极通道 0-63
 //  @param pin_n 负极通道 0-63

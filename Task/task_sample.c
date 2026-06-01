@@ -266,15 +266,38 @@ void task_sample_run()
             memcpy(&float_bytes, &meter_rx_buf[3], sizeof(float_bytes));
             memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
             g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
-            M_SPI_DEBUG("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
-            M_SPI_DEBUG("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
-                        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
-            M_SPI_DEBUG("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
+            // printf("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
+            // printf("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
+            //        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
+            // printf("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
 
             *(dac_config_table[g_sample_task.set_power_data_frame.power_id].last_voltage) = float_bytes.f;
 
             bsp_cali_and_set_power(g_sample_task.set_power_data_frame.power_id);
-            // calibration_save();
+            calibration_save();
+            meter_tx_buf[2] = g_sample_task.cmd_status;
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        case SET_ALL_POWER_VOLTAGE:
+            g_sample_task.set_power_data_frame.frame_header = meter_rx_buf[0];
+            g_sample_task.set_power_data_frame.cmd_type = meter_rx_buf[1];
+            for (uint8_t i = 0; i < 8; i++)
+            {
+                g_sample_task.set_power_data_frame.power_id = i;
+                memcpy(&float_bytes, &meter_rx_buf[2 + i * sizeof(float_bytes)], sizeof(float_bytes));
+                memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
+                g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
+                // printf("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
+                // printf("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
+                //        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
+                // printf("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
+
+                *(dac_config_table[g_sample_task.set_power_data_frame.power_id].last_voltage) = float_bytes.f;
+
+                bsp_cali_and_set_power(g_sample_task.set_power_data_frame.power_id);
+            }
+            calibration_save();
             meter_tx_buf[2] = g_sample_task.cmd_status;
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
@@ -343,14 +366,11 @@ void task_sample_run()
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         case GET_FREQUENCY:
-            pin_num = meter_rx_buf[2];
-            pin_num = pin_num - 1; // 外部传入的pin_num从1开始,这里转换成从0开始
-            bsp_select_24pin_channel(pin_num, 1);
-            memcpy(&ref_freq_vol, &meter_rx_buf[3], sizeof(float));
+            // 打开TE通道
+            bsp_sel_test_freq_ch(1);
+            memcpy(&ref_freq_vol, &meter_rx_buf[2], sizeof(float));
             printf("%f\r\n", ref_freq_vol);
 
-            bsp_select_24pin_channel(pin_num, 1);
-            bsp_d_trigger_set_channel(&d_1, 6, 1);
             g_calibration_manager.data.ref_freq_last = ref_freq_vol / 2;
             bsp_cali_and_set_power(17);
             get_freq_flag = 0;
@@ -365,8 +385,8 @@ void task_sample_run()
                 M_SPI_INFO("GET_FREQ timeout\r\n");
             }
 
-            // 恢复环境
-            bsp_select_24pin_channel(pin_num, 0);
+            // 关闭TE通道
+            bsp_sel_test_freq_ch(0);
             bsp_led_pwm_init(10);
             enableTim1PWMOutput();
             printf("Result: Freq: %lu Hz\n", uwFrequency);
@@ -459,13 +479,6 @@ void task_sample_run()
             M_SPI_DEBUG("GET DIODE: %f\r\n", latest_sample_data[2]);
             printf("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
             bsp_rd_select_pin(pin_p, pin_n, 0);
-            task_com_resume();
-            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
-            break;
-        case SET_RESISTANCE:
-            r_level = meter_rx_buf[2];
-            bsp_rd_select_r_level(r_level);
-            M_SPI_DEBUG("SET_RESISTANCE: r_level %d\r\n", r_level);
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;

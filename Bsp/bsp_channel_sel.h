@@ -187,4 +187,5 @@ void bsp_close_40pin_channel();
 void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index);
 void bsp_ads1256_ch1_select(const AI1_INDEX ai1_index);
 void bsp_ads1256_ch2_select(const AI2_INDEX ai2_index);
+void bsp_sel_test_freq_ch(uint8_t state);
 #endif // BSP_CHANNEL_SEL_H

@@ -28,7 +28,7 @@ const osMutexAttr_t show_mutex_attributes = {
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
     .name = "defaultTask",
-    .stack_size = 1024,
+    .stack_size = 1024 * 4,
     .priority = (osPriority_t)osPriorityNormal,
 };
 osTimerId_t led_timerHandle;
