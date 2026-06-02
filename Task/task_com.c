@@ -23,14 +23,14 @@ osThreadId_t task_sample_handle;
 const osThreadAttr_t task_sample_attributes = {
     .name = "task_sample_task",
     .stack_size = 4096,
-    .priority = (osPriority_t)osPriorityHigh,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 
 osThreadId_t task_com_handle;
 const osThreadAttr_t task_com_attributes = {
     .name = "task_com_task",
     .stack_size = 4096,
-    .priority = (osPriority_t)osPriorityHigh6,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Private function prototypes -----------------------------------------------*/
 

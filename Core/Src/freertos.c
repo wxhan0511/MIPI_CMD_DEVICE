@@ -82,7 +82,7 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     osDelay(10);
-    lv_tick_inc(10);
+    lv_tick_inc(10); // 同步推进 LVGL 的内部时钟 10ms
     if (!HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
     {
       // 临界区外获取信号量是安全的

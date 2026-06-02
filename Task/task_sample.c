@@ -672,5 +672,9 @@ void task_sample_task_mutex_release(void)
 }
 void task_sample_init(void)
 {
+    sample_mutex = osMutexNew(&sample_mutex_attributes);
+    configASSERT(sample_mutex != NULL);
+
     task_sample_handle = osThreadNew(task_sample_run, NULL, &task_sample_attributes);
+    configASSERT(task_sample_handle != NULL);
 }
