@@ -29,7 +29,7 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
     .name = "defaultTask",
     .stack_size = 1024 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+    .priority = (osPriority_t)osPriorityNormal2,
 };
 osTimerId_t led_timerHandle;
 const osTimerAttr_t led_timer_attributes = {
@@ -63,7 +63,7 @@ void MX_FREERTOS_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  osDelay(2000);
+  // osDelay(2000);
 
   printf("StartDefaultTask running\r\n");
   osTimerStart(led_timerHandle, 500);
@@ -82,9 +82,12 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     osDelay(10);
-    lv_tick_inc(10); // 同步推进 LVGL 的内部时钟 10ms
+    lv_tick_inc(5); // 同步推进 LVGL 的内部时钟 5ms
+    printf("111\r\n");
+#if 0
     if (!HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
     {
+      printf("PULSE_A_Pin pressed\r\n");
       // 临界区外获取信号量是安全的
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {
@@ -188,7 +191,7 @@ void StartDefaultTask(void *argument)
 
       key_flag_1 = 0;
     }
-
+#endif
     // else if(HAL_GPIO_ReadPin(KEY_2_GPIO_Port,KEY_2_Pin) == 1)
     // {
     //   widget_change(1);

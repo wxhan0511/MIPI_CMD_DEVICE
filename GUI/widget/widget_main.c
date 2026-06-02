@@ -17,7 +17,7 @@ osThreadId_t widget_main_flush_task_handle;
 const osThreadAttr_t widget_main_flush_task_attributes = {
 	.name = "widget_main_flush_task_handle",
 	.stack_size = 1024 * 4,
-	.priority = (osPriority_t)osPriorityNormal,
+	.priority = (osPriority_t)osPriorityNormal1,
 };
 
 open_machine_group_t open_machine_group;
@@ -77,6 +77,7 @@ void widget_flush_timer_cb(const lv_timer_t *timer)
 	const lcd_show_t *show_buf = timer->user_data;
 	if (open_en == 1)
 	{
+		printf("widget flush timer called, open_en: %d\r\n", open_en);
 		if (current_page == 0)
 		{
 			// printf("flush page 0\r\n");
@@ -148,6 +149,7 @@ void lvgl_timer_task_entry(void *params)
 	{
 		if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
 		{
+			printf("lvgl_timer_task_entry acquired show_mutex\r\n");
 			lv_timer_handler();
 			osMutexRelease(show_mutexHandle);
 		}

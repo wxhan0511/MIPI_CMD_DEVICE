@@ -980,4 +980,5 @@ static void set_display_portrait(uint8_t page)
 void ui_load_page_1()
 {
     lv_screen_load_anim(page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+    printf("Loaded page1 (Main Page) with animation.\r\n");
 }
