@@ -12,11 +12,9 @@
 #include <string.h>
 #include <tgmath.h>
 
-
 #include "main.h"
 
 uint8_t first_loop_flag[8] = {0};
-
 
 ads1256_dev_t dev_vol = {
     .cs_group = ADC_SPI_CS1_GPIO_Port,
@@ -34,7 +32,7 @@ ads1256_dev_t dev_vol = {
     .sample_res_gear = {0, 0, 0, 0, 0, 0, 0, 0},
     .step_cnt = 1,
     .sample_cnt = 0,
-    .r_en=0,
+    .r_en = 0,
     .res_cali_en = 1,
 };
 
@@ -180,7 +178,7 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
 {
     uint8_t data[5];
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    
+
     GPIO_InitStruct.Pin = ADC_DRDY1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -350,38 +348,38 @@ uint8_t bsp_ads1256_get_sample_channel(const ads1256_dev_t *handle)
  * @brief ADS1256采样流程状态机处理函数，依次完成通道选择、同步、数据读取、通道切换、数据平均等步骤
  * @param handle ADS1256设备句柄
  */
-void bsp_ads1256_irq_handle(ads1256_dev_t* handle)
+void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
 {
-    
+
     if (handle->step_cnt == 0)
     {
-        //1、通道选择
+        // 1、通道选择
         bsp_ads1256_set_single_channel(handle, handle->work_channel);
         bsp_delay_us(5);
     }
     else if (handle->step_cnt == 1)
     {
-        //2、同步唤醒
+        // 2、同步唤醒
         bsp_ads1256_sync_wakeup(handle);
     }
     else if (handle->step_cnt == 2)
     {
-        //3、读取数据
+        // 3、读取数据
 
         bsp_ads1256_read_data(
             handle, &handle->data_buffer[handle->work_channel][handle->sample_cnt[handle->work_channel]]);
-        //printf("%d %d: %d \r\n", handle->work_channel,handle->sample_cnt,handle->data_buffer[handle->work_channel][handle->sample_cnt]);
+        // printf("%d %d: %d \r\n", handle->work_channel,handle->sample_cnt,handle->data_buffer[handle->work_channel][handle->sample_cnt]);
     }
     else if (handle->step_cnt == 3)
     {
-        //4、选择下一个通道
+        // 4、选择下一个通道
         handle->last_channel = handle->work_channel;
         handle->work_channel += 1;
         while (1)
         {
-            //q:解释下一条语句
-            //a: 如果当前通道使能位为1且不是第8个通道，则继续循环
-            //   否则，跳出循环，准备进行下一步操作
+            // q:解释下一条语句
+            // a: 如果当前通道使能位为1且不是第8个通道，则继续循环
+            //    否则，跳出循环，准备进行下一步操作
             if ((handle->channel_en >> handle->work_channel & 0x01) == 1 && handle->work_channel != 8)
             {
                 break;
@@ -395,8 +393,8 @@ void bsp_ads1256_irq_handle(ads1256_dev_t* handle)
     }
     else if (handle->step_cnt == 4)
     {
-        //5、结束采样
-        //设置采样平均数
+        // 5、结束采样
+        // 设置采样平均数
         handle->sample_cnt[handle->last_channel] += 1;
         if (handle->sample_cnt[handle->last_channel] == AVG_CNT)
         {
@@ -404,41 +402,38 @@ void bsp_ads1256_irq_handle(ads1256_dev_t* handle)
             for (uint8_t i = 0; i < AVG_CNT; i++)
             {
                 sum += handle->data_buffer[handle->last_channel][i];
-                //printf("%d \r\n",handle->data_buffer[handle->last_channel][i]);
+                // printf("%d \r\n",handle->data_buffer[handle->last_channel][i]);
             }
 
             handle->data_buffer_avg[handle->last_channel] = sum / AVG_CNT;
             handle->sample_cnt[handle->last_channel] = 0;
-            //printf("channel %d ,vol %f \r\n",handle->last_channel,handle->data_buffer_avg[handle->last_channel]);
+            // printf("channel %d ,vol %f \r\n",handle->last_channel,handle->data_buffer_avg[handle->last_channel]);
         }
-
     }
-    else if(handle->step_cnt == 5)
+    else if (handle->step_cnt == 5)
     {
         // if(handle->vol_en == 1)
-        {   
-            const double raw_data = handle->data_buffer_avg[handle->last_channel]*ADC_RATIO*0.000001;
-            //printf("channel %d raw data %f \r\n",handle->last_channel,raw_data);
-            if(raw_data != 0.0)
+        {
+            const double raw_data = handle->data_buffer_avg[handle->last_channel] * ADC_RATIO * 0.000001;
+            // printf("channel %d raw data %f \r\n",handle->last_channel,raw_data);
+            if (raw_data != 0.0)
             {
-                raw_data_queue_push(raw_data , handle->last_channel);   //push data and index(corresponding channel) to ring queue
+                raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
             }
-            //printf("channel %d raw data %f \r\n",handle->last_channel,raw_data);
+            printf("channel %d raw data %f \r\n", handle->last_channel, raw_data);
 
-            //const double compare = bsp_adc_vol_convert_64pin(handle->vol_gear,raw_data,handle->single_vol_cali_en);
-            //handle->data_buffer_avg[handle->last_channel] = compare;
-            //printf("vol raw data %d gear %d ,%f %.3f \r\n",handle->last_channel,handle->vol_gear,raw_data,compare);
+            // const double compare = bsp_adc_vol_convert_64pin(handle->vol_gear,raw_data,handle->single_vol_cali_en);
+            // handle->data_buffer_avg[handle->last_channel] = compare;
+            // printf("vol raw data %d gear %d ,%f %.3f \r\n",handle->last_channel,handle->vol_gear,raw_data,compare);
         }
     }
-    else if(handle->step_cnt == 6)
+    else if (handle->step_cnt == 6)
     {
         handle->step_cnt = 0;
         return;
     }
     handle->step_cnt += 1;
 }
-
-
 
 /**
  * @brief 向ADS1256发送同步（SYNC）和唤醒（WAKEUP）命令

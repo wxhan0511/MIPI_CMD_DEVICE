@@ -73,11 +73,9 @@ void widget_main_create(void)
 void widget_flush_timer_cb(const lv_timer_t *timer)
 {
 	taskENTER_CRITICAL();
-	// printf("widget flush timer called\r\n");
 	const lcd_show_t *show_buf = timer->user_data;
 	if (open_en == 1)
 	{
-		printf("widget flush timer called, open_en: %d\r\n", open_en);
 		if (current_page == 0)
 		{
 			// printf("flush page 0\r\n");
@@ -113,7 +111,6 @@ void widget_flush_timer_cb(const lv_timer_t *timer)
 			ui_refresh_firmware_version(&fw_version_group, show_buf);
 		}
 	}
-	// printf("widget flush timer called end\r\n");
 	taskEXIT_CRITICAL();
 }
 
@@ -149,7 +146,6 @@ void lvgl_timer_task_entry(void *params)
 	{
 		if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
 		{
-			printf("lvgl_timer_task_entry acquired show_mutex\r\n");
 			lv_timer_handler();
 			osMutexRelease(show_mutexHandle);
 		}

@@ -83,7 +83,6 @@ void StartDefaultTask(void *argument)
   {
     osDelay(10);
     lv_tick_inc(5); // 同步推进 LVGL 的内部时钟 5ms
-    printf("111\r\n");
 #if 0
     if (!HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
     {

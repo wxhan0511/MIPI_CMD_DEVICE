@@ -411,7 +411,7 @@ void task_sample_run()
             printf("t_temp_start: %lu\r\n", t_temp_start);
 
             M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
-
+            wait_adc_one_round(1000);
             t0 = HAL_GetTick();
             while (latest_sample_ch_sel[2] != 0) // 等待ADS1256通道2的子通道切到0,且最新采样数据已准备好
             {
@@ -449,18 +449,17 @@ void task_sample_run()
         case GET_DIODE:
             pin_p = meter_rx_buf[2];
             pin_n = meter_rx_buf[3];
-            bsp_rd_select_r_level(OHM_4_point_7_K);
-            bsp_rd_select_pin(pin_p, pin_n, 1);
+            dev_vol.sample_res_gear_rd = OHM_4_point_7_K;
+            bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
+            dev_vol.channel_en = 0b00000100; // 只使能通道2
             bsp_rd_select_mode(D_MODE);
-            M_SPI_DEBUG("GET_DIODE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
             bsp_ads1256_ch2_select(0);
-            while (dev_vol.work_channel != 2)
-            {
-                osDelay(1);
-            };
-            wait_adc_one_round(1000);
+            bsp_rd_select_pin(pin_p, pin_n, 1);
+
+            M_SPI_DEBUG("GET_DIODE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
 
             M_SPI_DEBUG("Waiting for ADS1256 channel 2 sub channel 0 data ready...\r\n");
+            wait_adc_one_round(1000);
             t0 = HAL_GetTick();
             while (latest_sample_ch_sel[2] != 0) // 等待ADS1256通道2的数据准备好
             {
@@ -468,17 +467,17 @@ void task_sample_run()
                 {
                     // 可按你的状态定义改成超时状态
                     g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
-                    M_SPI_INFO("GET_RESISTANCE timeout\r\n");
+                    M_SPI_INFO("GET_DIODE timeout\r\n");
                     break;
                 }
                 osDelay(1);
             }
+            wait_adc_one_round(1000);
+            memcpy(&meter_tx_buf[3], (const void *)&latest_sample_raw_data[2], sizeof(float));
 
-            memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
-
-            M_SPI_DEBUG("GET DIODE: %f\r\n", latest_sample_data[2]);
-            printf("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_data[2]);
+            printf("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_raw_data[2]);
             bsp_rd_select_pin(pin_p, pin_n, 0);
+            dev_vol.channel_en = 0b11111111; // 使能所有通道
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
