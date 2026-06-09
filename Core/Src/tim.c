@@ -46,11 +46,12 @@ static volatile uint8_t last_ccr1_valid = 0U;
 /* 定时器模式与溢出计数 */
 static volatile uint32_t tim1_ovf_cnt = 0U;
 /* 注意：这个变量用于在捕获发生时保存当前的溢出总数 */
-static volatile uint32_t tim1_ovf_snap = 0U; 
+static volatile uint32_t tim1_ovf_snap = 0U;
 uint32_t sample_count = 0;
 
 /* 原始捕获数据结构 */
-typedef struct {
+typedef struct
+{
   uint32_t cc1;
   uint32_t ovf1;
   uint32_t cc2;
@@ -193,7 +194,7 @@ void TIM1_CCP_Init(void)
     /* Configuration Error */
     Error_Handler(__FILE__, __LINE__);
   }
-  __HAL_TIM_URS_ENABLE(&htim1); 
+  __HAL_TIM_URS_ENABLE(&htim1);
 }
 
 void enableTim1CaptureCompareInterrupt(void)
@@ -456,7 +457,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle)
     GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-    
+
     /* 3. 配置 NVIC (为了门限法的溢出统计) */
     HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
@@ -640,7 +641,7 @@ static uint32_t TIM1_GetCaptureClockHz(void)
 void TIM1_GateMode_Init(void)
 {
   HAL_TIM_Base_DeInit(&htim1);
-  
+
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -650,13 +651,13 @@ void TIM1_GateMode_Init(void)
 
   // 配置为外部时钟模式 1，由 PE11 (TIM1_CH2) 提供计数脉冲
   TIM_SlaveConfigTypeDef sSlaveConfig = {0};
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_EXTERNAL1; 
-  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2; 
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_EXTERNAL1;
+  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
   sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
   sSlaveConfig.TriggerFilter = 0;
   HAL_TIM_SlaveConfigSynchronization(&htim1, &sSlaveConfig);
 
-  tim1_mode = TIM1_MODE_CAP_MEAS; 
+  tim1_mode = TIM1_MODE_CAP_MEAS;
   tim1_ovf_cnt = 0;
 
   // 开启溢出中断处理
@@ -676,41 +677,39 @@ void TIM1_GateMode_Init(void)
  */
 int Measure_Frequency_Adaptive(void)
 {
-    // 强制关闭捕获中断
-    HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
-    __HAL_TIM_DISABLE_IT(&htim1, TIM_IT_CC1 | TIM_IT_CC2);
-    tim1_mode = TIM1_MODE_CAP_MEAS; // 设置为测量模式以触发溢出累加
+  // 强制关闭捕获中断
+  HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
+  __HAL_TIM_DISABLE_IT(&htim1, TIM_IT_CC1 | TIM_IT_CC2);
+  tim1_mode = TIM1_MODE_CAP_MEAS; // 设置为测量模式以触发溢出累加
 
-    // 初始化外部时钟模式
-    TIM1_GateMode_Init(); 
-    
-    uint64_t valid_sum = 0;
-    
-    // 连续测量 12 次，抛弃前 2 次，取后 10 次
-    for (int i = 0; i < 12; i++)
+  // 初始化外部时钟模式
+  TIM1_GateMode_Init();
+
+  uint64_t valid_sum = 0;
+
+  // 连续测量 12 次，抛弃前 2 次，取后 10 次
+  for (int i = 0; i < 12; i++)
+  {
+    tim1_ovf_cnt = 0;
+    __HAL_TIM_SET_COUNTER(&htim1, 0);
+
+    HAL_TIM_Base_Start_IT(&htim1);
+    HAL_Delay(100); // 10ms 门限
+    uint32_t count = __HAL_TIM_GET_COUNTER(&htim1);
+    uint32_t ovfs = tim1_ovf_cnt;
+    HAL_TIM_Base_Stop_IT(&htim1);
+
+    if (i >= 2)
     {
-        tim1_ovf_cnt = 0;
-        __HAL_TIM_SET_COUNTER(&htim1, 0);
-        
-        HAL_TIM_Base_Start_IT(&htim1);
-        osDelay(100); // 10ms 门限
-        uint32_t count = __HAL_TIM_GET_COUNTER(&htim1);
-        uint32_t ovfs = tim1_ovf_cnt; 
-        HAL_TIM_Base_Stop_IT(&htim1);
-
-        if (i >= 2)
-        {
-            valid_sum += ((uint64_t)count + (uint64_t)ovfs * 65536);
-        }
+      valid_sum += ((uint64_t)count + (uint64_t)ovfs * 65536);
     }
-    uint32_t avg_freq = (uint32_t)((valid_sum *0.009662149) * 100);
+  }
+  uint32_t avg_freq = (uint32_t)((valid_sum * 0.009662149) * 100);
 
-
-    uwFrequency = avg_freq;
-    uwDutyCycle = 50; // 门限法无法测高频占空比，固定 50
-    get_freq_flag = 1;
-    return 0;
-    
+  uwFrequency = avg_freq;
+  uwDutyCycle = 50; // 门限法无法测高频占空比，固定 50
+  get_freq_flag = 1;
+  return 0;
 }
 #if 1
 /**
@@ -722,7 +721,8 @@ int Measure_Frequency_Adaptive(void)
 /* 仅记录数据，不处理计算 */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-  if (htim->Instance != TIM1 || tim1_mode != TIM1_MODE_CAP_MEAS) return;
+  if (htim->Instance != TIM1 || tim1_mode != TIM1_MODE_CAP_MEAS)
+    return;
 
   uint32_t current_ovf = tim1_ovf_cnt;
 
@@ -748,14 +748,14 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
       capture_buffer[raw_sample_idx].ovf1 = last_ccr1_ovf;
       capture_buffer[raw_sample_idx].cc2 = ccr2;
       capture_buffer[raw_sample_idx].ovf2 = ovf2;
-      //printf("Captured Sample %u: CCR1 = %lu (Ovf: %lu), CCR2 = %lu (Ovf: %lu)\r\n",
-             //raw_sample_idx, last_ccr1, last_ccr1_ovf, ccr2, ovf2);
+      // printf("Captured Sample %u: CCR1 = %lu (Ovf: %lu), CCR2 = %lu (Ovf: %lu)\r\n",
+      // raw_sample_idx, last_ccr1, last_ccr1_ovf, ccr2, ovf2);
       raw_sample_idx++;
       last_ccr1_valid = 0U;
 
       if (raw_sample_idx >= MAX_SAMPLES)
       {
-        get_freq_flag = 1; // 标记采样缓冲区已扫满
+        get_freq_flag = 1;                    // 标记采样缓冲区已扫满
         disableTim1CaptureCompareInterrupt(); // 停止中断，保护数据
       }
     }
@@ -769,13 +769,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
   {
     /* Get the Input Capture value */
     uwIC2Value = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);//周期值
-    
+
     if (uwIC2Value != 0)
     {
       /* Duty cycle computation */
       uwDutyCycle = ((HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1)) * 100) / uwIC2Value;//占空比
-      
-      /* uwFrequency computation */    
+
+      /* uwFrequency computation */
       uwFrequency = 168000000U / ((htim1.Init.Prescaler + 1U) * uwIC2Value);
 
       printf("sample_count:%d\r\n",sample_count);
@@ -813,7 +813,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
  */
 void TIM1_Calculate_Results(void)
 {
-  if (get_freq_flag == 0) return;
+  if (get_freq_flag == 0)
+    return;
 
   uint64_t sum_freq = 0;
   uint64_t sum_duty = 0;
@@ -822,24 +823,26 @@ void TIM1_Calculate_Results(void)
   uint32_t tim_clk = TIM1_GetCaptureClockHz();
   uint32_t cnt_clk = tim_clk / (htim1.Init.Prescaler + 1U);
   uint64_t arrp1 = (uint64_t)htim1.Init.Period + 1ULL;
-  //printf("Timer Clock = %lu Hz, Count Clock = %lu Hz\r\n", tim_clk, cnt_clk);
+  // printf("Timer Clock = %lu Hz, Count Clock = %lu Hz\r\n", tim_clk, cnt_clk);
   for (uint8_t i = 2; i < raw_sample_idx; i++)
   {
     // 1. 计算周期 Ticks
     uint64_t period_ticks = (uint64_t)capture_buffer[i].cc2 + (uint64_t)capture_buffer[i].ovf2 * arrp1;
-    if (period_ticks == 0) continue;
-    //printf("arr1 = %lu, ovf1 = %lu, arr2 = %lu, ovf2 = %lu\r\n",
-           //capture_buffer[i].cc1, capture_buffer[i].ovf1,
-           //capture_buffer[i].cc2, capture_buffer[i].ovf2);
-    //printf("Sample %u: Period Ticks = %lu\r\n", i, period_ticks);
-    // 2. 计算高电平 Ticks
+    if (period_ticks == 0)
+      continue;
+    // printf("arr1 = %lu, ovf1 = %lu, arr2 = %lu, ovf2 = %lu\r\n",
+    // capture_buffer[i].cc1, capture_buffer[i].ovf1,
+    // capture_buffer[i].cc2, capture_buffer[i].ovf2);
+    // printf("Sample %u: Period Ticks = %lu\r\n", i, period_ticks);
+    //  2. 计算高电平 Ticks
     uint64_t high_ticks = (uint64_t)capture_buffer[i].cc1 + (uint64_t)capture_buffer[i].ovf1 * arrp1;
-    if (high_ticks > period_ticks) high_ticks = period_ticks;
+    if (high_ticks > period_ticks)
+      high_ticks = period_ticks;
 
     // 3. 计算频率和占空比
     uint32_t f = (uint32_t)((uint64_t)cnt_clk / period_ticks);
-    uint32_t d = (uint32_t)((high_ticks * 100ULL + (period_ticks/2)) / period_ticks);
-    //printf("Sample %u: Freq = %lu Hz, Duty = %lu%%\r\n", i, f, d);
+    uint32_t d = (uint32_t)((high_ticks * 100ULL + (period_ticks / 2)) / period_ticks);
+    // printf("Sample %u: Freq = %lu Hz, Duty = %lu%%\r\n", i, f, d);
     sum_freq += f;
     sum_duty += d;
     valid_count++;

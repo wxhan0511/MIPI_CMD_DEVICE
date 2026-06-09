@@ -95,48 +95,24 @@ void bsp_init()
     bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
     bsp_rly_gear_set(GEAR_mA, VDD_RLY);
     bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
-
-    // bsp_test_spi_flash();
-    // calibration_set_defaults();
-    // W25Q256JVEQ_INFO("Default calibration values have been set\r\n");
-    // calibration_save();
-    // calibration_load();
-
-    // while(1);
-    // M_CS_Pin_L();
-    // HAL_SPI_Transmit(&hspi2, (uint8_t*)"Hello Flash", 11, HAL_MAX_DELAY);
-    // M_CS_Pin_H();
-
+    calibration_load();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
     /*-------------ADC END---------------------------*/
 
-    // Master mode and listening are mutually exclusive
-#ifdef I2C_SLAVE_I2C2_LISTEN
-    HAL_I2C_DisableListen_IT(&hi2c2);
-#endif
     /*-------------DAC and LIMIT CURRENT START----------*/
-
     bsp_dac_init();
-
-/*-------------DAC and LIMIT CURRENT END------------*/
-#ifdef I2C_SLAVE_I2C2_LISTEN
-    HAL_I2C_EnableListen_IT(&hi2c2);
-#endif
+    /*-------------DAC and LIMIT CURRENT END------------*/
     /*-------------PWM START----------------*/
     bsp_led_pwm_init(10);   // step1
     bsp_blasi_pwm_init(10); // step1
     enableTim1PWMOutput();  // step2
     enableTim2PWMOutput();
-
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();
     // test_ccp();
     /*-------------CCP END----------------*/
-
-    // MX_USB_OTG_HS_PCD_Init();
-    // MX_USB_DEVICE_Init();
     MIPI_CMD_INFO("------------- bsp init finish -------------\r\n");
 }
 
