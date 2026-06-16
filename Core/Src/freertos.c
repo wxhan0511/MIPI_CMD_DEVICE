@@ -1,4 +1,4 @@
-/* Includes ------------------------------------------------------------------*/
+/* ==================== 1. 头文件包含 ==================== */
 #include "main.h"
 
 #include "i2c_task.h"
@@ -10,9 +10,22 @@
 #include "lv_port_disp_template.h"
 #include "widget_func.h"
 #include "task_sample.h"
-#include "lv_port_disp_template.h"
+#include "task_com.h"
 #include "lcd.h"
-/* Private function prototypes -----------------------------------------------*/
+
+/* ==================== 2. 宏定义 ==================== */
+/* 无 */
+
+/* ==================== 3. 类型定义（结构体、枚举、别名） ==================== */
+/* 无 */
+
+/* ==================== 4. 外部全局变量 ==================== */
+/* 无 */
+
+/* ==================== 5. 静态私有变量 ==================== */
+/* 无 */
+
+/* ==================== 6. 静态函数声明 ==================== */
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 void StartDefaultTask(void *argument);
@@ -34,6 +47,8 @@ const osThreadAttr_t defaultTask_attributes = {
 osTimerId_t led_timerHandle;
 const osTimerAttr_t led_timer_attributes = {
     .name = "led_timer"};
+
+/* ==================== 7. 外部可调用函数实现 ==================== */
 /**
  * @brief  FreeRTOS initialization
  * @param  None
@@ -82,9 +97,9 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     osDelay(10);
-    lv_tick_inc(5); // 同步推进 LVGL 的内部时钟 5ms
-#if 0
-    if (!HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
+    lv_tick_inc(10); // 同步推进 LVGL 的内部时钟 10ms
+#if 1
+    if (HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
     {
       printf("PULSE_A_Pin pressed\r\n");
       // 临界区外获取信号量是安全的
@@ -134,7 +149,7 @@ void StartDefaultTask(void *argument)
 
       key_flag = 0;
     }
-    if (!HAL_GPIO_ReadPin(PULSE_B_GPIO_Port, PULSE_B_Pin))
+    if (HAL_GPIO_ReadPin(PULSE_B_GPIO_Port, PULSE_B_Pin))
     {
       osDelay(10);
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
@@ -202,4 +217,8 @@ void StartDefaultTask(void *argument)
   }
   /* USER CODE END StartDefaultTask */
 }
+
+/* ==================== 8. 静态私有函数实现 ==================== */
+/* 无 */
+
 /* USER CODE END Application */

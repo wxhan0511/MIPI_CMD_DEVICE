@@ -69,9 +69,10 @@ enum
   TIM1_MODE_PWM_BURST = 2
 };
 static volatile uint8_t tim1_mode = TIM1_MODE_IDLE;
-#define SAMPLE_WINDOW 1000U   // 采样次数
-#define GRADIENT_STEP 0.1f    //
-#define GRADIENT_BUCKETS 100U // 0.1%, 0.2%, …, 1.0%
+#define SAMPLE_WINDOW 1000U        // 采样次数
+#define GRADIENT_STEP 0.1f         //
+#define GRADIENT_BUCKETS 100U      // 0.1%, 0.2%, …, 1.0%
+#define DUTY_MEASURE_MAX_HZ 80000U // 80kHz 以上占空比固定为 0
 
 float mean_freq_samples = 0;
 float mean_duty_samples = 0;
@@ -694,7 +695,7 @@ int Measure_Frequency_Adaptive(void)
     __HAL_TIM_SET_COUNTER(&htim1, 0);
 
     HAL_TIM_Base_Start_IT(&htim1);
-    HAL_Delay(100); // 10ms 门限
+    HAL_Delay(100); // 等待 100 ms 以确保计数器有足够时间捕获脉冲
     uint32_t count = __HAL_TIM_GET_COUNTER(&htim1);
     uint32_t ovfs = tim1_ovf_cnt;
     HAL_TIM_Base_Stop_IT(&htim1);
@@ -707,7 +708,7 @@ int Measure_Frequency_Adaptive(void)
   uint32_t avg_freq = (uint32_t)((valid_sum * 0.009662149) * 100);
 
   uwFrequency = avg_freq;
-  uwDutyCycle = 50; // 门限法无法测高频占空比，固定 50
+  uwDutyCycle = 0; // 门限法无法测高频占空比，固定 0
   get_freq_flag = 1;
   return 0;
 }
@@ -819,6 +820,7 @@ void TIM1_Calculate_Results(void)
   uint64_t sum_freq = 0;
   uint64_t sum_duty = 0;
   uint32_t valid_count = 0;
+  uint32_t duty_valid_count = 0;
 
   uint32_t tim_clk = TIM1_GetCaptureClockHz();
   uint32_t cnt_clk = tim_clk / (htim1.Init.Prescaler + 1U);
@@ -844,14 +846,25 @@ void TIM1_Calculate_Results(void)
     uint32_t d = (uint32_t)((high_ticks * 100ULL + (period_ticks / 2)) / period_ticks);
     // printf("Sample %u: Freq = %lu Hz, Duty = %lu%%\r\n", i, f, d);
     sum_freq += f;
-    sum_duty += d;
+    if (f < DUTY_MEASURE_MAX_HZ)
+    {
+      sum_duty += d;
+      duty_valid_count++;
+    }
     valid_count++;
   }
 
   if (valid_count > 0)
   {
     uwFrequency = (uint32_t)(sum_freq / valid_count);
-    uwDutyCycle = (uint32_t)(sum_duty / valid_count);
+    if (uwFrequency >= DUTY_MEASURE_MAX_HZ || duty_valid_count == 0U)
+    {
+      uwDutyCycle = 0U;
+    }
+    else
+    {
+      uwDutyCycle = (uint32_t)(sum_duty / duty_valid_count);
+    }
   }
 
   // 重置采样状态，准备下一次采集

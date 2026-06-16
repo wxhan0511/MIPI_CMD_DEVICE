@@ -12,12 +12,12 @@
 #include "lvgl.h"
 #include "lcd.h"
 static lv_obj_t *label_power_name[7];
-static lv_obj_t *label_power_name_page3[4];
+static lv_obj_t *label_power_name_page3[3];
 static const char *power_name[7] = {
     "    Name", "      vcc", "      iovcc", "      vsp", "      vsn",
     "      avdd", "      vdd"};
-static const char *power_name_page3[4] = {
-    "    Name", "      elvdd", "      elvss", "      v+adj"};
+static const char *power_name_page3[3] = {
+    "    Name", "      elvdd", "      elvss"};
 
 char *protocol_name[20] =
     {
@@ -137,49 +137,65 @@ void ui_label_set_text(lv_obj_t *label, const char *text)
 
 void ui_main_protocol_group_init(lv_obj_t *page, lcd_protocol_label_group_t *label_group)
 {
-    // 协议标签创建
+    // 0~70 高度内紧凑布局：4 行，每行 16px 高
+    const int h = 16;
+    const int y1 = 18;
+    const int y2 = 34;
+    const int y3 = 50;
+    const int y4 = 66;
+
+    // --------------------- Row1: Protocol ---------------------
     lv_obj_t *label_protocol = lv_label_create(page);
-    ui_label_init(label_protocol, x_line_0, y_line_0, 80, label_height, "	- Protocol"); // 5,10
+    ui_label_init(label_protocol, 4, y1, 54, h, "Protocol:");
 
-    // 协议名称标签创建
-    label_group->label_protocol = lv_label_create(page); // 5+80,10
-    ui_label_init(label_group->label_protocol, x_line_0 + data_step, y_line_0, 150, label_height, protocol_name[19]);
+    label_group->label_protocol = lv_label_create(page);
+    ui_label_init(label_group->label_protocol, 60, y1, 256, h, protocol_name[19]);
+    lv_label_set_long_mode(label_group->label_protocol, LV_LABEL_LONG_CLIP);
 
-    // 速度标签创建
-    lv_obj_t *label_speed = lv_label_create(page); // 5,10+20
-    ui_label_init(label_speed, x_line_1, y_line_1, 80, label_height, "	- Speed");
+    // --------------------- Row2: PCLK / HS --------------------
+    lv_obj_t *label_pclk = lv_label_create(page);
+    ui_label_init(label_pclk, 4, y2, 40, h, "PCLK:");
 
-    // Pixel Clock 标签创建
-    lv_obj_t *label_pclk = lv_label_create(page); // 5+80,10+20
-    ui_label_init(label_pclk, x_line_1 + data_step, y_line_1, 60, label_height, "PCLK");
+    label_group->label_speed_pclk = lv_label_create(page);
+    ui_label_init(label_group->label_speed_pclk, 44, y2, 102, h, "NULL");
+    lv_label_set_long_mode(label_group->label_speed_pclk, LV_LABEL_LONG_CLIP);
 
-    // Pixel Clock 数据标签创建
-    label_group->label_speed_pclk = lv_label_create(page); // 5+80+50,10+20
-    ui_label_init(label_group->label_speed_pclk, x_line_1 + data_step + 50, y_line_1, 80, label_height, "NULL");
+    lv_obj_t *label_hs = lv_label_create(page);
+    ui_label_init(label_hs, 150, y2, 24, h, "HS:");
 
-    // MIPI HS 标签创建
-    lv_obj_t *label_hs = lv_label_create(page); // 5+80,50
-    ui_label_init(label_hs, x_line_2, y_line_2, 80, label_height, "	- HS");
-
-    // MIPI HS 数据标签创建
     label_group->label_speed_hs = lv_label_create(page);
-    ui_label_init(label_group->label_speed_hs, x_line_2 + 50, y_line_2, 80, label_height, "1025 Mbps");
+    ui_label_init(label_group->label_speed_hs, 176, y2, 140, h, "1025 Mbps");
+    lv_label_set_long_mode(label_group->label_speed_hs, LV_LABEL_LONG_CLIP);
 
-    // MIPI LP 标签创建
+    // --------------------- Row3: LP / State -------------------
     lv_obj_t *label_lp = lv_label_create(page);
-    ui_label_init(label_lp, x_line_2 + 130, y_line_2, 80, label_height, "LP");
+    ui_label_init(label_lp, 4, y3, 30, h, "LP:");
 
-    // MIPI LP 数据标签创建
     label_group->label_speed_lp = lv_label_create(page);
-    ui_label_init(label_group->label_speed_lp, x_line_2 + 160, y_line_2, 80, label_height, "48.00 Mhz");
+    ui_label_init(label_group->label_speed_lp, 36, y3, 108, h, "NULL");
+    lv_label_set_long_mode(label_group->label_speed_lp, LV_LABEL_LONG_CLIP);
 
-    // 点屏状态标签创建
     lv_obj_t *label_state = lv_label_create(page);
-    ui_label_init(label_state, x_line_3, y_line_3, 80, label_height, "	- State");
+    ui_label_init(label_state, 150, y3, 40, h, "State:");
 
-    // 点屏状态数据标签创建
     label_group->label_state = lv_label_create(page);
-    ui_label_init(label_group->label_state, x_line_3 + data_step, y_line_3, 150, label_height, "Power off");
+    ui_label_init(label_group->label_state, 192, y3, 124, h, "Power off");
+    lv_label_set_long_mode(label_group->label_state, LV_LABEL_LONG_CLIP);
+
+    // --------------------- Row4: IPv4 / LIM -------------------
+    lv_obj_t *label_ipv4 = lv_label_create(page);
+    ui_label_init(label_ipv4, 4, y4, 40, h, "IPv4:");
+
+    label_group->label_ipv4 = lv_label_create(page);
+    ui_label_init(label_group->label_ipv4, 44, y4, 134, h, "0.0.0.0");
+    lv_label_set_long_mode(label_group->label_ipv4, LV_LABEL_LONG_CLIP);
+
+    // lv_obj_t *label_lim = lv_label_create(page);
+    // ui_label_init(label_lim, 180, y4, 32, h, "LIM:");
+
+    // label_group->label_lim = lv_label_create(page);
+    // ui_label_init(label_group->label_lim, 214, y4, 102, h, "NULL");
+    // lv_label_set_long_mode(label_group->label_lim, LV_LABEL_LONG_CLIP);
 }
 
 void ui_main_protocol_group_rotate_init(lv_obj_t *page, lcd_protocol_label_group_t *label_group)
@@ -282,263 +298,284 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
         ui_label_init(label_group->label_power_cur[i], 10 + 83 * 2, 94 + 20 * (i + 1), 76, 16, "null");
     }
 #elif STYLE_1
-    static lv_obj_t *line_v[7];
-    static lv_obj_t *line_h[7];
+    static lv_obj_t *line_v[8];
+    static lv_obj_t *line_h[3];
+
+    // 列分隔：Name | Vol | Cur | Lim
+    const int x_name = 5;
+    const int x_col1 = 80;
+    const int x_col2 = 165;
+    const int x_col3 = 250;
+
+    // 行：标题 + 6路数据（总7行），再补一条底线
     for (int i = 0; i < 7; i++)
     {
-        // 分割横线
         line_v[i] = lv_line_create(page);
         lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
         lv_obj_set_size(line_v[i], 310, 4);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
-        // 电压名称标签
         label_power_name[i] = lv_label_create(page);
-        ui_label_init(label_power_name[i], 5, 92 + 20 * i, 80, label_height, power_name[i]);
+        ui_label_init(label_power_name[i], x_name, 92 + 20 * i, 70, label_height, power_name[i]);
     }
+    line_v[7] = lv_line_create(page);
+    lv_line_set_points(line_v[7], (lv_point_precise_t *)line_v_points, 2);
+    lv_obj_set_pos(line_v[7], 5, 90 + 20 * 7);
+    lv_obj_set_size(line_v[7], 310, 4);
+    lv_obj_set_style_line_color(line_v[7], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 名称标签
+    // 标题
     lv_obj_t *vol_name_label = lv_label_create(page);
-    ui_label_init(vol_name_label, 80 + 30, 92, 120, label_height, "    Vol");
+    ui_label_init(vol_name_label, x_col1 + 10, 92, 70, label_height, " Vol");
 
     lv_obj_t *cur_name_label = lv_label_create(page);
-    ui_label_init(cur_name_label, 200 + 30, 92, 120, label_height, "    Cur");
+    ui_label_init(cur_name_label, x_col2 + 10, 92, 70, label_height, " Cur");
 
+    lv_obj_t *lim_name_label = lv_label_create(page);
+    ui_label_init(lim_name_label, x_col3 + 5, 92, 70, label_height, " Lim");
+
+    // 竖线
     line_h[0] = lv_line_create(page);
     lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[0], 80, 90);
-    lv_obj_set_size(line_h[0], 4, 140);
+    lv_obj_set_pos(line_h[0], x_col1, 90);
+    lv_obj_set_size(line_h[0], 4, 160);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
     lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[1], 120 + 80, 90);
-    lv_obj_set_size(line_h[1], 4, 140);
-    lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
+    lv_obj_set_pos(line_h[1], x_col2, 90);
+    lv_obj_set_size(line_h[1], 4, 160);
+    lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 采样数据标签
+    line_h[2] = lv_line_create(page);
+    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[2], x_col3, 90);
+    lv_obj_set_size(line_h[2], 4, 160);
+    lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    // 6路数据
     for (int i = 0; i < 6; i++)
     {
         label_group->label_power_vol[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_vol[i], 80 + 30, 94 + 20 * (i + 1), 76, 16, "null");
+        ui_label_init(label_group->label_power_vol[i], x_col1 + 10, 94 + 20 * (i + 1), 70, 16, "null");
+
         label_group->label_power_cur[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_cur[i], 200 + 30, 94 + 20 * (i + 1), 76, 16, "null");
+        ui_label_init(label_group->label_power_cur[i], x_col2 + 10, 94 + 20 * (i + 1), 70, 16, "null");
+
+        label_group->label_power_th[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_th[i], x_col3 + 8, 94 + 20 * (i + 1), 70, 16, "NULL");
     }
 #endif
 }
 
 void ui_main_sample_data_group_rotate_init(lv_obj_t *page, sample_data_label_group_t *label_group)
 {
-    // 恢复为竖屏布局 (宽 240, 高 320)
-    // 布局逻辑参考自 ui_main_sample_data_group_init 的 STYLE_1
+    static lv_obj_t *line_v[8];
+    static lv_obj_t *line_h[3];
 
-    static lv_obj_t *line_v[8]; // 横向分割线”对象
-    static lv_obj_t *line_h[2]; // 竖向分割线对象
+    // 竖屏 240 宽压缩版：Name | Vol | Cur | Lim
+    const int x_name = 5;
+    const int x_col1 = 70;
+    const int x_col2 = 130;
+    const int x_col3 = 185;
+
     for (int i = 0; i < 7; i++)
     {
-        // 分割横线
-        line_v[i] = lv_line_create(page);                                      // 在 page 对象上创建一个 lv_line（线条）对象
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2); // 设置线条的坐标点。line_v_points 包含起点和终点，由 2 个点组成。这决定了线条的长短和方向（横向）。
-        /*设置线条的显示位置：
-        X 坐标：固定为 5。
-        Y 坐标：起始于 90，每组间隔 20 像素（即 90, 110, 130...）*/
-        lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 320, 4); // 设置线条对象的容器尺寸。宽度设为 320（占满屏幕横向），高度设为 4
-        lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
-
-        // 电压名称标签
-        label_power_name[i] = lv_label_create(page); // 创建并初始化名称标签
-        ui_label_init(label_power_name[i], 5, 92 + 20 * i, 70, label_height, power_name[i]);
-    }
-
-    // 名称标签
-    lv_obj_t *vol_name_label = lv_label_create(page);
-    ui_label_init(vol_name_label, 75 + 10, 92, 80, label_height, "    Vol");
-
-    lv_obj_t *cur_name_label = lv_label_create(page);
-    ui_label_init(cur_name_label, 155 + 10, 92, 80, label_height, "    Cur");
-
-    line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[0], 75, 90);
-    lv_obj_set_size(line_h[0], 4, 140);
-    lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
-
-    line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[1], 155, 90);
-    lv_obj_set_size(line_h[1], 4, 140);
-    lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
-
-    // 采样数据标签
-    for (int i = 0; i < 6; i++)
-    {
-        label_group->label_power_vol[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_vol[i], 75 + 10, 94 + 20 * (i + 1), 76, 16, "null");
-        label_group->label_power_cur[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_cur[i], 155 + 10, 94 + 20 * (i + 1), 76, 16, "null");
-    }
-}
-
-void ui_page3_sample_data_group_init(lv_obj_t *page, sample_data_page3_label_group_t *label_group)
-{
-#define STYLE_0 0
-#define STYLE_1 1
-#if STYLE_0
-    static lv_obj_t *line_v[7];
-    static lv_obj_t *line_h[7];
-    for (int i = 0; i < 7; i++)
-    {
-        // 分割横线
-        line_v[i] = lv_line_create(lv_screen_active());
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
-        lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 300, 4);
-        lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
-
-        // 电压名称标签
-        label_power_name[i] = lv_label_create(lv_screen_active());
-        ui_label_init(label_power_name[i], 5, 92 + 20 * i, 80, label_height, power_name[i]);
-    }
-
-    // 名称标签
-    lv_obj_t *vol_name_label = lv_label_create(lv_screen_active());
-    ui_label_init(vol_name_label, 5 + 89, 92, 80, label_height, "    Vol");
-
-    lv_obj_t *cur_name_label = lv_label_create(lv_screen_active());
-    ui_label_init(cur_name_label, 5 + 85 * 2, 92, 80, label_height, "    Cur");
-
-    lv_obj_t *threshold_name_label = lv_label_create(lv_screen_active());
-    ui_label_init(threshold_name_label, 5 + 80 * 3, 92, 80, label_height, "Threshold");
-
-    // 分割竖线
-    for (int i = 0; i < 3; i++)
-    {
-        line_h[i] = lv_line_create(lv_screen_active());
-        lv_line_set_points(line_h[i], (lv_point_precise_t *)line_h_points, 2);
-        lv_obj_set_pos(line_h[i], 80 * (i + 1), 90);
-        lv_obj_set_size(line_h[i], 4, 140);
-        lv_obj_set_style_line_color(line_h[i], lv_color_hex(0x000000), LV_PART_MAIN);
-    }
-
-    // 采样数据标签
-    for (int i = 0; i < 6; i++)
-    {
-        label_group->label_power_vol[i] = lv_label_create(lv_screen_active());
-        ui_label_init(label_group->label_power_vol[i], 10 + 86, 94 + 20 * (i + 1), 76, 16, "null");
-        label_group->label_power_cur[i] = lv_label_create(lv_screen_active());
-        ui_label_init(label_group->label_power_cur[i], 10 + 83 * 2, 94 + 20 * (i + 1), 76, 16, "null");
-    }
-#elif STYLE_1
-    static lv_obj_t *line_v[4];
-    static lv_obj_t *line_h[4];
-    for (int i = 0; i < 4; i++)
-    {
-        // 分割横线
-        line_v[i] = lv_line_create(page);
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
-        lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 300, 4);
-        lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
-
-        // 电压名称标签
-        label_power_name_page3[i] = lv_label_create(page);
-        ui_label_init(label_power_name_page3[i], 5, 92 + 20 * i, 80, label_height, power_name_page3[i]);
-    }
-    line_v[4] = lv_line_create(page);
-    lv_line_set_points(line_v[4], (lv_point_precise_t *)line_v_points, 2);
-    lv_obj_set_pos(line_v[4], 5, 90 + 20 * 4);
-    lv_obj_set_size(line_v[4], 300, 4);
-    lv_obj_set_style_line_color(line_v[4], lv_color_hex(0x000000), LV_PART_MAIN);
-
-    // 名称标签
-    lv_obj_t *vol_name_label = lv_label_create(page);
-    ui_label_init(vol_name_label, 80 + 30, 92, 120, label_height, "    Vol");
-
-    lv_obj_t *cur_name_label = lv_label_create(page);
-    ui_label_init(cur_name_label, 200 + 30, 92, 120, label_height, "    Cur");
-
-    line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[0], 80, 90);
-    lv_obj_set_size(line_h[0], 4, 80);
-    lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
-
-    line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[1], 120 + 80, 90);
-    lv_obj_set_size(line_h[1], 4, 80);
-    lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
-
-    // 采样数据标签
-    for (int i = 0; i < 3; i++)
-    {
-        label_group->label_power_vol[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_vol[i], 80 + 30, 94 + 20 * (i + 1), 76, 16, "null");
-        label_group->label_power_cur[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_cur[i], 200 + 30, 94 + 20 * (i + 1), 76, 16, "null");
-    }
-    lv_mem_monitor_t mon;
-    lv_mem_monitor(&mon);
-    printf("LVGL Total Memory: %d Bytes\r\n", mon.total_size);
-    printf("LVGL Used Memory: %d Bytes (%d%%)\r\n", mon.total_size - mon.free_size, mon.used_pct);
-    printf("LVGL Free Memory: %d Bytes\r\n", mon.free_size);
-#endif
-}
-
-void ui_page3_sample_data_group_rotate_init(lv_obj_t *page, sample_data_page3_label_group_t *label_group)
-{
-    // 恢复为竖屏布局 (宽 240, 高 320)
-    // 布局逻辑参考自 ui_page3_sample_data_group_init 的 STYLE_1
-
-    static lv_obj_t *line_v[5];
-    static lv_obj_t *line_h[2];
-    for (int i = 0; i < 4; i++)
-    {
-        // 分割横线
         line_v[i] = lv_line_create(page);
         lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
         lv_obj_set_size(line_v[i], 240, 4);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
-        // 电压名称标签
-        label_power_name_page3[i] = lv_label_create(page);
-        ui_label_init(label_power_name_page3[i], 5, 92 + 20 * i, 70, label_height, power_name_page3[i]);
+        label_power_name[i] = lv_label_create(page);
+        ui_label_init(label_power_name[i], x_name, 92 + 20 * i, 62, label_height, power_name[i]);
     }
-    line_v[4] = lv_line_create(page);
-    lv_line_set_points(line_v[4], (lv_point_precise_t *)line_v_points, 2);
-    lv_obj_set_pos(line_v[4], 5, 90 + 20 * 4);
-    lv_obj_set_size(line_v[4], 240, 4);
-    lv_obj_set_style_line_color(line_v[4], lv_color_hex(0x000000), LV_PART_MAIN);
+    line_v[7] = lv_line_create(page);
+    lv_line_set_points(line_v[7], (lv_point_precise_t *)line_v_points, 2);
+    lv_obj_set_pos(line_v[7], 5, 90 + 20 * 7);
+    lv_obj_set_size(line_v[7], 240, 4);
+    lv_obj_set_style_line_color(line_v[7], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 名称标签
     lv_obj_t *vol_name_label = lv_label_create(page);
-    ui_label_init(vol_name_label, 75 + 10, 92, 80, label_height, "    Vol");
+    ui_label_init(vol_name_label, x_col1 + 2, 92, 55, label_height, " Vol");
 
     lv_obj_t *cur_name_label = lv_label_create(page);
-    ui_label_init(cur_name_label, 155 + 10, 92, 80, label_height, "    Cur");
+    ui_label_init(cur_name_label, x_col2 + 2, 92, 50, label_height, " Cur");
+
+    lv_obj_t *lim_name_label = lv_label_create(page);
+    ui_label_init(lim_name_label, x_col3 + 2, 92, 50, label_height, " Lim");
 
     line_h[0] = lv_line_create(page);
     lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[0], 75, 90);
+    lv_obj_set_pos(line_h[0], x_col1, 90);
+    lv_obj_set_size(line_h[0], 4, 160);
+    lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    line_h[1] = lv_line_create(page);
+    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[1], x_col2, 90);
+    lv_obj_set_size(line_h[1], 4, 160);
+    lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    line_h[2] = lv_line_create(page);
+    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[2], x_col3, 90);
+    lv_obj_set_size(line_h[2], 4, 160);
+    lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    for (int i = 0; i < 6; i++)
+    {
+        label_group->label_power_vol[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_vol[i], x_col1 + 2, 94 + 20 * (i + 1), 55, 16, "null");
+
+        label_group->label_power_cur[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_cur[i], x_col2 + 2, 94 + 20 * (i + 1), 50, 16, "null");
+
+        label_group->label_power_th[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_th[i], x_col3 + 2, 94 + 20 * (i + 1), 50, 16, "NULL");
+    }
+}
+void ui_page3_sample_data_group_init(lv_obj_t *page, sample_data_page3_label_group_t *label_group)
+{
+    static lv_obj_t *line_v[4];
+    static lv_obj_t *line_h[3];
+
+    // 横屏布局：Name | Vol | Cur | Lim
+    const int x_name = 5;
+    const int x_col1 = 80;
+    const int x_col2 = 165;
+    const int x_col3 = 250;
+
+    // 标题 + 2行数据 + 底线
+    for (int i = 0; i < 3; i++)
+    {
+        line_v[i] = lv_line_create(page);
+        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
+        lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
+        lv_obj_set_size(line_v[i], 310, 4);
+        lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
+
+        label_power_name_page3[i] = lv_label_create(page);
+        ui_label_init(label_power_name_page3[i], x_name, 92 + 20 * i, 70, label_height, power_name_page3[i]);
+    }
+    line_v[3] = lv_line_create(page);
+    lv_line_set_points(line_v[3], (lv_point_precise_t *)line_v_points, 2);
+    lv_obj_set_pos(line_v[3], 5, 90 + 20 * 3);
+    lv_obj_set_size(line_v[3], 310, 4);
+    lv_obj_set_style_line_color(line_v[3], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    lv_obj_t *vol_name_label = lv_label_create(page);
+    ui_label_init(vol_name_label, x_col1 + 10, 92, 70, label_height, " Vol");
+
+    lv_obj_t *cur_name_label = lv_label_create(page);
+    ui_label_init(cur_name_label, x_col2 + 10, 92, 70, label_height, " Cur");
+
+    lv_obj_t *lim_name_label = lv_label_create(page);
+    ui_label_init(lim_name_label, x_col3 + 5, 92, 70, label_height, " Lim");
+
+    line_h[0] = lv_line_create(page);
+    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[0], x_col1, 90);
     lv_obj_set_size(line_h[0], 4, 80);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
     lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
-    lv_obj_set_pos(line_h[1], 155, 90);
+    lv_obj_set_pos(line_h[1], x_col2, 90);
     lv_obj_set_size(line_h[1], 4, 80);
     lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 采样数据标签
-    for (int i = 0; i < 3; i++)
+    line_h[2] = lv_line_create(page);
+    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[2], x_col3, 90);
+    lv_obj_set_size(line_h[2], 4, 80);
+    lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    for (int i = 0; i < 2; i++)
     {
         label_group->label_power_vol[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_vol[i], 75 + 10, 94 + 20 * (i + 1), 76, 16, "null");
+        ui_label_init(label_group->label_power_vol[i], x_col1 + 10, 94 + 20 * (i + 1), 70, 16, "null");
+
         label_group->label_power_cur[i] = lv_label_create(page);
-        ui_label_init(label_group->label_power_cur[i], 155 + 10, 94 + 20 * (i + 1), 76, 16, "null");
+        ui_label_init(label_group->label_power_cur[i], x_col2 + 10, 94 + 20 * (i + 1), 70, 16, "null");
+
+        label_group->label_power_th[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_th[i], x_col3 + 8, 94 + 20 * (i + 1), 50, 16, "NULL");
+    }
+
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    printf("LVGL Total Memory: %d Bytes\r\n", mon.total_size);
+    printf("LVGL Used Memory: %d Bytes (%d%%)\r\n", mon.total_size - mon.free_size, mon.used_pct);
+    printf("LVGL Free Memory: %d Bytes\r\n", mon.free_size);
+}
+void ui_page3_sample_data_group_rotate_init(lv_obj_t *page, sample_data_page3_label_group_t *label_group)
+{
+    static lv_obj_t *line_v[4];
+    static lv_obj_t *line_h[3];
+
+    // 竖屏 240：Name | Vol | Cur | Lim
+    const int x_name = 5;
+    const int x_col1 = 70;
+    const int x_col2 = 130;
+    const int x_col3 = 185;
+
+    // 标题 + 2行 + 底线
+    for (int i = 0; i < 3; i++)
+    {
+        line_v[i] = lv_line_create(page);
+        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
+        lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
+        lv_obj_set_size(line_v[i], 240, 4);
+        lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
+
+        label_power_name_page3[i] = lv_label_create(page);
+        ui_label_init(label_power_name_page3[i], x_name, 92 + 20 * i, 62, label_height, power_name_page3[i]);
+    }
+    line_v[3] = lv_line_create(page);
+    lv_line_set_points(line_v[3], (lv_point_precise_t *)line_v_points, 2);
+    lv_obj_set_pos(line_v[3], 5, 90 + 20 * 3);
+    lv_obj_set_size(line_v[3], 240, 4);
+    lv_obj_set_style_line_color(line_v[3], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    lv_obj_t *vol_name_label = lv_label_create(page);
+    ui_label_init(vol_name_label, x_col1 + 2, 92, 55, label_height, " Vol");
+
+    lv_obj_t *cur_name_label = lv_label_create(page);
+    ui_label_init(cur_name_label, x_col2 + 2, 92, 50, label_height, " Cur");
+
+    lv_obj_t *lim_name_label = lv_label_create(page);
+    ui_label_init(lim_name_label, x_col3 + 2, 92, 50, label_height, " Lim");
+
+    line_h[0] = lv_line_create(page);
+    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[0], x_col1, 90);
+    lv_obj_set_size(line_h[0], 4, 80);
+    lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    line_h[1] = lv_line_create(page);
+    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[1], x_col2, 90);
+    lv_obj_set_size(line_h[1], 4, 80);
+    lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    line_h[2] = lv_line_create(page);
+    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_obj_set_pos(line_h[2], x_col3, 90);
+    lv_obj_set_size(line_h[2], 4, 80);
+    lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
+
+    for (int i = 0; i < 2; i++)
+    {
+        label_group->label_power_vol[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_vol[i], x_col1 + 2, 94 + 20 * (i + 1), 55, 16, "null");
+
+        label_group->label_power_cur[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_cur[i], x_col2 + 2, 94 + 20 * (i + 1), 50, 16, "null");
+
+        label_group->label_power_th[i] = lv_label_create(page);
+        ui_label_init(label_group->label_power_th[i], x_col3 + 2, 94 + 20 * (i + 1), 45, 16, "NULL");
     }
 }
 
@@ -549,6 +586,7 @@ void ui_refresh_protocol(const lcd_protocol_label_group_t *label_group, const lc
     ui_label_set_text(label_group->label_speed_hs, lcd_protocol->speed_hs);
     ui_label_set_text(label_group->label_speed_lp, lcd_protocol->speed_lp);
     ui_label_set_text(label_group->label_state, lcd_protocol->state);
+    ui_label_set_text(label_group->label_ipv4, lcd_protocol->ipv4);
 }
 
 void ui_refresh_firmware_version(const fw_version_label_group_t *version_group, const lcd_show_t *version_data)
@@ -587,11 +625,11 @@ void ui_main_protocol_init(lcd_show_t *lcd_protocol)
     lcd_protocol->speed_lp = "NULL";
     lcd_protocol->speed_pclk = "NULL";
     lcd_protocol->state = "Power off";
+    lcd_protocol->ipv4 = "0.0.0.0";
 }
 // ANCHOR - 刷新采样数据
 void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const lcd_show_t *lcd_protocol)
 {
-    // osMutexAcquire(&show_mutexHandle,0);
     static char temp_str[100];
     for (int i = 0; i < 6; i++)
     {
@@ -612,8 +650,6 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
             sprintf(temp_str, "%d mV", (uint32_t)lcd_protocol->voltage[i]);
         }
         ui_label_set_text(label_group->label_power_vol[i], temp_str);
-        // if(i == 0)
-        //     printf("vsn voltage %f \r\n",lcd_protocol->voltage[i]);
     }
 
     for (int i = 0; i < 6; i++)
@@ -639,6 +675,8 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
             sprintf(temp_str, "%.2f uA", lcd_protocol->current[i]);
         }
         ui_label_set_text(label_group->label_power_cur[i], temp_str);
+        sprintf(temp_str, "%.2f mA", lcd_protocol->threshold[i]);
+        ui_label_set_text(label_group->label_power_th[i], temp_str);
     }
 
     // osMutexRelease(&show_mutexHandle);
@@ -693,6 +731,8 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
             sprintf(temp_str, "%.2f uA", lcd_protocol->current[i]);
         }
         ui_label_set_text(label_group->label_power_cur[i - 6], temp_str);
+        sprintf(temp_str, "%.2f mA", lcd_protocol->threshold[i]);
+        ui_label_set_text(label_group->label_power_th[i - 6], temp_str);
     }
 
     // osMutexRelease(&show_mutexHandle);
@@ -726,7 +766,7 @@ void ui_set_sample_voltage(lcd_show_t *lcd_show, const double *voltage)
 void ui_set_sample_current(lcd_show_t *lcd_show, const double *current)
 {
     osMutexAcquire(&show_mutexHandle, 0);
-    memcpy(lcd_show->voltage, current, sizeof(double) * 6);
+    memcpy(lcd_show->current, current, sizeof(double) * 6);
 
     osMutexRelease(&show_mutexHandle);
 }
@@ -734,7 +774,7 @@ void ui_set_sample_current(lcd_show_t *lcd_show, const double *current)
 void ui_set_sample_threshold(lcd_show_t *lcd_show, const double *threshold)
 {
     osMutexAcquire(&show_mutexHandle, 0);
-    memcpy(lcd_show->voltage, threshold, sizeof(double) * 6);
+    memcpy(lcd_show->threshold, threshold, sizeof(double) * 8);
 
     osMutexRelease(&show_mutexHandle);
 }

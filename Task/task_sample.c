@@ -4,6 +4,7 @@
  *  Created on: Jun 30, 2025
  *      Author: Wenxiao Han
  */
+/* ==================== 1. 头文件包含 ==================== */
 #include "task_sample.h"
 #include "usart.h"
 #include "i2c.h"
@@ -12,8 +13,19 @@
 #include "utils.h"
 #include "bsp.h"
 #include "widget_func.h"
+#include "task_com.h"
+#include "tim.h"
 #include "math.h"
 
+/* ==================== 2. 宏定义 ==================== */
+// 一轮完整的采样流程：
+#define WAIT_ADC_1_IDLE           \
+    while (dev_vol.step_cnt != 6) \
+    {                             \
+        osDelay(10);              \
+    }
+
+/* ==================== 3. 类型定义（结构体、枚举、别名） ==================== */
 enum
 {
     PROTO_GET_ID = 0,
@@ -29,6 +41,21 @@ enum
     PROTO_CMD_COUNT
 };
 
+typedef int (*power_status_func_t)(void);
+typedef int (*lim_status_func_t)(void);
+
+/* ==================== 4. 外部全局变量 ==================== */
+extern volatile uint8_t meter_com_flag;
+extern uint8_t meter_rx_buf[SPI2_SLAVE_RX_LEN];
+extern uint8_t meter_tx_buf[SPI2_SLAVE_TX_LEN];
+extern volatile TEST_R_D_RES_LEVEL r_level_selected;
+extern ads1256_dev_t dev_vol;
+extern __IO uint32_t uwFrequency;
+extern uint8_t get_freq_flag;
+extern __IO uint32_t uwDutyCycle;
+extern lcd_show_t lcd_show;
+
+/* ==================== 5. 静态私有变量 ==================== */
 static const protocol_header_t PROTOCOL_HEADERS[PROTO_CMD_COUNT] =
     {
         [PROTO_GET_ID] = {0xA0, 0x10},                    // 获取 ID
@@ -43,6 +70,13 @@ static const protocol_header_t PROTOCOL_HEADERS[PROTO_CMD_COUNT] =
         [PROTO_SET_ALL_POWER_CURRENT_LIM] = {0xA0, 0x19}, // 所有电源限流配置
 };
 
+osThreadId_t task_sample_handle;
+const osThreadAttr_t task_sample_attributes = {
+    .name = "task_sample_task",
+    .stack_size = 4096,
+    .priority = (osPriority_t)osPriorityHigh,
+};
+
 osMutexId_t sample_mutex;
 osStaticMutexDef_t sample_mutex_control_block;
 const osMutexAttr_t sample_mutex_attributes = {
@@ -50,29 +84,21 @@ const osMutexAttr_t sample_mutex_attributes = {
     .cb_mem = &sample_mutex_control_block,
     .cb_size = sizeof(sample_mutex_control_block),
 };
-extern volatile uint8_t meter_com_flag;
-extern uint8_t meter_rx_buf[SPI2_SLAVE_RX_LEN];
-extern uint8_t meter_tx_buf[SPI2_SLAVE_TX_LEN];
-extern volatile TEST_R_D_RES_LEVEL r_level_selected;
-extern ads1256_dev_t dev_vol;
-// 一轮完整的采样流程：
-#define WAIT_ADC_1_IDLE           \
-    while (dev_vol.step_cnt != 6) \
-    {                             \
-        osDelay(10);              \
-    }                             \
-    extern __IO uint32_t uwDutyCycle;
-/* Frequency Value */
-extern __IO uint32_t uwFrequency;
-extern uint8_t get_freq_flag;
+extern void task_com_resume(void);
+extern void disableTim1PWMOutput(void);
+extern void disableTim2PWMOutput(void);
+extern void enableTim1PWMOutput(void);
+extern int Measure_Frequency_Adaptive(void);
 sample_data_t sample_data;
 SampleTask_S g_sample_task = {0};
 uint8_t sample_vol_id = 0;
 uint8_t sample_cur_id = 0;
 uint8_t ads1256_ch_index = 0;
 uint8_t d_trigger_ch_index = 0;
-extern lcd_show_t lcd_show;
 
+/* ==================== 6. 静态函数声明 ==================== */
+static int find_sample_vol_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index);
+static int find_sample_cur_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index);
 static inline int get_VSN_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 0); }
 static inline int get_ELVSS_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 1); }
 static inline int get_ELVDD_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 2); }
@@ -91,8 +117,6 @@ static inline int get_VDD_lim_status(void) { return bsp_d_trigger_get_channel_st
 static inline int get_ELVDD_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, ELVDD_RLY); }
 static inline int get_ELVSS_lim_status(void) { return bsp_d_trigger_get_channel_state(&d_2, ELVSS_RLY); }
 
-typedef int (*power_status_func_t)(void);
-typedef int (*lim_status_func_t)(void);
 power_status_func_t power_enable_status[8] = {
     get_VCC_status,
     get_IOVCC_status,
@@ -111,6 +135,7 @@ lim_status_func_t lim_gear_status[8] = {
     get_VDD_lim_status,
     get_ELVDD_lim_status,
     get_ELVSS_lim_status};
+
 // 0xff:不需要dtrigger次级选通
 uint8_t sample_cur_map[11][2] = {
     {3, 0xff}, // power:0,VCC → ch_index、d_trigger_ch_index
@@ -142,7 +167,7 @@ uint8_t sample_vol_map[15][2] = {
     {2, 6}, // power:13,AD_V_BL → ch_index、d_trigger_ch_index
     {2, 7}, // power:14,AD_V_V-ADJ → ch_index、d_trigger_ch_index
 };
-int find_sample_vol_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
+static int find_sample_vol_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
 {
     for (int j = 0; j < 15; j++)
     {
@@ -153,7 +178,7 @@ int find_sample_vol_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
     }
     return -1; // 未找到
 }
-int find_sample_cur_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
+static int find_sample_cur_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
 {
     for (int j = 0; j < 11; j++)
     {
@@ -165,8 +190,10 @@ int find_sample_cur_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
     return -1; // 未找到
 }
 
-void task_sample_run()
+/* ==================== 7. 外部可调用函数实现 ==================== */
+void task_sample_run(void *argument)
 {
+    (void)argument;
 
     uint32_t t0 = 0;
     uint32_t t_temp_start = 0;
@@ -184,6 +211,7 @@ void task_sample_run()
     TEST_R_D_RES_LEVEL r_level = OHM_10_M;
     static const uint8_t power_order[8] = {0, 1, 2, 3, 8, 9, 10, 11};
     static const uint8_t set_power_order[20] = {0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19};
+
     for (;;)
     {
         switch (g_sample_task.cmd_type)
@@ -192,7 +220,7 @@ void task_sample_run()
             task_sample_task_mutex_acquire(); // 通信时无法获取互斥锁,空闲时更新采样数据到显示屏上
             for (uint8_t i = 0; i < 8; i++)
             {
-                // printf("chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
+                // M_SPI_DEBUG("chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
                 if (i <= 2 && latest_sample_ch_sel[i] == 0xff) //
                 {
                     continue;
@@ -203,7 +231,7 @@ void task_sample_run()
                 }
                 int idx_vol = find_sample_vol_map_index(i, latest_sample_ch_sel[i]);
                 int idx_cur = find_sample_cur_map_index(i, latest_sample_ch_sel[i]);
-                // printf("latest_sample_ch_sel[%d]: %d, idx_vol: %d, idx_cur: %d\n", i, latest_sample_ch_sel[i], idx_vol, idx_cur);
+                // M_SPI_DEBUG("latest_sample_ch_sel[%d]: %d, idx_vol: %d, idx_cur: %d\n", i, latest_sample_ch_sel[i], idx_vol, idx_cur);
 
                 if (idx_vol != -1)
                 {
@@ -221,7 +249,7 @@ void task_sample_run()
                     if (enable)
                     {
                         lcd_show.voltage[idx_vol] = latest_sample_data[i];
-                        // printf("idx_vol: %d, voltage: %f\n", idx_vol, latest_sample_data[i]);
+                        // M_SPI_DEBUG("idx_vol: %d, voltage: %f\n", idx_vol, latest_sample_data[i]);
                     }
                     else
                         lcd_show.voltage[idx_vol] = 0; // 未使能
@@ -241,7 +269,7 @@ void task_sample_run()
                 }
                 if (idx_vol == -1 && idx_cur == -1)
                 {
-                    // printf("no idx found for chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
+                    // M_SPI_DEBUG("no idx found for chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
                     continue;
                 }
             }
@@ -264,12 +292,20 @@ void task_sample_run()
             g_sample_task.set_power_data_frame.cmd_type = meter_rx_buf[1];
             g_sample_task.set_power_data_frame.power_id = meter_rx_buf[2];
             memcpy(&float_bytes, &meter_rx_buf[3], sizeof(float_bytes));
+
             memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
             g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
-            // printf("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
-            // printf("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
-            //        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
-            // printf("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
+            uint8_t lim_idx = 0;
+            if (3 < g_sample_task.set_power_data_frame.power_id && g_sample_task.set_power_data_frame.power_id < 8)
+                lim_idx = g_sample_task.set_power_data_frame.power_id - 4;
+            if (11 < g_sample_task.set_power_data_frame.power_id && g_sample_task.set_power_data_frame.power_id < 16)
+                lim_idx = g_sample_task.set_power_data_frame.power_id - 8;
+            lcd_show.threshold[lim_idx] = float_bytes.f;
+
+            M_SPI_DEBUG("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
+            M_SPI_DEBUG("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
+                        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
+            M_SPI_DEBUG("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
 
             *(dac_config_table[g_sample_task.set_power_data_frame.power_id].last_voltage) = float_bytes.f;
 
@@ -288,10 +324,10 @@ void task_sample_run()
                 memcpy(&float_bytes, &meter_rx_buf[2 + i * sizeof(float_bytes)], sizeof(float_bytes));
                 memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
                 g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
-                // printf("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
-                // printf("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
+                // M_SPI_DEBUG("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
+                // M_SPI_DEBUG("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
                 //        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
-                // printf("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
+                // M_SPI_DEBUG("set_power_data_frame.value.float_value:%f\r\n", float_bytes.f);
 
                 *(dac_config_table[g_sample_task.set_power_data_frame.power_id].last_voltage) = float_bytes.f;
 
@@ -323,11 +359,7 @@ void task_sample_run()
             break;
         case SINGLE_POWER_EN:
             power_id = power_order[meter_rx_buf[2]];
-
             en = meter_rx_buf[3];
-            MIPI_CMD_DEBUG("power_id:%d, en:%d\r\n", power_id, en);
-
-            power_id = power_order[power_id];
             if (en == 0x01)
                 bsp_power_single_enable(power_id);
             else
@@ -337,10 +369,20 @@ void task_sample_run()
             break;
         case SINGLE_VOL_GET:
             M_SPI_DEBUG("SINGLE_VOL_GET\r\n");
-
             sample_vol_id = meter_rx_buf[2];
             M_SPI_DEBUG("sample_vol_id: %d\r\n", sample_vol_id);
-
+            uint8_t power_on = 1U;
+            if (sample_vol_id < 8U)
+            {
+                power_on = (uint8_t)power_enable_status[sample_vol_id]();
+            }
+            if (!power_on)
+            {
+                memset(&meter_tx_buf[3], 0, sizeof(float));
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
             meter_wait_v_c_ready(sample_vol_id, (uint8_t)0);
             // 测完24pin和40pin关闭24pin和40pin的通道,避免干扰
             if (sample_vol_id == 10)
@@ -348,7 +390,7 @@ void task_sample_run()
             if (sample_vol_id == 9)
                 bsp_close_40pin_channel();
 
-            M_SPI_INFO("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
+            M_SPI_DEBUG("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[ads1256_ch_index], sizeof(float));
             M_SPI_DEBUG("SINGLE_VOL_GET: channel %d, voltage %f\r\n", ads1256_ch_index, latest_sample_data[ads1256_ch_index]);
             M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[ads1256_ch_index]);
@@ -369,7 +411,7 @@ void task_sample_run()
             // 打开TE通道
             bsp_sel_test_freq_ch(1);
             memcpy(&ref_freq_vol, &meter_rx_buf[2], sizeof(float));
-            printf("%f\r\n", ref_freq_vol);
+            M_SPI_DEBUG("%f\r\n", ref_freq_vol);
 
             g_calibration_manager.data.ref_freq_last = ref_freq_vol / 2;
             bsp_cali_and_set_power(17);
@@ -389,9 +431,9 @@ void task_sample_run()
             bsp_sel_test_freq_ch(0);
             bsp_led_pwm_init(10);
             enableTim1PWMOutput();
-            printf("Result: Freq: %lu Hz\n", uwFrequency);
+            M_SPI_DEBUG("Result: Freq: %lu Hz\n", uwFrequency);
             float freq_f = (float)uwFrequency;
-            printf("freq_f: %f\r\n", freq_f);
+            M_SPI_DEBUG("freq_f: %f\r\n", freq_f);
             memcpy(&meter_tx_buf[3], &freq_f, sizeof(float));
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
@@ -407,8 +449,7 @@ void task_sample_run()
             bsp_rd_select_mode(R_MODE);
             bsp_rd_select_pin(pin_p, pin_n, 1);
             t_temp_start = HAL_GetTick();
-            HAL_GPIO_WritePin(PULSE_A_GPIO_Port, PULSE_A_Pin, GPIO_PIN_SET); // 测试用
-            printf("t_temp_start: %lu\r\n", t_temp_start);
+            M_SPI_DEBUG("t_temp_start: %lu\r\n", t_temp_start);
 
             M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
             wait_adc_one_round(1000);
@@ -434,12 +475,12 @@ void task_sample_run()
             // bsp_delay_ms(100);
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
             t_temp_end = HAL_GetTick();
-            printf("t_temp_end: %lu\r\n", t_temp_end);
-            printf("resistance measurement time: %lu ms\r\n", t_temp_end - t_temp_start);
+            M_SPI_DEBUG("t_temp_end: %lu\r\n", t_temp_end);
+            M_SPI_DEBUG("resistance measurement time: %lu ms\r\n", t_temp_end - t_temp_start);
             M_SPI_DEBUG("GET RESISTANCE: %f\r\n", latest_sample_data[2]);
             M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
-            printf("pin_p: %d, pin_n: %d, resistance: %f m\r\n", pin_p, pin_n, latest_sample_data[2] / 1000000);
-            printf("final sample_res_gear_rd: %d\r\n", dev_vol.sample_res_gear_rd);
+            M_SPI_DEBUG("pin_p: %d, pin_n: %d, resistance: %f m\r\n", pin_p, pin_n, latest_sample_data[2] / 1000000);
+            M_SPI_DEBUG("final sample_res_gear_rd: %d\r\n", dev_vol.sample_res_gear_rd);
             bsp_rd_select_mode(R_D_MODE_NULL);
             bsp_rd_select_pin(pin_p, pin_n, 0);
             dev_vol.channel_en = 0b11111111; // 使能所有通道
@@ -475,7 +516,7 @@ void task_sample_run()
             wait_adc_one_round(1000);
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_raw_data[2], sizeof(float));
 
-            printf("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_raw_data[2]);
+            M_SPI_DEBUG("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_raw_data[2]);
             bsp_rd_select_pin(pin_p, pin_n, 0);
             dev_vol.channel_en = 0b11111111; // 使能所有通道
             task_com_resume();
@@ -539,7 +580,7 @@ void task_sample_run()
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         case SEL_LIM_GEAR:
-            printf("SEL_LIM_GEAR\r\n");
+            M_SPI_DEBUG("SEL_LIM_GEAR\r\n");
             uint8_t idx_lim_gear = meter_rx_buf[2];
             uint8_t lim_gear = meter_rx_buf[3];
             // 全ua档 RST拉低,有一个是ma档,RST拉高
@@ -602,13 +643,15 @@ void task_sample_run()
                 g_calibration_manager.data.da_data.elvss_ref_gain = 0.1;
                 g_calibration_manager.data.da_data.elvss_ref_offset = 0;
             }
-            printf("idx_lim_gear: %d, lim_gear: %d\r\n", idx_lim_gear, lim_gear);
-            printf("lim_gear_ua_count: %d\r\n", lim_gear_ua_count);
+            M_SPI_DEBUG("idx_lim_gear: %d, lim_gear: %d\r\n", idx_lim_gear, lim_gear);
+            M_SPI_DEBUG("lim_gear_ua_count: %d\r\n", lim_gear_ua_count);
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         default:
             M_SPI_DEBUG("unknow command\r\n");
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         }
 
@@ -620,13 +663,13 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
 {
     if (type == 0) // 电压
     {
-        ads1256_ch_index = sample_vol_map[sample_vol_id][0];
-        d_trigger_ch_index = sample_vol_map[sample_vol_id][1];
+        ads1256_ch_index = sample_vol_map[sample_id][0];
+        d_trigger_ch_index = sample_vol_map[sample_id][1];
     }
     else if (type == 1) // 电流
     {
-        ads1256_ch_index = sample_cur_map[sample_cur_id][0];
-        d_trigger_ch_index = sample_cur_map[sample_cur_id][1];
+        ads1256_ch_index = sample_cur_map[sample_id][0];
+        d_trigger_ch_index = sample_cur_map[sample_id][1];
     }
 
     if (ads1256_ch_index == 0 && d_trigger_ch_index != 0xff)
@@ -677,3 +720,5 @@ void task_sample_init(void)
     task_sample_handle = osThreadNew(task_sample_run, NULL, &task_sample_attributes);
     configASSERT(task_sample_handle != NULL);
 }
+
+/* ==================== 8. 静态私有函数实现 ==================== */

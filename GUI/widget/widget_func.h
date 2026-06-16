@@ -16,10 +16,10 @@ typedef struct
     char *state;
 
     double current[11];
-    uint8_t current_gear[11];
+
     double voltage[15];
-    uint8_t voltage_gear[15];
-    // double threshold[9];
+    char *ipv4;
+    double threshold[8];
     uint32_t version[9];
 } lcd_show_t;
 
@@ -32,6 +32,7 @@ typedef struct
     lv_obj_t *label_speed_hs;
     lv_obj_t *label_speed_lp;
     lv_obj_t *label_state;
+    lv_obj_t *label_ipv4;
 } lcd_protocol_label_group_t;
 
 typedef struct

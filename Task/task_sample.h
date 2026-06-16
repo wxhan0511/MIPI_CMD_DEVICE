@@ -1,16 +1,21 @@
 /*
  * task_sample.h
- *  与上位机通信
- *  Created on: Jun 30, 2025
- *      Author: Wenxiao Han
+ * 与上位机通信采样任务接口
  */
 
+/* ==================== 1. 头文件保护 ==================== */
 #ifndef _TASK_SAMPLE_H_
 #define _TASK_SAMPLE_H_
 
+/* ==================== 2. 头文件包含 ==================== */
 #include "cmsis_os.h"
 #include "bsp.h"
 #include "task_manage.h"
+
+/* ==================== 3. 宏定义 ==================== */
+/* 无 */
+
+/* ==================== 4. 类型定义 ==================== */
 
 typedef enum
 {
@@ -106,12 +111,18 @@ typedef struct
     __attribute__((aligned(4))) uint8_t print_vol_gear[8];
     __attribute__((aligned(4))) uint8_t print_cur_gear[8];
 } sample_data_t;
-// ANCHOR - 任务相关
+
+/* ==================== 5. 外部全局变量声明 ==================== */
+/* 无 */
+
+/* ==================== 6. 外部函数声明 ==================== */
 void task_sample_init(void);
-void task_sample_run();
+void task_sample_run(void *argument);
 void task_sample_suspend(void);
 void task_sample_resume(void);
 void task_sample_task_mutex_acquire(void);
 void task_sample_task_mutex_release(void);
 void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type);
+
+/* ==================== 7. 结束头文件保护 ==================== */
 #endif /* _TASK_SAMPLE_H_ */

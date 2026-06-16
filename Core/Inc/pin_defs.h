@@ -213,10 +213,10 @@ extern "C"
 /*  ============================================================================
  * Pulse Pin Definitions
  * ============================================================================ */
-#define PULSE_A_Pin GPIO_PIN_14
+#define PULSE_A_Pin GPIO_PIN_0
 #define PULSE_A_GPIO_Port GPIOC
-#define PULSE_B_Pin GPIO_PIN_15
-#define PULSE_B_GPIO_Port GPIOE
+#define PULSE_B_Pin GPIO_PIN_1
+#define PULSE_B_GPIO_Port GPIOC
 
 #define LCD_BL_EN_Pin GPIO_PIN_5
 #define LCD_BL_EN_GPIO_Port GPIOE

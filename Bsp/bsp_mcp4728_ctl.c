@@ -120,33 +120,12 @@ void bsp_cali_and_set_power(uint8_t power_id)
     MIPI_CMD_DEBUG("channel = %d, last_voltage = %.2f mV\r\n", cfg->channel, *(cfg->last_voltage));
     // 最大输出电压 4.096V
     dac_chips[cfg->chip].val[cfg->channel] = float_to_uint16_round(val);
-    // dac_chips[cfg->chip].val[cfg->channel] = 1000;
-    // bsp_dac_single_voltage_set(&dac_chips[4],0, 2000, 0);//ADJ-  (3000,-18.441)(2000,-14.282)
-    // bsp_dac_single_voltage_set(&dac_chips[4],1, 2400, 0);//ADJ+ (3000,5.134)(1000,11.324)(2500,8.526)(2400,9.198)
-    // bsp_dac_single_voltage_set(&dac_chips[0],0, 1500, 0);//out+V1  (vi1000 v0=4.966)(1500,4.946) (vi=2000 vo=1.5055)(2500,0.0505)
-    // bsp_dac_single_voltage_set(&dac_chips[0],1, 1300, 0);//(1500,2623)(1300,4003)
-    // bsp_dac_single_voltage_set(&dac_chips[0],2, 1500, 0);//(1500,2792.5)(1200,5312)
-    // bsp_dac_single_voltage_set(&dac_chips[0],3, 2000, 0);//(1500,-3219)(2000,-1235.7)
-    // bsp_dac_single_voltage_set(&dac_chips[2],0, 1550, 0); //(1500,4894)(1550,4546)
-    // bsp_dac_single_voltage_set(&dac_chips[2],1, 1400, 0);//(1500,2702)(1400,3535.7)
-    // bsp_dac_single_voltage_set(&dac_chips[2],2, 1100, 0);//(1500,2637.6)(1100,6000.6)
-    // bsp_dac_single_voltage_set(&dac_chips[2],3, 1100, 0);//(1500,-3115.0)(1100,-5796)
-    // bsp_dac_single_voltage_set(&dac_chips[4],3, 1500, 0);//(1500,)
-    // MIPI_CMD_DEBUG("%s,%s: last_voltage=%.2f mV, offset=%.2f, gain=%.2f\r\n",
-    //     cfg->name, cfg->name1, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
-    // if (bsp_dac_single_voltage_set(&dac_chips[2], 0, 1000, 0) != BSP_OK)
-    // {
-    //     MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
-    // }
 
     if (bsp_dac_single_voltage_set(&dac_chips[cfg->chip], cfg->channel, dac_chips[cfg->chip].val[cfg->channel], 0) != BSP_OK)
     {
         MIPI_CMD_DEBUG("%s set voltage failed\r\n", cfg->name);
     }
-    // bsp_dac_single_voltage_set(&dac_chips[4],3, 2000, 0);//(1500,)
     single_mcp4728_sync_update(power_id);
-
-    bsp_power_single_enable(power_id);
 }
 void all_mcp4728_sync_update()
 {
@@ -217,7 +196,6 @@ void bsp_dac_init()
     }
 
     LEVEL_SHIFT_ENABLE();
-
 }
 
 void mcp4728_device_init()

@@ -83,7 +83,7 @@ void bsp_init()
     bsp_d_trigger_init(d_6);
     bsp_d_trigger_init(d_7);
     bsp_d_trigger_init(d_8);
-    bsp_d_trigger_set(enabled); // 验证通过
+    bsp_d_trigger_set(enabled);
     bsp_close_24pin_channel();
     bsp_close_40pin_channel();
 
@@ -201,6 +201,7 @@ static HAL_StatusTypeDef bsp_init_adc_system(void)
     HAL_NVIC_SetPriority(EXTI2_IRQn, 2, 0);
     HAL_NVIC_EnableIRQ(EXTI2_IRQn); // ADC_DRDY_1 PA2
     MIPI_CMD_INFO("------------- bsp init ads1256 finish -------------\r\n");
+    return HAL_OK;
 }
 
 // ANCHOR - FLASH STRESS TEST
