@@ -189,7 +189,7 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->vdd_ref_last = 1000;
     cal->elvdd_ref_last = 1000;
     cal->elvss_ref_last = 1000;
-    cal->v_level_shift_last = 980;
+    cal->v_level_shift_last = 3300;
     cal->ref_freq_last = 980;
     cal->vadj_p_last = 10000;
     cal->vadj_n_last = -10000;

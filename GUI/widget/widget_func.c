@@ -685,7 +685,7 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
 {
     // osMutexAcquire(&show_mutexHandle,0);
     static char temp_str[100];
-    for (int i = 6; i < 9; i++)
+    for (int i = 6; i < 8; i++)
     {
         if (isnan(lcd_protocol->voltage[i]))
         {
@@ -708,7 +708,7 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
         //     printf("vsn voltage %f \r\n",lcd_protocol->voltage[i]);
     }
 
-    for (int i = 6; i < 9; i++)
+    for (int i = 6; i < 8; i++)
     {
         if (isnan(lcd_protocol->current[i]))
         {
@@ -740,7 +740,7 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
 
 void ui_set_protocol(lcd_show_t *lcd_show, char *protocol, char *pclk, char *hs, char *lp, char *state)
 {
-    osMutexAcquire(&show_mutexHandle, 0);
+    osMutexAcquire(show_mutexHandle, 0);
     if (protocol != NULL)
         lcd_show->protocol = protocol;
     if (pclk != NULL)
@@ -752,31 +752,31 @@ void ui_set_protocol(lcd_show_t *lcd_show, char *protocol, char *pclk, char *hs,
     if (state != NULL)
         lcd_show->state = state;
 
-    osMutexRelease(&show_mutexHandle);
+    osMutexRelease(show_mutexHandle);
 }
 
 void ui_set_sample_voltage(lcd_show_t *lcd_show, const double *voltage)
 {
-    osMutexAcquire(&show_mutexHandle, 0);
+    osMutexAcquire(show_mutexHandle, 0);
     memcpy(lcd_show->voltage, voltage, sizeof(double) * 6);
 
-    osMutexRelease(&show_mutexHandle);
+    osMutexRelease(show_mutexHandle);
 }
 
 void ui_set_sample_current(lcd_show_t *lcd_show, const double *current)
 {
-    osMutexAcquire(&show_mutexHandle, 0);
+    osMutexAcquire(show_mutexHandle, 0);
     memcpy(lcd_show->current, current, sizeof(double) * 6);
 
-    osMutexRelease(&show_mutexHandle);
+    osMutexRelease(show_mutexHandle);
 }
 
 void ui_set_sample_threshold(lcd_show_t *lcd_show, const double *threshold)
 {
-    osMutexAcquire(&show_mutexHandle, 0);
+    osMutexAcquire(show_mutexHandle, 0);
     memcpy(lcd_show->threshold, threshold, sizeof(double) * 8);
 
-    osMutexRelease(&show_mutexHandle);
+    osMutexRelease(show_mutexHandle);
 }
 
 void ui_clean_screen(lv_obj_t *page)

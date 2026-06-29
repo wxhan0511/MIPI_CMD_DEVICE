@@ -46,11 +46,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LCD_BL_EN_GPIO_Port, &GPIO_InitStruct);
 
-  GPIO_InitStruct.Pin = PULSE_A_Pin | PULSE_B_Pin;
+  GPIO_InitStruct.Pin = KEY1_Pin | KEY2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(PULSE_A_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(KEY1_GPIO_Port, &GPIO_InitStruct);
 
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
 

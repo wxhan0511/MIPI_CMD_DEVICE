@@ -206,17 +206,17 @@ extern "C"
 /* ============================================================================
  * Key Pin Definitions
  * ============================================================================ */
-#define KEY1_Pin GPIO_PIN_12
-#define KEY1_GPIO_Port GPIOB
-#define KEY2_Pin GPIO_PIN_13
-#define KEY2_GPIO_Port GPIOB
-/*  ============================================================================
- * Pulse Pin Definitions
- * ============================================================================ */
-#define PULSE_A_Pin GPIO_PIN_0
-#define PULSE_A_GPIO_Port GPIOC
-#define PULSE_B_Pin GPIO_PIN_1
-#define PULSE_B_GPIO_Port GPIOC
+#define KEY1_Pin GPIO_PIN_0
+#define KEY1_GPIO_Port GPIOC
+#define KEY2_Pin GPIO_PIN_1
+#define KEY2_GPIO_Port GPIOC
+    /*  ============================================================================
+     * Pulse Pin Definitions
+     * ============================================================================ */
+    // #define PULSE_A_Pin GPIO_PIN_0
+    // #define PULSE_A_GPIO_Port GPIOC
+    // #define PULSE_B_Pin GPIO_PIN_1
+    // #define PULSE_B_GPIO_Port GPIOC
 
 #define LCD_BL_EN_Pin GPIO_PIN_5
 #define LCD_BL_EN_GPIO_Port GPIOE

@@ -78,7 +78,7 @@ void MX_FREERTOS_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  // osDelay(2000);
+  osDelay(2000);
 
   printf("StartDefaultTask running\r\n");
   osTimerStart(led_timerHandle, 500);
@@ -99,9 +99,9 @@ void StartDefaultTask(void *argument)
     osDelay(10);
     lv_tick_inc(10); // 同步推进 LVGL 的内部时钟 10ms
 #if 1
-    if (HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin))
+    if (!HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin))
     {
-      printf("PULSE_A_Pin pressed\r\n");
+      printf("KEY1_Pin pressed\r\n");
       // 临界区外获取信号量是安全的
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {
@@ -125,10 +125,9 @@ void StartDefaultTask(void *argument)
         lv_display_t *disp = lv_display_get_default();
         if (disp)
         {
-          if (disp)
-            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 依需求
-          lcd_write_cmd_8bit(0x36);                               // 发送指令
-          lcd_write_data_8bit(0x28);                              // 保持竖屏逻辑 BGR顺序
+          lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 依需求
+          lcd_write_cmd_8bit(0x36);                             // 发送指令
+          lcd_write_data_8bit(0x28);                            // 保持竖屏逻辑 BGR顺序
           if (current_page == PAGE_0)
             lv_obj_set_size(page1, 320, 240); // 更新页面尺寸以适应新的显示方向
           if (current_page == PAGE_1)
@@ -149,8 +148,9 @@ void StartDefaultTask(void *argument)
 
       key_flag = 0;
     }
-    if (HAL_GPIO_ReadPin(PULSE_B_GPIO_Port, PULSE_B_Pin))
+    if (!HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin))
     {
+      printf("KEY2_Pin pressed\r\n");
       osDelay(10);
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {
