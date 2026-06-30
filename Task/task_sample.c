@@ -364,6 +364,9 @@ void task_sample_run(void *argument)
                 bsp_power_single_enable(power_id);
             else
                 bsp_power_single_disable(power_id);
+            M_SPI_DEBUG("power_id: %d, en: %d\r\n", power_id, en);
+            M_SPI_DEBUG("power_on: %d\r\n", (uint8_t)power_enable_status[power_id]());
+
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
@@ -375,6 +378,7 @@ void task_sample_run(void *argument)
             if (sample_vol_id < 8U)
             {
                 power_on = (uint8_t)power_enable_status[sample_vol_id]();
+                M_SPI_DEBUG("power_on: %d\r\n", power_on);
             }
             if (!power_on)
             {

@@ -27,7 +27,7 @@
 #define D_TRIGGER_DEVICE_NUM 8
 
 /* 每个D触发器8路通道状态缓存：bit0~bit7 对应 channel 0~7 */
-static uint8_t s_d_trigger_shadow[D_TRIGGER_DEVICE_NUM] = {0};
+static volatile uint8_t s_d_trigger_shadow[D_TRIGGER_DEVICE_NUM] = {0};
 GPIO_TypeDef *latch_group[8] = {
     LATCH_0_GPIO_Port,
     LATCH_1_GPIO_Port,

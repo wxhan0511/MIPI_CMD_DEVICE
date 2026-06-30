@@ -101,7 +101,7 @@ void StartDefaultTask(void *argument)
 #if 1
     if (!HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin))
     {
-      printf("KEY1_Pin pressed\r\n");
+
       // 临界区外获取信号量是安全的
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {
@@ -150,7 +150,7 @@ void StartDefaultTask(void *argument)
     }
     if (!HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin))
     {
-      printf("KEY2_Pin pressed\r\n");
+
       osDelay(10);
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {

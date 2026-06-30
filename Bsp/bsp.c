@@ -95,6 +95,7 @@ void bsp_init()
     bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
     bsp_rly_gear_set(GEAR_mA, VDD_RLY);
     bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
+    calibration_set_defaults();
     calibration_load();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
