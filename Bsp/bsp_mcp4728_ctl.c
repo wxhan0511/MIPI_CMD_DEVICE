@@ -109,7 +109,6 @@ void bsp_power_all_enable()
 
 void bsp_cali_and_set_power(uint8_t power_id)
 {
-    bsp_power_single_disable(power_id);
 
     dac_config_table_t *cfg = &dac_config_table[power_id];
     float val = *(cfg->last_voltage);
@@ -218,19 +217,19 @@ void bsp_power_single_enable(uint8_t power_id)
     {
     case 0:
         VCC_ENABLE_POWEREN_P_1();
-        printf("VCC_ENABLE_POWEREN_P_1\r\n");
+        M_SPI_DEBUG("VCC_ENABLE_POWEREN_P_1\r\n");
         break;
     case 1:
         IOVCC_ENABLE_POWEREN_P_2();
-        printf("IOVCC_ENABLE_POWEREN_P_2\r\n");
+        M_SPI_DEBUG("IOVCC_ENABLE_POWEREN_P_2\r\n");
         break;
     case 2:
         VSP_ENABLE_POWEREN_P_3();
-        printf("VSP_ENABLE_POWEREN_P_3\r\n");
+        M_SPI_DEBUG("VSP_ENABLE_POWEREN_P_3\r\n");
         break;
     case 3:
         VSN_ENABLE_POWEREN_N_1();
-        printf("VSN_ENABLE_POWEREN_N_1\r\n");
+        M_SPI_DEBUG("VSN_ENABLE_POWEREN_N_1\r\n");
         break;
     case 4:
     case 5:
@@ -244,23 +243,23 @@ void bsp_power_single_enable(uint8_t power_id)
         break;
     case 8:
         AVDD_ENABLE_POWEREN_P_4();
-        printf("AVDD_ENABLE_POWEREN_P_4\r\n");
+        M_SPI_DEBUG("AVDD_ENABLE_POWEREN_P_4\r\n");
         break;
     case 9:
         VDD_ENABLE_POWEREN_P_5();
-        printf("VDD_ENABLE_POWEREN_P_5\r\n");
+        M_SPI_DEBUG("VDD_ENABLE_POWEREN_P_5\r\n");
         break;
     case 10:
         ELVDD_ENABLE_POWEREN_P_6();
-        printf("ELVDD_ENABLE_POWEREN_P_6\r\n");
+        M_SPI_DEBUG("ELVDD_ENABLE_POWEREN_P_6\r\n");
         break;
     case 11:
         ELVSS_ENABLE_POWEREN_N_2();
-        printf("ELVSS_ENABLE_POWEREN_N_2\r\n");
+        M_SPI_DEBUG("ELVSS_ENABLE_POWEREN_N_2\r\n");
         break;
     case 16:
         LEVEL_SHIFT_ENABLE();
-        printf("LEVEL_SHIFT_ENABLE\r\n");
+        M_SPI_DEBUG("LEVEL_SHIFT_ENABLE\r\n");
         break;
     default:
         MIPI_CMD_DEBUG("other power_id: %d\r\n no need to handle", power_id);

@@ -45,6 +45,7 @@ typedef enum
     SEL_PIN_PN = 0x1E,
     GET_24PIN_VOLTAGE = 0x1F,
     SEL_LIM_GEAR = 0x20,
+    SET_BACKLIGHT_CURRENT = 0x21,
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 

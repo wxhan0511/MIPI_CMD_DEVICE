@@ -132,10 +132,10 @@ extern volatile uint8_t ch2_flag;
 /* Exported macro ------------------------------------------------------------*/
 
 // ANCHOR - 电源控制宏
-#define VSN_ENABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 0, 0);
-#define VSN_DISABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 0, 1);
-#define ELVSS_ENABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 1, 0);
-#define ELVSS_DISABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 1, 1);
+#define VSN_ENABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 1, 0);
+#define VSN_DISABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 1, 1);
+#define ELVSS_ENABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 0, 0);
+#define ELVSS_DISABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 0, 1);
 #define ELVDD_ENABLE_POWEREN_P_6() bsp_d_trigger_set_channel(&d_3, 2, 1);
 #define ELVDD_DISABLE_POWEREN_P_6() bsp_d_trigger_set_channel(&d_3, 2, 0);
 #define VDD_ENABLE_POWEREN_P_5() bsp_d_trigger_set_channel(&d_3, 3, 1);

@@ -38,6 +38,7 @@ enum
     PROTO_GET_CURRENT,
     PROTO_SET_ALL_POWER_VOLTAGE,
     PROTO_SET_ALL_POWER_CURRENT_LIM,
+    PROTO_SET_BACKLIGHT_CURRENT,
     PROTO_CMD_COUNT
 };
 
@@ -56,19 +57,20 @@ extern __IO uint32_t uwDutyCycle;
 extern lcd_show_t lcd_show;
 
 /* ==================== 5. 静态私有变量 ==================== */
-static const protocol_header_t PROTOCOL_HEADERS[PROTO_CMD_COUNT] =
-    {
-        [PROTO_GET_ID] = {0xA0, 0x10},                    // 获取 ID
-        [PROTO_GET_VERSION] = {0xA0, 0x11},               // 获取软件版本号
-        [PROTO_SET_VOLTAGE] = {0xA0, 0x12},               // 电压配置
-        [PROTO_SET_CURRENT_LIM] = {0xA0, 0x13},           // 限流配置
-        [PROTO_SET_ALL_POWER_EN] = {0xA0, 0x14},          // 所有电源使能
-        [PROTO_SET_POWER_EN] = {0xA0, 0x15},              // 单路电源使能
-        [PROTO_GET_VOLTAGE] = {0xA0, 0x16},               // 单路电源电压获取
-        [PROTO_GET_CURRENT] = {0xA0, 0x17},               // 单路电源电流获取
-        [PROTO_SET_ALL_POWER_VOLTAGE] = {0xA0, 0x18},     // 所有电源电压配置
-        [PROTO_SET_ALL_POWER_CURRENT_LIM] = {0xA0, 0x19}, // 所有电源限流配置
-};
+// static const protocol_header_t PROTOCOL_HEADERS[PROTO_CMD_COUNT] =
+//     {
+//         [PROTO_GET_ID] = {0xA0, 0x10},                    // 获取 ID
+//         [PROTO_GET_VERSION] = {0xA0, 0x11},               // 获取软件版本号
+//         [PROTO_SET_VOLTAGE] = {0xA0, 0x12},               // 电压配置
+//         [PROTO_SET_CURRENT_LIM] = {0xA0, 0x13},           // 限流配置
+//         [PROTO_SET_ALL_POWER_EN] = {0xA0, 0x14},          // 所有电源使能
+//         [PROTO_SET_POWER_EN] = {0xA0, 0x15},              // 单路电源使能
+//         [PROTO_GET_VOLTAGE] = {0xA0, 0x16},               // 单路电源电压获取
+//         [PROTO_GET_CURRENT] = {0xA0, 0x17},               // 单路电源电流获取
+//         [PROTO_SET_ALL_POWER_VOLTAGE] = {0xA0, 0x18},     // 所有电源电压配置
+//         [PROTO_SET_ALL_POWER_CURRENT_LIM] = {0xA0, 0x19}, // 所有电源限流配置
+//         [PROTO_SET_BACKLIGHT_CURRENT] = {0xA0, 0x21},     // 背光电流控制
+// };
 
 osThreadId_t task_sample_handle;
 const osThreadAttr_t task_sample_attributes = {
@@ -209,7 +211,9 @@ void task_sample_run(void *argument)
     uint8_t pin_num = 0;
     R_D_MODE rd_mode = R_D_MODE_NULL;
     TEST_R_D_RES_LEVEL r_level = OHM_10_M;
+    // 用户下发的使能电源index 到 bsp_power_single_enable(power_id)的power_id的映射
     static const uint8_t power_order[8] = {0, 1, 2, 3, 8, 9, 10, 11};
+    // 用户下发的设置电压index 到 dac通道index的映射 5个dac共20路
     static const uint8_t set_power_order[20] = {0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19};
 
     for (;;)
@@ -263,7 +267,9 @@ void task_sample_run(void *argument)
                     // }
                     bool enable = (idx_cur < 8) ? power_enable_status[idx_cur]() : 1;
                     if (enable)
+                    {
                         lcd_show.current[idx_cur] = latest_sample_data[i];
+                    }
                     else
                         lcd_show.current[idx_cur] = 0; // 未使能
                 }
@@ -288,19 +294,27 @@ void task_sample_run(void *argument)
             break;
         case VOL_SET:
         case LIM_SET:
+            // 解析数据
             g_sample_task.set_power_data_frame.frame_header = meter_rx_buf[0];
             g_sample_task.set_power_data_frame.cmd_type = meter_rx_buf[1];
             g_sample_task.set_power_data_frame.power_id = meter_rx_buf[2];
+            // 解析浮点数
             memcpy(&float_bytes, &meter_rx_buf[3], sizeof(float_bytes));
-
             memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
+            // 用户下发的index 到 dac通道index的映射
             g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
+            // 用户下发的 index 到 dac通道index的映射
             uint8_t lim_idx = 0;
             if (3 < g_sample_task.set_power_data_frame.power_id && g_sample_task.set_power_data_frame.power_id < 8)
+            {
                 lim_idx = g_sample_task.set_power_data_frame.power_id - 4;
+                lcd_show.threshold[lim_idx] = float_bytes.f;
+            }
             if (11 < g_sample_task.set_power_data_frame.power_id && g_sample_task.set_power_data_frame.power_id < 16)
+            {
                 lim_idx = g_sample_task.set_power_data_frame.power_id - 8;
-            lcd_show.threshold[lim_idx] = float_bytes.f;
+                lcd_show.threshold[lim_idx] = float_bytes.f;
+            }
 
             M_SPI_DEBUG("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
             M_SPI_DEBUG("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
@@ -404,6 +418,7 @@ void task_sample_run(void *argument)
         case SINGLE_CUR_GET:
             sample_cur_id = meter_rx_buf[2];
             meter_wait_v_c_ready(sample_cur_id, 1);
+
             M_SPI_INFO("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[ads1256_ch_index], sizeof(float));
             M_SPI_DEBUG("SINGLE_CUR_GET: channel %d, current %f\r\n", ads1256_ch_index, latest_sample_data[ads1256_ch_index]);
@@ -469,13 +484,13 @@ void task_sample_run(void *argument)
                 }
                 osDelay(1);
             }
-            wait_adc_one_round(1000); // 至少等6轮,从档六开始切
-            wait_adc_one_round(1000);
-            wait_adc_one_round(1000);
-            wait_adc_one_round(1000);
-            wait_adc_one_round(1000);
-            wait_adc_one_round(1000);
-            wait_adc_one_round(1000);
+            wait_adc_one_round(100); // 至少等6轮,从档六开始切
+            wait_adc_one_round(100);
+            wait_adc_one_round(100);
+            wait_adc_one_round(100);
+            wait_adc_one_round(100);
+            wait_adc_one_round(100);
+            wait_adc_one_round(100);
             // bsp_delay_ms(100);
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
             t_temp_end = HAL_GetTick();
@@ -652,6 +667,14 @@ void task_sample_run(void *argument)
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        case SET_BACKLIGHT_CURRENT:
+            memcpy(&float_bytes, &meter_rx_buf[2], sizeof(float_bytes));
+            disableTim1CaptureCompareInterrupt();
+            bsp_led_pwm_init((uint8_t)float_bytes.f);
+            enableTim1PWMOutput();
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
         default:
             M_SPI_DEBUG("unknow command\r\n");
             task_com_resume();
@@ -696,6 +719,8 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
             osDelay(1);
         }
     }
+    for (uint8_t i = 0; i < 8; i++)
+        wait_adc_one_round(100);
 }
 void task_sample_suspend(void)
 {

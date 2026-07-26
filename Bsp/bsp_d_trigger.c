@@ -22,6 +22,10 @@
 #include "bsp_d_trigger.h"
 
 #include "bsp_dwt.h" //for delay
+#include "cmsis_os2.h"
+
+static osMutexId_t s_d_trigger_mutex = NULL;
+static uint8_t s_d_trigger_mutex_ready = 0;
 
 #define D_TRIGGER_CHANNEL_NUM 8
 #define D_TRIGGER_DEVICE_NUM 8
@@ -116,6 +120,17 @@ const d_trigger_t d_8 = {
     .d_group = latch_group,
     .d_pin = latch_pin,
 };
+void bsp_d_trigger_lock_init(void)
+{
+    if (s_d_trigger_mutex == NULL)
+    {
+        s_d_trigger_mutex = osMutexNew(NULL);
+        if (s_d_trigger_mutex != NULL)
+        {
+            s_d_trigger_mutex_ready = 1;
+        }
+    }
+}
 /**
  * @brief 初始化一路 D 触发器的时钟脚与 8 路数据脚
  * @param cfg 触发器配置（可传 d_1 ~ d_8）
@@ -183,6 +198,11 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
     {
         return;
     }
+    if (osMutexAcquire(s_d_trigger_mutex, osWaitForever) != osOK)
+    {
+        return;
+    }
+
     /* 1) 先更新软件缓存 */
     int8_t idx = bsp_d_trigger_get_index(cfg);
     if (idx >= 0)
@@ -192,6 +212,7 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         else
             s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
     }
+    printf("set s_d_trigger_shadow[%d]:%x\r\n", idx, s_d_trigger_shadow[idx]);
     /* 2) 按缓存回放全部8路数据脚，避免只改1路导致其余路状态丢失 */
     uint8_t shadow = s_d_trigger_shadow[idx];
     for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)
@@ -206,20 +227,32 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
 
     HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_RESET);
     bsp_delay_us(20);
+
+    osMutexRelease(s_d_trigger_mutex);
 }
 
 uint8_t bsp_d_trigger_get_channel_state(const d_trigger_t *cfg, const uint8_t channel)
 {
+    uint8_t ret = 0;
     if (cfg == NULL || channel >= D_TRIGGER_CHANNEL_NUM)
     {
         return 0;
     }
+
+    if (osMutexAcquire(s_d_trigger_mutex, osWaitForever) != osOK)
+    {
+        return 0;
+    }
+
     int8_t idx = bsp_d_trigger_get_index(cfg);
     if (idx >= 0)
     {
-        return (s_d_trigger_shadow[idx] >> channel) & 0x01U;
+        ret = (s_d_trigger_shadow[idx] >> channel) & 0x01U;
     }
-    return 0;
+    // printf("get s_d_trigger_shadow[%d]:%x\r\n", idx, s_d_trigger_shadow[idx]);
+    osMutexRelease(s_d_trigger_mutex);
+
+    return ret;
 }
 
 void test_d_trigger()

@@ -7,7 +7,7 @@
 
 #include "bsp.h"
 #include "main.h"
-
+#include "cmsis_os2.h"
 typedef struct
 {
     GPIO_TypeDef *d_clk_group; // CP Group
@@ -25,7 +25,7 @@ extern const d_trigger_t d_5;
 extern const d_trigger_t d_6;
 extern const d_trigger_t d_7;
 extern const d_trigger_t d_8;
-
+void bsp_d_trigger_lock_init(void);
 void bsp_d_trigger_init(d_trigger_t cfg);
 void bsp_d_trigger_set(uint8_t state);
 void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, uint8_t enable);

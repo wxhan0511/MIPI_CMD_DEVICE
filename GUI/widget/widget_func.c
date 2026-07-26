@@ -662,13 +662,13 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
         {
             sprintf(temp_str, "--");
         }
-        else if (fabs(lcd_protocol->current[i]) >= 1000000)
-        {
-            sprintf(temp_str, "%.2f A", lcd_protocol->current[i] / 1000000);
-        }
         else if (fabs(lcd_protocol->current[i]) >= 1000)
         {
-            sprintf(temp_str, "%.2f mA", lcd_protocol->current[i] / 1000);
+            sprintf(temp_str, "%.2f A", lcd_protocol->current[i] / 1000);
+        }
+        else if (fabs(lcd_protocol->current[i]) >= 1)
+        {
+            sprintf(temp_str, "%.2f mA", lcd_protocol->current[i] / 1);
         }
         else
         {
@@ -718,13 +718,13 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
         {
             sprintf(temp_str, "--");
         }
-        else if (fabs(lcd_protocol->current[i]) >= 1000000)
+        else if (fabs(lcd_protocol->current[i]) >= 1000)
         {
-            sprintf(temp_str, "%.2f A", lcd_protocol->current[i] / 1000000);
+            sprintf(temp_str, "%.2f A", lcd_protocol->current[i] / 1000);
         }
         else if (fabs(lcd_protocol->current[i]) >= 1000)
         {
-            sprintf(temp_str, "%.2f mA", lcd_protocol->current[i] / 1000);
+            sprintf(temp_str, "%.2f mA", lcd_protocol->current[i] / 1);
         }
         else
         {

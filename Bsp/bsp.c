@@ -97,18 +97,21 @@ void bsp_init()
     bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
     calibration_set_defaults();
     calibration_load();
+    calibration_set_defaults();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
     /*-------------ADC END---------------------------*/
 
     /*-------------DAC and LIMIT CURRENT START----------*/
     bsp_dac_init();
+    LEVEL_SHIFT_ENABLE();
     /*-------------DAC and LIMIT CURRENT END------------*/
     /*-------------PWM START----------------*/
-    bsp_led_pwm_init(10);   // step1
+    bsp_led_pwm_init(47);   // step1
     bsp_blasi_pwm_init(10); // step1
     enableTim1PWMOutput();  // step2
     enableTim2PWMOutput();
+    // bsp_lim_rst_set(0);
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();

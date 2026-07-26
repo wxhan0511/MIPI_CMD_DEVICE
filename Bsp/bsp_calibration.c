@@ -173,11 +173,11 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->da_data.elvdd_set_offset = 22400;
 
     // Default Voltage Value
-    cal->vsn_last_voltage = -3000;
+    cal->vsn_last_voltage = -5000;
     cal->vsp_last_voltage = 3000;
     cal->iovcc_last_voltage = 3000;
     cal->vcc_last_voltage = 3000;
-    cal->elvss_last_voltage = -3000;
+    cal->elvss_last_voltage = -5000;
     cal->elvdd_last_voltage = 3000;
     cal->vdd_last_voltage = 3000;
     cal->avdd_last_voltage = 3000;
@@ -189,7 +189,7 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->vdd_ref_last = 1000;
     cal->elvdd_ref_last = 1000;
     cal->elvss_ref_last = 1000;
-    cal->v_level_shift_last = 3300;
+    cal->v_level_shift_last = 1800;
     cal->ref_freq_last = 980;
     cal->vadj_p_last = 10000;
     cal->vadj_n_last = -10000;

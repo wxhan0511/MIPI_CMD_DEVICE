@@ -452,6 +452,7 @@ HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len)
   return HAL_SPI_Transmit_IT(&hspi2, meter_tx_buf, SPI2_SLAVE_TX_LEN);
 }
 // 中断回调转发入口
+
 void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi)
 {
   if (hspi->Instance != SPI2)

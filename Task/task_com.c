@@ -72,6 +72,6 @@ static void task_com_run(void *arg)
             meter_com_flag = 0;
             com_handle_spi(meter_rx_buf, meter_tx_buf);
         }
-        osDelay(10);
+        osDelay(2);
     }
 }

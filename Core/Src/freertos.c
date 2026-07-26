@@ -60,7 +60,7 @@ void MX_FREERTOS_Init(void)
   led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
 
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
+  bsp_d_trigger_lock_init();
   widget_main_task_init(); // LVGL UI task
   // power_task_init();
   task_sample_init();
