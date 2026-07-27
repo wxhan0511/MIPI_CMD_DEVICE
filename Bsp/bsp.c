@@ -86,7 +86,8 @@ void bsp_init()
     bsp_d_trigger_set(enabled);
     bsp_close_24pin_channel();
     bsp_close_40pin_channel();
-
+    bsp_d_trigger_lock_init();
+    printf("all set ma \r\n");
     bsp_rly_gear_set(GEAR_mA, VSN_RLY); // ⚠️⚠️⚠️需放最前
     bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
     bsp_rly_gear_set(GEAR_mA, VCC_RLY);
