@@ -15,6 +15,9 @@ volatile uint8_t ch0_flag = 8;
 volatile uint8_t ch1_flag = 8;
 volatile uint8_t ch2_flag = 8;
 volatile R_D_MODE r_d_mode = 0;
+// 定义一个全局的静态状态实例（默认全部初始化为 GEAR_uA）
+static RLY_GearState_t s_rly_gear_state = {
+    .gear = {GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA}};
 
 const static uint8_t truth_table[8][3] = {
     {0, 0, 0}, // A2 A1 A0
@@ -63,12 +66,41 @@ void bsp_rd_select_mode(const R_D_MODE mode)
         bsp_d_trigger_set_channel(&d_8, 5, mode);
     r_d_mode = mode;
 }
-// ANCHOR - 电流档位设置
-//  @param gear 1: mA档，0: uA档
-//  @param rly_index 继电器索引，0-7对应8个继电器
+
+// 在设置硬件的同时更新状态结构体
 void bsp_rly_gear_set(TEST_CUR_GEAR gear, RLY_INDEX rly_index)
 {
-    bsp_d_trigger_set_channel(&d_2, rly_index, gear);
+    // 边界检查，防止越界
+    if (rly_index >= VSN_RLY && rly_index < RLY_INDEX_MAX)
+    {
+        // 更新挡位状态结构体
+        s_rly_gear_state.gear[rly_index] = gear;
+
+        // 执行底层硬件设置
+        bsp_d_trigger_set_channel(&d_2, rly_index, gear);
+    }
+}
+
+// 提供一个获取当前挡位状态的函数
+TEST_CUR_GEAR bsp_rly_gear_get(RLY_INDEX rly_index)
+{
+    if (rly_index >= VSN_RLY && rly_index < RLY_INDEX_MAX)
+    {
+        return s_rly_gear_state.gear[rly_index];
+    }
+    return GEAR_uA; // 默认返回
+}
+
+void bsp_rly_gear_set_all(TEST_CUR_GEAR gear)
+{
+    bsp_d_trigger_set_channel(&d_2, VSN_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, ELVSS_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, VSN_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, IOVCC_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, VSP_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, AVDD_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, VDD_RLY, gear);
+    bsp_d_trigger_set_channel(&d_2, ELVDD_RLY, gear);
 }
 
 // ANCHOR -  选通电阻级别
@@ -658,7 +690,6 @@ void bsp_test_select_mode(const TEST_MODE mode)
 // NOTE - 开启频率测试前，先对选择通道执行电压测量。电压为0~5V才可EN，否则有概率损坏保护器件 -比较器的Ref_Freq 需要设置
 void bsp_select_24pin_channel(uint16_t pin, uint8_t en)
 {
-
     uint16_t _pin_group = pin / 8;
     uint16_t _pin = pin % 8;
     if (en == 0)

@@ -98,6 +98,14 @@ typedef struct
     float ch1_gain[8];
     float ch2_offset[8];
     float ch2_gain[8];
+
+    float ch0_offset_ua[8];
+    float ch0_gain_ua[8];
+    float ch1_offset_ua[8];
+    float ch1_gain_ua[8];
+    float ch2_offset_ua[8];
+    float ch2_gain_ua[8];
+
     float ch3_offset;
     float ch3_gain;
     float ch4_offset;
@@ -108,6 +116,18 @@ typedef struct
     float ch6_gain;
     float ch7_offset;
     float ch7_gain;
+
+    float ch3_offset_ua;
+    float ch3_gain_ua;
+    float ch4_offset_ua;
+    float ch4_gain_ua;
+    float ch5_offset_ua;
+    float ch5_gain_ua;
+    float ch6_offset_ua;
+    float ch6_gain_ua;
+    float ch7_offset_ua;
+    float ch7_gain_ua;
+
 } ad_calibration_data_t;
 
 // 校准数据结构体

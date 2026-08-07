@@ -53,7 +53,7 @@ dac_dev_t dac_chips[DAC_CHIP_MAX] = {
     {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
     {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
     {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}}};
-// 1. 定义映射表
+// 1. 定义映射表,按DAC_BSY号和通道号由小到大排序
 dac_config_table_t dac_config_table[20] = {
     //  上次电压地址                                      | 偏移地址                                               | 增益地址                                             | 芯片       | 名称         | 通道 | 反 | id | res | 使能                    | 禁能
     {&g_calibration_manager.data.vcc_last_voltage, &g_calibration_manager.data.da_data.vcc_set_offset, &g_calibration_manager.data.da_data.vcc_set_gain, DAC_CHIP_1, "VCC", 0, 0, 0, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+1"},

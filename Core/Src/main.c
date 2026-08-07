@@ -61,7 +61,7 @@ int main(void)
   MX_FSMC_Init();
   MX_DAC_Init();
   MX_SPI1_Init(); /* ADS1256 */
-  MX_SPI2_Init(); /* M SPI */
+  // MX_SPI2_Init(); /* M SPI */
   MX_SPI3_Init(); /* FLASH */
   MX_USART3_UART_Init();
 

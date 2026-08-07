@@ -101,7 +101,6 @@ void StartDefaultTask(void *argument)
 #if 1
     if (!HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin))
     {
-
       // 临界区外获取信号量是安全的
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {
@@ -150,6 +149,11 @@ void StartDefaultTask(void *argument)
     }
     if (!HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin))
     {
+#ifdef calcbration_board_mode
+      HAL_GPIO_WritePin(TSPI_CS_GPIO_Port, TSPI_CS_Pin, 0);
+      osDelay(1);
+      HAL_GPIO_WritePin(TSPI_CS_GPIO_Port, TSPI_CS_Pin, 1);
+#endif
 
       osDelay(10);
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)

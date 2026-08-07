@@ -128,7 +128,7 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     // Calibration Parameter Settings
     // calu_calibration_data();
     cal->da_data.vadj_n_gain = -5;
-    cal->da_data.vadj_n_offset = -4884;
+    cal->da_data.vadj_n_offset = -7326;
 
     cal->da_data.vadj_p_gain = -5.612;
     cal->da_data.vadj_p_offset = 25641;

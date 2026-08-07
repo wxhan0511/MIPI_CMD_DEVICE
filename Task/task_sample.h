@@ -46,6 +46,10 @@ typedef enum
     GET_24PIN_VOLTAGE = 0x1F,
     SEL_LIM_GEAR = 0x20,
     SET_BACKLIGHT_CURRENT = 0x21,
+    READ_DA_DATA = 0x22,
+    READ_AD_DATA = 0x23,
+    WRITE_CALI_DATA = 0x24,
+    enable_lim = 0x25,
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 

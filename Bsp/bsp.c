@@ -88,17 +88,10 @@ void bsp_init()
     bsp_close_40pin_channel();
     bsp_d_trigger_lock_init();
     printf("all set ma \r\n");
-    bsp_rly_gear_set(GEAR_mA, VSN_RLY); // ⚠️⚠️⚠️需放最前
-    bsp_rly_gear_set(GEAR_mA, ELVSS_RLY);
-    bsp_rly_gear_set(GEAR_mA, VCC_RLY);
-    bsp_rly_gear_set(GEAR_mA, IOVCC_RLY);
-    bsp_rly_gear_set(GEAR_mA, VSP_RLY);
-    bsp_rly_gear_set(GEAR_mA, AVDD_RLY);
-    bsp_rly_gear_set(GEAR_mA, VDD_RLY);
-    bsp_rly_gear_set(GEAR_mA, ELVDD_RLY);
-    calibration_set_defaults();
+    bsp_rly_gear_set_all(GEAR_mA);
+    // calibration_set_defaults();
     calibration_load();
-    calibration_set_defaults();
+    // calibration_set_defaults();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
     /*-------------ADC END---------------------------*/
@@ -112,7 +105,8 @@ void bsp_init()
     bsp_blasi_pwm_init(10); // step1
     enableTim1PWMOutput();  // step2
     enableTim2PWMOutput();
-    // bsp_lim_rst_set(0);
+
+    bsp_lim_rst_set(0);
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();

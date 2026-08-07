@@ -89,8 +89,12 @@ typedef enum
     AVDD_RLY,
     VDD_RLY,
     ELVDD_RLY,
+    RLY_INDEX_MAX,
 } RLY_INDEX;
-
+typedef struct
+{
+    TEST_CUR_GEAR gear[RLY_INDEX_MAX]; // 存储当前的挡位
+} RLY_GearState_t;
 // ADS1256选通宏
 typedef enum
 {
@@ -181,6 +185,8 @@ void bsp_test_select_mode(const TEST_MODE mode);
 void bsp_limit_current_reset();
 void bsp_lim_rst_set(uint8_t state);
 void bsp_rly_gear_set(TEST_CUR_GEAR gear, RLY_INDEX rly_index);
+TEST_CUR_GEAR bsp_rly_gear_get(RLY_INDEX rly_index);
+void bsp_rly_gear_set_all(TEST_CUR_GEAR gear);
 void bsp_select_24pin_channel(uint16_t pin, uint8_t en);
 void bsp_close_24pin_channel();
 void bsp_close_40pin_channel();

@@ -26,21 +26,6 @@
     }
 
 /* ==================== 3. 类型定义（结构体、枚举、别名） ==================== */
-enum
-{
-    PROTO_GET_ID = 0,
-    PROTO_GET_VERSION,
-    PROTO_SET_VOLTAGE,
-    PROTO_SET_CURRENT_LIM,
-    PROTO_SET_ALL_POWER_EN,
-    PROTO_SET_POWER_EN,
-    PROTO_GET_VOLTAGE,
-    PROTO_GET_CURRENT,
-    PROTO_SET_ALL_POWER_VOLTAGE,
-    PROTO_SET_ALL_POWER_CURRENT_LIM,
-    PROTO_SET_BACKLIGHT_CURRENT,
-    PROTO_CMD_COUNT
-};
 
 typedef int (*power_status_func_t)(void);
 typedef int (*lim_status_func_t)(void);
@@ -55,22 +40,6 @@ extern __IO uint32_t uwFrequency;
 extern uint8_t get_freq_flag;
 extern __IO uint32_t uwDutyCycle;
 extern lcd_show_t lcd_show;
-
-/* ==================== 5. 静态私有变量 ==================== */
-// static const protocol_header_t PROTOCOL_HEADERS[PROTO_CMD_COUNT] =
-//     {
-//         [PROTO_GET_ID] = {0xA0, 0x10},                    // 获取 ID
-//         [PROTO_GET_VERSION] = {0xA0, 0x11},               // 获取软件版本号
-//         [PROTO_SET_VOLTAGE] = {0xA0, 0x12},               // 电压配置
-//         [PROTO_SET_CURRENT_LIM] = {0xA0, 0x13},           // 限流配置
-//         [PROTO_SET_ALL_POWER_EN] = {0xA0, 0x14},          // 所有电源使能
-//         [PROTO_SET_POWER_EN] = {0xA0, 0x15},              // 单路电源使能
-//         [PROTO_GET_VOLTAGE] = {0xA0, 0x16},               // 单路电源电压获取
-//         [PROTO_GET_CURRENT] = {0xA0, 0x17},               // 单路电源电流获取
-//         [PROTO_SET_ALL_POWER_VOLTAGE] = {0xA0, 0x18},     // 所有电源电压配置
-//         [PROTO_SET_ALL_POWER_CURRENT_LIM] = {0xA0, 0x19}, // 所有电源限流配置
-//         [PROTO_SET_BACKLIGHT_CURRENT] = {0xA0, 0x21},     // 背光电流控制
-// };
 
 osThreadId_t task_sample_handle;
 const osThreadAttr_t task_sample_attributes = {
@@ -211,10 +180,9 @@ void task_sample_run(void *argument)
     uint8_t pin_num = 0;
     R_D_MODE rd_mode = R_D_MODE_NULL;
     TEST_R_D_RES_LEVEL r_level = OHM_10_M;
-    // 用户下发的使能电源index 到 bsp_power_single_enable(power_id)的power_id的映射
-    static const uint8_t power_order[8] = {0, 1, 2, 3, 8, 9, 10, 11};
+    uint8_t usr_idx = 0;
     // 用户下发的设置电压index 到 dac通道index的映射 5个dac共20路
-    static const uint8_t set_power_order[20] = {0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19};
+    static const uint8_t power_order[20] = {0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19};
 
     for (;;)
     {
@@ -283,7 +251,13 @@ void task_sample_run(void *argument)
             osDelay(5);
             break;
         case GET_ID:
-            meter_tx_buf[3] = id; // 1,2,3,4:bit1~4
+            meter_rx_buf[2] = id; // 1,2,3,4:bit1~4
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        case enable_lim:
+            uint8_t lim_status = meter_rx_buf[2];
+            bsp_lim_rst_set(lim_status);
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
@@ -302,7 +276,7 @@ void task_sample_run(void *argument)
             memcpy(&float_bytes, &meter_rx_buf[3], sizeof(float_bytes));
             memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
             // 用户下发的index 到 dac通道index的映射
-            g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
+            g_sample_task.set_power_data_frame.power_id = power_order[g_sample_task.set_power_data_frame.power_id];
             // 用户下发的 index 到 dac通道index的映射
             uint8_t lim_idx = 0;
             if (3 < g_sample_task.set_power_data_frame.power_id && g_sample_task.set_power_data_frame.power_id < 8)
@@ -337,7 +311,7 @@ void task_sample_run(void *argument)
                 g_sample_task.set_power_data_frame.power_id = i;
                 memcpy(&float_bytes, &meter_rx_buf[2 + i * sizeof(float_bytes)], sizeof(float_bytes));
                 memcpy(g_sample_task.set_power_data_frame.value.bytes, float_bytes.b, sizeof(float_bytes.b));
-                g_sample_task.set_power_data_frame.power_id = set_power_order[g_sample_task.set_power_data_frame.power_id];
+                g_sample_task.set_power_data_frame.power_id = power_order[g_sample_task.set_power_data_frame.power_id];
                 // M_SPI_DEBUG("set_power_data_frame.power_id:%x\r\n", g_sample_task.set_power_data_frame.power_id);
                 // M_SPI_DEBUG("set_power_data_frame.value.bytes:%02X %02X %02X %02X\r\n",
                 //        float_bytes.b[0], float_bytes.b[1], float_bytes.b[2], float_bytes.b[3]);
@@ -385,27 +359,25 @@ void task_sample_run(void *argument)
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         case SINGLE_VOL_GET:
-            M_SPI_DEBUG("SINGLE_VOL_GET\r\n");
-            sample_vol_id = meter_rx_buf[2];
-            M_SPI_DEBUG("sample_vol_id: %d\r\n", sample_vol_id);
-            uint8_t power_on = 1U;
-            if (sample_vol_id < 8U)
+            usr_idx = meter_rx_buf[2];
+            M_SPI_DEBUG("usr_idx: %d\r\n", usr_idx);
+
+            if (usr_idx < 8U)
             {
-                power_on = (uint8_t)power_enable_status[sample_vol_id]();
-                M_SPI_DEBUG("power_on: %d\r\n", power_on);
+                if (!power_enable_status[usr_idx]())
+                {
+                    M_SPI_DEBUG("usr_idx:%d not enable,break\r\n", usr_idx);
+                    memset(&meter_tx_buf[3], 0, sizeof(float));
+                    task_com_resume();
+                    g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                    break;
+                }
             }
-            if (!power_on)
-            {
-                memset(&meter_tx_buf[3], 0, sizeof(float));
-                task_com_resume();
-                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
-                break;
-            }
-            meter_wait_v_c_ready(sample_vol_id, (uint8_t)0);
+            meter_wait_v_c_ready(usr_idx, 0);
             // 测完24pin和40pin关闭24pin和40pin的通道,避免干扰
-            if (sample_vol_id == 10)
+            if (usr_idx == 10)
                 bsp_close_24pin_channel();
-            if (sample_vol_id == 9)
+            if (usr_idx == 9)
                 bsp_close_40pin_channel();
 
             M_SPI_DEBUG("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
@@ -416,13 +388,16 @@ void task_sample_run(void *argument)
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         case SINGLE_CUR_GET:
-            sample_cur_id = meter_rx_buf[2];
-            meter_wait_v_c_ready(sample_cur_id, 1);
+            usr_idx = meter_rx_buf[2];
+            meter_wait_v_c_ready(usr_idx, 1);
 
             M_SPI_INFO("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
+
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[ads1256_ch_index], sizeof(float));
+
             M_SPI_DEBUG("SINGLE_CUR_GET: channel %d, current %f\r\n", ads1256_ch_index, latest_sample_data[ads1256_ch_index]);
             M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[ads1256_ch_index]);
+
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
@@ -675,6 +650,230 @@ void task_sample_run(void *argument)
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        case READ_DA_DATA:
+            usr_idx = meter_rx_buf[2];
+            uint8_t dac_channel_index = power_order[usr_idx];
+            dac_config_table_t *cfg = &dac_config_table[dac_channel_index];
+            float da_data = (float)dac_chips[cfg->chip].val[cfg->channel];
+            memcpy(&meter_tx_buf[3], &da_data, sizeof(float));
+            M_SPI_DEBUG("READ_DA_DATA : %f\r\n", da_data);
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        case READ_AD_DATA:
+            usr_idx = meter_rx_buf[2];
+            uint8_t data_type = meter_rx_buf[3];
+            uint8_t gear = meter_rx_buf[4];
+            M_SPI_DEBUG("usr_idx: %d\r\n", usr_idx);
+            if (usr_idx < 8U)
+            {
+                if (!power_enable_status[usr_idx]())
+                {
+                    M_SPI_DEBUG("usr_idx:%d not enable,break\r\n", usr_idx);
+                    memset(&meter_tx_buf[3], 0, sizeof(float));
+                    task_com_resume();
+                    g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                    break;
+                }
+            }
+            meter_wait_v_c_ready(usr_idx, data_type);
+            // 测完24pin和40pin关闭24pin和40pin的通道,避免干扰
+            if (data_type == 0 && usr_idx == 10)
+                bsp_close_24pin_channel();
+            if (data_type == 0 && usr_idx == 9)
+                bsp_close_40pin_channel();
+
+            M_SPI_DEBUG("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
+            memcpy(&meter_tx_buf[3], (const void *)&latest_sample_raw_data[ads1256_ch_index], sizeof(float));
+            M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[ads1256_ch_index]);
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        case WRITE_CALI_DATA:
+        {
+            printf("WRITE_CALI_DATA\r\n");
+            calibration_data_t *cal = &g_calibration_manager.data;
+
+            // 80 个 float 的临时拼接缓存
+            static float temp_cali_data[80] = {0};
+            float da_cali_data[16] = {0};
+            float ad_v_cali_data[16] = {0};
+            float ad_c_ma_cali_data[16] = {0};
+            float ad_c_ua_cali_data[16] = {0};
+            float ad_v_i_cali_data[8] = {0};
+            float ad_c_i_cali_data[8] = {0};
+
+            // 1. 读取当前是第几次发送 (0~7)
+            uint8_t num = meter_rx_buf[2];
+            uint8_t *ptr = &meter_rx_buf[3];
+
+            // 防止 num 越界 (合法值为 0~7)
+            if (num > 7)
+            {
+                printf("Invalid num: %d\r\n", num);
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
+
+            // 2. 将当前包的 10 个 float (40字节) 拷贝到临时数组的对应位置
+            memcpy(&temp_cali_data[num * 10], ptr, 10 * sizeof(float));
+
+            // 3. 只有当接收到最后一包 (num == 7) 时，才进行数据分发
+            if (num == 7)
+            {
+                uint8_t *p_src = (uint8_t *)temp_cali_data;
+
+                // 拷贝前 16 个 float (索引 0~15) 给 da_cali_data
+                memcpy(da_cali_data, p_src, sizeof(da_cali_data));
+                p_src += sizeof(da_cali_data);
+
+                // 拷贝 16 个 float (索引 16~31) 给 ad_v_cali_data
+                memcpy(ad_v_cali_data, p_src, sizeof(ad_v_cali_data));
+                p_src += sizeof(ad_v_cali_data);
+
+                // 拷贝 16 个 float (索引 32~47) 给 ad_c_ma_cali_data
+                memcpy(ad_c_ma_cali_data, p_src, sizeof(ad_c_ma_cali_data));
+                p_src += sizeof(ad_c_ma_cali_data);
+
+                // 拷贝 16 个 float (索引 48~63) 给 ad_c_ua_cali_data
+                memcpy(ad_c_ua_cali_data, p_src, sizeof(ad_c_ua_cali_data));
+                p_src += sizeof(ad_c_ua_cali_data);
+
+                // 拷贝 8 个 float (索引 64~71) 给 ad_v_i_cali_data
+                memcpy(ad_v_i_cali_data, p_src, sizeof(ad_v_i_cali_data));
+                p_src += sizeof(ad_v_i_cali_data);
+
+                // 拷贝 8 个 float (索引 72~79) 给 ad_c_i_cali_data
+                memcpy(ad_c_i_cali_data, p_src, sizeof(ad_c_i_cali_data));
+                p_src += sizeof(ad_c_i_cali_data);
+
+                printf("All 80 calibration data received!\r\n");
+                // TODO: 在这里执行实际的校准应用或写入 Flash 操作
+                // ================= 开始写入校准值 =================
+
+                // 5. 写入 DA 校准值
+                // 顺序: vcc_set_gain, vcc_set_offset, iovcc, vsp, vsn, avdd, vdd, elvdd, elvss
+                cal->da_data.vcc_set_gain = da_cali_data[0];
+                cal->da_data.vcc_set_offset = da_cali_data[1];
+
+                cal->da_data.iovcc_set_gain = da_cali_data[2];
+                cal->da_data.iovcc_set_offset = da_cali_data[3];
+
+                cal->da_data.vsp_set_gain = da_cali_data[4];
+                cal->da_data.vsp_set_offset = da_cali_data[5];
+
+                cal->da_data.vsn_set_gain = da_cali_data[6];
+                cal->da_data.vsn_set_offset = da_cali_data[7];
+
+                cal->da_data.avdd_set_gain = da_cali_data[8];
+                cal->da_data.avdd_set_offset = da_cali_data[9];
+
+                cal->da_data.vdd_set_gain = da_cali_data[10];
+                cal->da_data.vdd_set_offset = da_cali_data[11];
+
+                cal->da_data.elvdd_set_gain = da_cali_data[12];
+                cal->da_data.elvdd_set_offset = da_cali_data[13];
+
+                cal->da_data.elvss_set_gain = da_cali_data[14];
+                cal->da_data.elvss_set_offset = da_cali_data[15];
+                // 6. 写入 AD 电压校准值
+                uint8_t v_idx_map[8] = {0, 1, 7, 3, 5, 6, 4, 2}; // 物理通道 0~7 对应的上位机数据索引
+                for (uint8_t i = 0; i < 8; i++)
+                {
+
+                    uint8_t idx = v_idx_map[i];
+                    cal->ad_data.ch0_gain[i] = ad_v_cali_data[idx * 2];               // 偶数索引为 gain
+                    cal->ad_data.ch0_offset[i] = ad_v_cali_data[idx * 2 + 1] * 0.001; // 奇数索引为 offset
+                }
+
+                // 7. 写入 AD 电流校准值 (ADCI 的 gain 和 offset)
+                cal->ad_data.ch3_gain = ad_c_ma_cali_data[0];
+                cal->ad_data.ch3_offset = ad_c_ma_cali_data[1] * 0.001;
+                cal->ad_data.ch4_gain = ad_c_ma_cali_data[2];
+                cal->ad_data.ch4_offset = ad_c_ma_cali_data[3] * 0.001;
+                cal->ad_data.ch5_gain = ad_c_ma_cali_data[4];
+                cal->ad_data.ch5_offset = ad_c_ma_cali_data[5] * 0.001;
+                cal->ad_data.ch6_gain = -ad_c_ma_cali_data[6];
+                cal->ad_data.ch6_offset = -ad_c_ma_cali_data[7] * 0.001;
+
+                cal->ad_data.ch1_gain[7] = ad_c_ma_cali_data[8];
+                cal->ad_data.ch1_offset[7] = ad_c_ma_cali_data[9] * 0.001;
+                cal->ad_data.ch7_gain = ad_c_ma_cali_data[10];
+                cal->ad_data.ch7_offset = ad_c_ma_cali_data[11] * 0.001;
+                cal->ad_data.ch1_gain[2] = ad_c_ma_cali_data[12];
+                cal->ad_data.ch1_offset[2] = ad_c_ma_cali_data[13] * 0.001;
+                cal->ad_data.ch1_gain[3] = -ad_c_ma_cali_data[14];
+                cal->ad_data.ch1_offset[3] = -ad_c_ma_cali_data[15] * 0.001;
+
+                cal->ad_data.ch3_gain_ua = ad_c_ua_cali_data[0];
+                cal->ad_data.ch3_offset_ua = ad_c_ua_cali_data[1] * 0.001;
+                cal->ad_data.ch4_gain_ua = ad_c_ua_cali_data[2];
+                cal->ad_data.ch4_offset_ua = ad_c_ua_cali_data[3] * 0.001;
+                cal->ad_data.ch5_gain_ua = ad_c_ua_cali_data[4];
+                cal->ad_data.ch5_offset_ua = ad_c_ua_cali_data[5] * 0.001;
+                cal->ad_data.ch6_gain_ua = -ad_c_ua_cali_data[6];
+                cal->ad_data.ch6_offset_ua = -ad_c_ua_cali_data[7] * 0.001;
+
+                cal->ad_data.ch1_gain_ua[7] = ad_c_ua_cali_data[8];
+                cal->ad_data.ch1_offset_ua[7] = ad_c_ua_cali_data[9] * 0.001;
+                cal->ad_data.ch7_gain_ua = ad_c_ua_cali_data[10];
+                cal->ad_data.ch7_offset_ua = ad_c_ua_cali_data[11] * 0.001;
+                cal->ad_data.ch1_gain_ua[2] = ad_c_ua_cali_data[12];
+                cal->ad_data.ch1_offset_ua[2] = ad_c_ua_cali_data[13] * 0.001;
+                cal->ad_data.ch1_gain_ua[3] = -ad_c_ua_cali_data[14];
+                cal->ad_data.ch1_offset_ua[3] = -ad_c_ua_cali_data[15] * 0.001;
+
+                printf("Calibration data applied successfully!\r\n");
+
+                // ================= 打印赋值后的最终校准值 =================
+                const char *pwr_names[8] = {"VCC", "IOVCC", "VSP", "VSN", "AVDD", "VDD", "ELVDD", "ELVSS"};
+                const char *cur_names[8] = {"CH3", "CH4", "CH5", "CH6", "CH1[7]", "CH7", "CH1[2]", "CH1[3]"};
+                printf("\r\n========== 1. DA 设定电压最终校准值 ==========\r\n");
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[0], cal->da_data.vcc_set_gain, cal->da_data.vcc_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[1], cal->da_data.iovcc_set_gain, cal->da_data.iovcc_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[2], cal->da_data.vsp_set_gain, cal->da_data.vsp_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[3], cal->da_data.vsn_set_gain, cal->da_data.vsn_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[4], cal->da_data.avdd_set_gain, cal->da_data.avdd_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[5], cal->da_data.vdd_set_gain, cal->da_data.vdd_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[6], cal->da_data.elvdd_set_gain, cal->da_data.elvdd_set_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[7], cal->da_data.elvss_set_gain, cal->da_data.elvss_set_offset);
+                printf("\r\n========== 2. AD 采集电压最终校准值 (物理通道0~7) ==========\r\n");
+                for (uint8_t i = 0; i < 8; i++)
+                {
+                    // 打印物理通道 i 的名字，以及对应的 gain 和 offset (注意 offset 已经乘了 0.001)
+                    printf("PHY_CH%d: gain=%.6f, offset=%.6f\r\n", i, cal->ad_data.ch0_gain[i], cal->ad_data.ch0_offset[i]);
+                }
+                printf("\r\n========== 3. AD 采集 mA 电流最终校准值 ==========\r\n");
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain, cal->ad_data.ch3_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain, cal->ad_data.ch4_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain, cal->ad_data.ch5_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain, cal->ad_data.ch6_offset); // 已取反
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain[7], cal->ad_data.ch1_offset[7]);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain, cal->ad_data.ch7_offset);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain[2], cal->ad_data.ch1_offset[2]);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain[3], cal->ad_data.ch1_offset[3]); // 已取反
+                printf("\r\n========== 4. AD 采集 uA 电流最终校准值 ==========\r\n");
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain_ua, cal->ad_data.ch3_offset_ua);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain_ua, cal->ad_data.ch4_offset_ua);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain_ua, cal->ad_data.ch5_offset_ua);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain_ua, cal->ad_data.ch6_offset_ua); // 已取反
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain_ua[7], cal->ad_data.ch1_offset_ua[7]);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua, cal->ad_data.ch7_offset_ua);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua[2], cal->ad_data.ch1_offset_ua[2]);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua[3], cal->ad_data.ch1_offset_ua[3]); // 已取反
+                // =========================================================
+                printf("Calibration data applied successfully!\r\n");
+                calibration_save();
+
+                printf("Calibration data applied successfully!\r\n");
+
+                calibration_save();
+            }
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        }
         default:
             M_SPI_DEBUG("unknow command\r\n");
             task_com_resume();
@@ -720,7 +919,7 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
         }
     }
     for (uint8_t i = 0; i < 8; i++)
-        wait_adc_one_round(100);
+        wait_adc_one_round(200); // 一轮采样140ms
 }
 void task_sample_suspend(void)
 {
