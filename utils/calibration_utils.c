@@ -95,15 +95,9 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             *gain = 1.0f;
         return;
     }
-    if (main_index >= 0 && main_index < 3 && sub_index > 7)
-    {
-        if (offset)
-            *offset = 0.0f;
-        if (gain)
-            *gain = 1.0f;
-        return;
-    }
+
     calibration_data_t *cal = &g_calibration_manager.data;
+    
     TEST_CUR_GEAR gear;
     // 2. 根据通道索引选择参数
     switch (main_index)
@@ -121,7 +115,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
     case 1:
         if (sub_index == 2)
         {
-            gear = bsp_rly_gear_get(ELVDD_RLY);
+            gear = bsp_rly_get_gear_isr(ELVDD_RLY);
             if (gear == GEAR_uA)
             {
                 *offset = cal->ad_data.ch1_offset_ua[2];
@@ -135,7 +129,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         else if (sub_index == 3)
         {
-            gear = bsp_rly_gear_get(ELVSS_RLY);
+            gear = bsp_rly_get_gear_isr(ELVSS_RLY);
             if (gear == GEAR_uA)
             {
                 *offset = cal->ad_data.ch1_offset_ua[3];
@@ -149,7 +143,8 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         else if (sub_index == 7)
         {
-            gear = bsp_rly_gear_get(AVDD_RLY);
+            gear = bsp_rly_get_gear_isr(AVDD_RLY);
+            printf("avdd_gear gear:%d\r\n", gear);
             if (gear == GEAR_uA)
             {
                 *offset = cal->ad_data.ch1_offset_ua[7];
@@ -170,7 +165,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         break;
     /* --- ch3~ch7: 标量结构，只要 main_index 匹配即为电流通道 --- */
     case 3:
-        gear = bsp_rly_gear_get(VCC_RLY);
+        gear = bsp_rly_get_gear_isr(VCC_RLY);
         if (gear == GEAR_uA)
         {
             *offset = cal->ad_data.ch3_offset_ua;
@@ -183,7 +178,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         break;
     case 4:
-        gear = bsp_rly_gear_get(IOVCC_RLY);
+        gear = bsp_rly_get_gear_isr(IOVCC_RLY);
         if (gear == GEAR_uA)
         {
             *offset = cal->ad_data.ch4_offset_ua;
@@ -196,7 +191,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         break;
     case 5:
-        gear = bsp_rly_gear_get(VSP_RLY);
+        gear = bsp_rly_get_gear_isr(VSP_RLY);
         if (gear == GEAR_uA)
         {
             *offset = cal->ad_data.ch5_offset_ua;
@@ -209,7 +204,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         break;
     case 6:
-        gear = bsp_rly_gear_get(VSN_RLY);
+        gear = bsp_rly_get_gear_isr(VSN_RLY);
         if (gear == GEAR_uA)
         {
             *offset = cal->ad_data.ch6_offset_ua;
@@ -222,7 +217,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         break;
     case 7:
-        gear = bsp_rly_gear_get(VDD_RLY);
+        gear = bsp_rly_get_gear_isr(VDD_RLY);
         if (gear == GEAR_uA)
         {
             *offset = cal->ad_data.ch7_offset_ua;

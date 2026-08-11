@@ -15,10 +15,7 @@ volatile uint8_t ch0_flag = 8;
 volatile uint8_t ch1_flag = 8;
 volatile uint8_t ch2_flag = 8;
 volatile R_D_MODE r_d_mode = 0;
-// 定义一个全局的静态状态实例（默认全部初始化为 GEAR_uA）
-static RLY_GearState_t s_rly_gear_state = {
-    .gear = {GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA, GEAR_uA}};
-
+static volatile rly_gear_state_t s_rly_gear_state = {0};
 const static uint8_t truth_table[8][3] = {
     {0, 0, 0}, // A2 A1 A0
     {0, 0, 1},
@@ -73,10 +70,9 @@ void bsp_rly_gear_set(TEST_CUR_GEAR gear, RLY_INDEX rly_index)
     // 边界检查，防止越界
     if (rly_index >= VSN_RLY && rly_index < RLY_INDEX_MAX)
     {
-        // 更新挡位状态结构体
+        // 执行底层硬件设置
         s_rly_gear_state.gear[rly_index] = gear;
 
-        // 执行底层硬件设置
         bsp_d_trigger_set_channel(&d_2, rly_index, gear);
     }
 }
@@ -86,21 +82,67 @@ TEST_CUR_GEAR bsp_rly_gear_get(RLY_INDEX rly_index)
 {
     if (rly_index >= VSN_RLY && rly_index < RLY_INDEX_MAX)
     {
-        return s_rly_gear_state.gear[rly_index];
+        TEST_CUR_GEAR gear = bsp_d_trigger_get_channel_state(&d_2, rly_index);
     }
     return GEAR_uA; // 默认返回
 }
+// 专为中断提供的读取函数
+TEST_CUR_GEAR bsp_rly_get_gear_isr(RLY_INDEX rly_index)
+{
+    // 边界检查
+    if (rly_index >= VSN_RLY && rly_index < RLY_INDEX_MAX)
+    {
+        // 直接读取volatile变量，无锁，极快
+        return s_rly_gear_state.gear[rly_index];
+    }
+    // 如果越界，返回默认值
+    return GEAR_uA;
+}
+int16_t bsp_rly_get_last_voltage_isr(RLY_INDEX rly_index)
+{
+    // 边界检查
+    if (rly_index >= VSN_RLY && rly_index < RLY_INDEX_MAX)
+    {
+        // 在中断中直接获取全局结构体指针
+        calibration_data_t *cal = &g_calibration_manager.data;
 
+        // 根据枚举索引获取对应的 last_voltage
+        switch (rly_index)
+        {
+        case VSN_RLY:
+            return cal->vsn_last_voltage;
+        case ELVSS_RLY:
+            return cal->elvss_last_voltage;
+        case VCC_RLY:
+            return cal->vcc_last_voltage;
+        case IOVCC_RLY:
+            return cal->iovcc_last_voltage;
+        case VSP_RLY:
+            return cal->vsp_last_voltage;
+        case AVDD_RLY:
+            return cal->avdd_last_voltage;
+        case VDD_RLY:
+            return cal->vdd_last_voltage;
+        case ELVDD_RLY:
+            return cal->elvdd_last_voltage;
+        default:
+            break;
+        }
+    }
+
+    // 如果越界，返回默认值 0
+    return 0;
+}
 void bsp_rly_gear_set_all(TEST_CUR_GEAR gear)
 {
-    bsp_d_trigger_set_channel(&d_2, VSN_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, ELVSS_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, VSN_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, IOVCC_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, VSP_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, AVDD_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, VDD_RLY, gear);
-    bsp_d_trigger_set_channel(&d_2, ELVDD_RLY, gear);
+    bsp_rly_gear_set(gear, VSN_RLY);
+    bsp_rly_gear_set(gear, ELVSS_RLY);
+    bsp_rly_gear_set(gear, VCC_RLY);
+    bsp_rly_gear_set(gear, IOVCC_RLY);
+    bsp_rly_gear_set(gear, VSP_RLY);
+    bsp_rly_gear_set(gear, AVDD_RLY);
+    bsp_rly_gear_set(gear, VDD_RLY);
+    bsp_rly_gear_set(gear, ELVDD_RLY);
 }
 
 // ANCHOR -  选通电阻级别

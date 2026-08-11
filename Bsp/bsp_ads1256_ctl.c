@@ -202,7 +202,7 @@ void sample_data_cali()
         else
         {
             IV_data = latest_sample_raw_data[i] * gain + offset;
-            latest_sample_data[i] = IV_data * 1000;
+            latest_sample_data[i] = IV_data;
         }
 
         // printf("channel %d, raw data %f, cali data %f\r\n", i, latest_sample_raw_data[i], latest_sample_data[i]);

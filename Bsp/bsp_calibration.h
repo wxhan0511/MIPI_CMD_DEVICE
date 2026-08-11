@@ -106,6 +106,13 @@ typedef struct
     float ch2_offset_ua[8];
     float ch2_gain_ua[8];
 
+    float ch0_offset_ua1[8];
+    float ch0_gain_ua1[8];
+    float ch1_offset_ua1[8];
+    float ch1_gain_ua1[8];
+    float ch2_offset_ua1[8];
+    float ch2_gain_ua1[8];
+
     float ch3_offset;
     float ch3_gain;
     float ch4_offset;
@@ -127,6 +134,17 @@ typedef struct
     float ch6_gain_ua;
     float ch7_offset_ua;
     float ch7_gain_ua;
+
+    float ch3_offset_ua1;
+    float ch3_gain_ua1;
+    float ch4_offset_ua1;
+    float ch4_gain_ua1;
+    float ch5_offset_ua1;
+    float ch5_gain_ua1;
+    float ch6_offset_ua1;
+    float ch6_gain_ua1;
+    float ch7_offset_ua1;
+    float ch7_gain_ua1;
 
 } ad_calibration_data_t;
 

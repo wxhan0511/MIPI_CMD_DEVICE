@@ -658,7 +658,7 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
         {
             sprintf(temp_str, "not sel");
         }
-        if (lcd_protocol->current[i] == 0)
+        else if (lcd_protocol->current[i] == 0)
         {
             sprintf(temp_str, "--");
         }
@@ -672,7 +672,7 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
         }
         else
         {
-            sprintf(temp_str, "%.2f uA", lcd_protocol->current[i]);
+            sprintf(temp_str, "%.2f uA", lcd_protocol->current[i] * 1000);
         }
         ui_label_set_text(label_group->label_power_cur[i], temp_str);
         sprintf(temp_str, "%.2f mA", lcd_protocol->threshold[i]);

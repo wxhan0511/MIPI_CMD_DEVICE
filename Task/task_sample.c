@@ -583,11 +583,11 @@ void task_sample_run(void *argument)
                 if (i != idx_lim_gear) // 其他档位
                     if (!lim_gear_status[i]())
                         lim_gear_ua_count++; // 统计其他档位中限流在ua档的数量
-            if (lim_gear_ua_count == 7 && lim_gear == 0)
-                bsp_lim_rst_set(0); // 8个档位都是ua档
+            // if (lim_gear_ua_count == 7 && lim_gear == 0)
+            //     bsp_lim_rst_set(0); // 8个档位都是ua档
 
-            if (lim_gear == 1)
-                bsp_lim_rst_set(1);
+            // if (lim_gear == 1)
+            //     bsp_lim_rst_set(1);
 
             if (idx_lim_gear == 0)
             {
@@ -783,46 +783,63 @@ void task_sample_run(void *argument)
                 {
 
                     uint8_t idx = v_idx_map[i];
-                    cal->ad_data.ch0_gain[i] = ad_v_cali_data[idx * 2];               // 偶数索引为 gain
-                    cal->ad_data.ch0_offset[i] = ad_v_cali_data[idx * 2 + 1] * 0.001; // 奇数索引为 offset
+                    cal->ad_data.ch0_gain[i] = ad_v_cali_data[idx * 2] * 1000; // 偶数索引为 gain
+                    cal->ad_data.ch0_offset[i] = ad_v_cali_data[idx * 2 + 1];  // 奇数索引为 offset
                 }
 
                 // 7. 写入 AD 电流校准值 (ADCI 的 gain 和 offset)
                 cal->ad_data.ch3_gain = ad_c_ma_cali_data[0];
-                cal->ad_data.ch3_offset = ad_c_ma_cali_data[1] * 0.001;
+                cal->ad_data.ch3_offset = ad_c_ma_cali_data[1];
                 cal->ad_data.ch4_gain = ad_c_ma_cali_data[2];
-                cal->ad_data.ch4_offset = ad_c_ma_cali_data[3] * 0.001;
+                cal->ad_data.ch4_offset = ad_c_ma_cali_data[3];
                 cal->ad_data.ch5_gain = ad_c_ma_cali_data[4];
-                cal->ad_data.ch5_offset = ad_c_ma_cali_data[5] * 0.001;
+                cal->ad_data.ch5_offset = ad_c_ma_cali_data[5];
                 cal->ad_data.ch6_gain = -ad_c_ma_cali_data[6];
-                cal->ad_data.ch6_offset = -ad_c_ma_cali_data[7] * 0.001;
+                cal->ad_data.ch6_offset = -ad_c_ma_cali_data[7];
 
                 cal->ad_data.ch1_gain[7] = ad_c_ma_cali_data[8];
-                cal->ad_data.ch1_offset[7] = ad_c_ma_cali_data[9] * 0.001;
+                cal->ad_data.ch1_offset[7] = ad_c_ma_cali_data[9];
                 cal->ad_data.ch7_gain = ad_c_ma_cali_data[10];
-                cal->ad_data.ch7_offset = ad_c_ma_cali_data[11] * 0.001;
+                cal->ad_data.ch7_offset = ad_c_ma_cali_data[11];
                 cal->ad_data.ch1_gain[2] = ad_c_ma_cali_data[12];
-                cal->ad_data.ch1_offset[2] = ad_c_ma_cali_data[13] * 0.001;
+                cal->ad_data.ch1_offset[2] = ad_c_ma_cali_data[13];
                 cal->ad_data.ch1_gain[3] = -ad_c_ma_cali_data[14];
-                cal->ad_data.ch1_offset[3] = -ad_c_ma_cali_data[15] * 0.001;
+                cal->ad_data.ch1_offset[3] = -ad_c_ma_cali_data[15];
 
                 cal->ad_data.ch3_gain_ua = ad_c_ua_cali_data[0];
-                cal->ad_data.ch3_offset_ua = ad_c_ua_cali_data[1] * 0.001;
+                cal->ad_data.ch3_offset_ua = ad_c_ua_cali_data[1];
                 cal->ad_data.ch4_gain_ua = ad_c_ua_cali_data[2];
-                cal->ad_data.ch4_offset_ua = ad_c_ua_cali_data[3] * 0.001;
+                cal->ad_data.ch4_offset_ua = ad_c_ua_cali_data[3];
                 cal->ad_data.ch5_gain_ua = ad_c_ua_cali_data[4];
-                cal->ad_data.ch5_offset_ua = ad_c_ua_cali_data[5] * 0.001;
+                cal->ad_data.ch5_offset_ua = ad_c_ua_cali_data[5];
                 cal->ad_data.ch6_gain_ua = -ad_c_ua_cali_data[6];
-                cal->ad_data.ch6_offset_ua = -ad_c_ua_cali_data[7] * 0.001;
+                cal->ad_data.ch6_offset_ua = -ad_c_ua_cali_data[7];
 
                 cal->ad_data.ch1_gain_ua[7] = ad_c_ua_cali_data[8];
-                cal->ad_data.ch1_offset_ua[7] = ad_c_ua_cali_data[9] * 0.001;
+                cal->ad_data.ch1_offset_ua[7] = ad_c_ua_cali_data[9];
                 cal->ad_data.ch7_gain_ua = ad_c_ua_cali_data[10];
-                cal->ad_data.ch7_offset_ua = ad_c_ua_cali_data[11] * 0.001;
+                cal->ad_data.ch7_offset_ua = ad_c_ua_cali_data[11];
                 cal->ad_data.ch1_gain_ua[2] = ad_c_ua_cali_data[12];
-                cal->ad_data.ch1_offset_ua[2] = ad_c_ua_cali_data[13] * 0.001;
+                cal->ad_data.ch1_offset_ua[2] = ad_c_ua_cali_data[13];
                 cal->ad_data.ch1_gain_ua[3] = -ad_c_ua_cali_data[14];
-                cal->ad_data.ch1_offset_ua[3] = -ad_c_ua_cali_data[15] * 0.001;
+                cal->ad_data.ch1_offset_ua[3] = -ad_c_ua_cali_data[15];
+
+                cal->ad_data.ch3_gain_ua1 = ad_v_i_cali_data[0];
+                cal->ad_data.ch3_offset_ua1 = ad_v_i_cali_data[1];
+                cal->ad_data.ch4_gain_ua1 = ad_v_i_cali_data[2];
+                cal->ad_data.ch4_offset_ua1 = ad_v_i_cali_data[3];
+                cal->ad_data.ch5_gain_ua1 = ad_v_i_cali_data[4];
+                cal->ad_data.ch5_offset_ua1 = ad_v_i_cali_data[5];
+                cal->ad_data.ch6_gain_ua1 = -ad_v_i_cali_data[6];
+                cal->ad_data.ch6_offset_ua1 = -ad_v_i_cali_data[7];
+                cal->ad_data.ch1_gain_ua1[7] = ad_c_i_cali_data[8];
+                cal->ad_data.ch1_offset_ua1[7] = ad_c_i_cali_data[9];
+                cal->ad_data.ch7_gain_ua1 = ad_c_i_cali_data[10];
+                cal->ad_data.ch7_offset_ua1 = ad_c_i_cali_data[11];
+                cal->ad_data.ch1_gain_ua1[2] = ad_c_i_cali_data[12];
+                cal->ad_data.ch1_offset_ua1[2] = ad_c_i_cali_data[13];
+                cal->ad_data.ch1_gain_ua1[3] = -ad_c_i_cali_data[14];
+                cal->ad_data.ch1_offset_ua1[3] = -ad_c_i_cali_data[15];
 
                 printf("Calibration data applied successfully!\r\n");
 
