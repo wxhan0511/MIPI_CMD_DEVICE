@@ -194,13 +194,13 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
     bsp_delay_ms(100);
 
     bsp_ads1256_wait_drdy(handle);
-    // read ads1256 reg status
+    //  read ads1256 reg status
     handle->read_reg(handle, REG_STATUS, &data[0], 5);
-    // ADS1256_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
-    // ADS1256_DEBUG("ADS1256 REG_MUX:0x%02X\r\n", data[1]);
-    // ADS1256_DEBUG("ADS1256 REG_ADCON:0x%02X\r\n", data[2]);
-    // ADS1256_DEBUG("ADS1256 REG_DRATE:0x%02X\r\n", data[3]);
-    // ADS1256_DEBUG("ADS1256 REG_IO:0x%02X\r\n", data[4]);
+    ADS1256_DEBUG("ADS1256 REG_STATUS:0x%02X\r\n", data[0]);
+    ADS1256_DEBUG("ADS1256 REG_MUX:0x%02X\r\n", data[1]);
+    ADS1256_DEBUG("ADS1256 REG_ADCON:0x%02X\r\n", data[2]);
+    ADS1256_DEBUG("ADS1256 REG_DRATE:0x%02X\r\n", data[3]);
+    ADS1256_DEBUG("ADS1256 REG_IO:0x%02X\r\n", data[4]);
     handle->cs_control(handle->cs_group, handle->cs_pin, 0);
 
     handle->write_byte(handle, CMD_SELFCAL);

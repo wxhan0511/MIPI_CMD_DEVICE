@@ -812,8 +812,8 @@ void task_sample_run(void *argument)
                 cal->ad_data.ch4_offset_ua = ad_c_ua_cali_data[3];
                 cal->ad_data.ch5_gain_ua = ad_c_ua_cali_data[4];
                 cal->ad_data.ch5_offset_ua = ad_c_ua_cali_data[5];
-                cal->ad_data.ch6_gain_ua = -ad_c_ua_cali_data[6];
-                cal->ad_data.ch6_offset_ua = -ad_c_ua_cali_data[7];
+                cal->ad_data.ch6_gain_ua = ad_c_ua_cali_data[6];
+                cal->ad_data.ch6_offset_ua = ad_c_ua_cali_data[7];
 
                 cal->ad_data.ch1_gain_ua[7] = ad_c_ua_cali_data[8];
                 cal->ad_data.ch1_offset_ua[7] = ad_c_ua_cali_data[9];
@@ -830,16 +830,16 @@ void task_sample_run(void *argument)
                 cal->ad_data.ch4_offset_ua1 = ad_v_i_cali_data[3];
                 cal->ad_data.ch5_gain_ua1 = ad_v_i_cali_data[4];
                 cal->ad_data.ch5_offset_ua1 = ad_v_i_cali_data[5];
-                cal->ad_data.ch6_gain_ua1 = -ad_v_i_cali_data[6];
-                cal->ad_data.ch6_offset_ua1 = -ad_v_i_cali_data[7];
-                cal->ad_data.ch1_gain_ua1[7] = ad_c_i_cali_data[8];
-                cal->ad_data.ch1_offset_ua1[7] = ad_c_i_cali_data[9];
-                cal->ad_data.ch7_gain_ua1 = ad_c_i_cali_data[10];
-                cal->ad_data.ch7_offset_ua1 = ad_c_i_cali_data[11];
-                cal->ad_data.ch1_gain_ua1[2] = ad_c_i_cali_data[12];
-                cal->ad_data.ch1_offset_ua1[2] = ad_c_i_cali_data[13];
-                cal->ad_data.ch1_gain_ua1[3] = -ad_c_i_cali_data[14];
-                cal->ad_data.ch1_offset_ua1[3] = -ad_c_i_cali_data[15];
+                cal->ad_data.ch6_gain_ua1 = ad_v_i_cali_data[6];
+                cal->ad_data.ch6_offset_ua1 = ad_v_i_cali_data[7];
+                cal->ad_data.ch1_gain_ua1[7] = ad_c_i_cali_data[0];
+                cal->ad_data.ch1_offset_ua1[7] = ad_c_i_cali_data[1];
+                cal->ad_data.ch7_gain_ua1 = ad_c_i_cali_data[2];
+                cal->ad_data.ch7_offset_ua1 = ad_c_i_cali_data[2];
+                cal->ad_data.ch1_gain_ua1[2] = ad_c_i_cali_data[4];
+                cal->ad_data.ch1_offset_ua1[2] = ad_c_i_cali_data[5];
+                cal->ad_data.ch1_gain_ua1[3] = -ad_c_i_cali_data[6];
+                cal->ad_data.ch1_offset_ua1[3] = -ad_c_i_cali_data[7];
 
                 printf("Calibration data applied successfully!\r\n");
 
@@ -879,6 +879,16 @@ void task_sample_run(void *argument)
                 printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua, cal->ad_data.ch7_offset_ua);
                 printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua[2], cal->ad_data.ch1_offset_ua[2]);
                 printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua[3], cal->ad_data.ch1_offset_ua[3]); // 已取反
+
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain_ua1, cal->ad_data.ch3_offset_ua1);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain_ua1, cal->ad_data.ch4_offset_ua1);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain_ua1, cal->ad_data.ch5_offset_ua1);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain_ua1, cal->ad_data.ch6_offset_ua1); // 已取反
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain_ua1[7], cal->ad_data.ch1_offset_ua1[7]);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua1, cal->ad_data.ch7_offset_ua1);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua1[2], cal->ad_data.ch1_offset_ua1[2]);
+                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua1[3], cal->ad_data.ch1_offset_ua1[3]); // 已取反
+
                 // =========================================================
                 printf("Calibration data applied successfully!\r\n");
                 calibration_save();

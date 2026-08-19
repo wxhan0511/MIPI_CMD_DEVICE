@@ -95,10 +95,9 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             *gain = 1.0f;
         return;
     }
-
     calibration_data_t *cal = &g_calibration_manager.data;
-    
     TEST_CUR_GEAR gear;
+    int16_t last_vol; // 用于保存获取到的历史电压
     // 2. 根据通道索引选择参数
     switch (main_index)
     {
@@ -118,8 +117,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             gear = bsp_rly_get_gear_isr(ELVDD_RLY);
             if (gear == GEAR_uA)
             {
-                *offset = cal->ad_data.ch1_offset_ua[2];
-                *gain = cal->ad_data.ch1_gain_ua[2];
+                last_vol = bsp_rly_get_last_voltage_isr(ELVDD_RLY);
+                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                {
+                    *offset = cal->ad_data.ch1_offset_ua1[2];
+                    *gain = cal->ad_data.ch1_gain_ua1[2];
+                }
+                else
+                {
+                    *offset = cal->ad_data.ch1_offset_ua[2];
+                    *gain = cal->ad_data.ch1_gain_ua[2];
+                }
             }
             else
             {
@@ -132,8 +140,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             gear = bsp_rly_get_gear_isr(ELVSS_RLY);
             if (gear == GEAR_uA)
             {
-                *offset = cal->ad_data.ch1_offset_ua[3];
-                *gain = cal->ad_data.ch1_gain_ua[3];
+                last_vol = bsp_rly_get_last_voltage_isr(ELVSS_RLY);
+                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                {
+                    *offset = cal->ad_data.ch1_offset_ua1[3];
+                    *gain = cal->ad_data.ch1_gain_ua1[3];
+                }
+                else
+                {
+                    *offset = cal->ad_data.ch1_offset_ua[3];
+                    *gain = cal->ad_data.ch1_gain_ua[3];
+                }
             }
             else
             {
@@ -147,8 +164,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             printf("avdd_gear gear:%d\r\n", gear);
             if (gear == GEAR_uA)
             {
-                *offset = cal->ad_data.ch1_offset_ua[7];
-                *gain = cal->ad_data.ch1_gain_ua[7];
+                last_vol = bsp_rly_get_last_voltage_isr(AVDD_RLY);
+                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                {
+                    *offset = cal->ad_data.ch1_offset_ua1[7];
+                    *gain = cal->ad_data.ch1_gain_ua1[7];
+                }
+                else
+                {
+                    *offset = cal->ad_data.ch1_offset_ua[7];
+                    *gain = cal->ad_data.ch1_gain_ua[7];
+                }
             }
             else
             {
@@ -168,8 +194,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         gear = bsp_rly_get_gear_isr(VCC_RLY);
         if (gear == GEAR_uA)
         {
-            *offset = cal->ad_data.ch3_offset_ua;
-            *gain = cal->ad_data.ch3_gain_ua;
+            last_vol = bsp_rly_get_last_voltage_isr(VCC_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                *offset = cal->ad_data.ch3_offset_ua1;
+                *gain = cal->ad_data.ch3_gain_ua1;
+            }
+            else
+            {
+                *offset = cal->ad_data.ch3_offset_ua;
+                *gain = cal->ad_data.ch3_gain_ua;
+            }
         }
         else
         {
@@ -181,8 +216,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         gear = bsp_rly_get_gear_isr(IOVCC_RLY);
         if (gear == GEAR_uA)
         {
-            *offset = cal->ad_data.ch4_offset_ua;
-            *gain = cal->ad_data.ch4_gain_ua;
+            last_vol = bsp_rly_get_last_voltage_isr(IOVCC_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                *offset = cal->ad_data.ch4_offset_ua1;
+                *gain = cal->ad_data.ch4_gain_ua1;
+            }
+            else
+            {
+                *offset = cal->ad_data.ch4_offset_ua;
+                *gain = cal->ad_data.ch4_gain_ua;
+            }
         }
         else
         {
@@ -194,8 +238,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         gear = bsp_rly_get_gear_isr(VSP_RLY);
         if (gear == GEAR_uA)
         {
-            *offset = cal->ad_data.ch5_offset_ua;
-            *gain = cal->ad_data.ch5_gain_ua;
+            last_vol = bsp_rly_get_last_voltage_isr(VSP_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                *offset = cal->ad_data.ch5_offset_ua1;
+                *gain = cal->ad_data.ch5_gain_ua1;
+            }
+            else
+            {
+                *offset = cal->ad_data.ch5_offset_ua;
+                *gain = cal->ad_data.ch5_gain_ua;
+            }
         }
         else
         {
@@ -207,8 +260,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         gear = bsp_rly_get_gear_isr(VSN_RLY);
         if (gear == GEAR_uA)
         {
-            *offset = cal->ad_data.ch6_offset_ua;
-            *gain = cal->ad_data.ch6_gain_ua;
+            last_vol = bsp_rly_get_last_voltage_isr(VSN_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                *offset = cal->ad_data.ch6_offset_ua1;
+                *gain = cal->ad_data.ch6_gain_ua1;
+            }
+            else
+            {
+                *offset = cal->ad_data.ch6_offset_ua;
+                *gain = cal->ad_data.ch6_gain_ua;
+            }
         }
         else
         {
@@ -220,8 +282,17 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         gear = bsp_rly_get_gear_isr(VDD_RLY);
         if (gear == GEAR_uA)
         {
-            *offset = cal->ad_data.ch7_offset_ua;
-            *gain = cal->ad_data.ch7_gain_ua;
+            last_vol = bsp_rly_get_last_voltage_isr(VDD_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                *offset = cal->ad_data.ch7_offset_ua1;
+                *gain = cal->ad_data.ch7_gain_ua1;
+            }
+            else
+            {
+                *offset = cal->ad_data.ch7_offset_ua;
+                *gain = cal->ad_data.ch7_gain_ua;
+            }
         }
         else
         {

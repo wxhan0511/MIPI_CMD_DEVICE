@@ -204,6 +204,8 @@ HAL_StatusTypeDef calibration_save(void);
 HAL_StatusTypeDef calibration_backup(void);
 HAL_StatusTypeDef calibration_restore_from_backup(void);
 HAL_StatusTypeDef calibration_set_defaults(void);
+void print_all_calibration_data(void);
+HAL_StatusTypeDef power_set_defaults(void);
 HAL_StatusTypeDef calibration_factory_reset(void);
 
 uint32_t calibration_calculate_crc32(uint8_t *data, uint32_t length);

@@ -90,8 +90,13 @@ void bsp_init()
     printf("all set ma \r\n");
     bsp_rly_gear_set_all(GEAR_mA);
     // calibration_set_defaults();
+    //   calibration_save();
+
     calibration_load();
+    power_set_defaults();
+    calibration_save();
     // calibration_set_defaults();
+    print_all_calibration_data();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
     /*-------------ADC END---------------------------*/
