@@ -52,7 +52,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-volatile uint16_t offset = 0; // Declare offset as a global variable
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -275,7 +275,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  printf("UsageFault_Handler\r\n");
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
@@ -659,7 +659,7 @@ void DMA2_Stream7_IRQHandler(void)
 
 void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-  offset = 0;
+  uint8_t offset = 0;
   i2c1_rx_ready_flag = 1;
   I2C_DEBUG("I2C Listen Complete Callback\r\n");
   HAL_I2C_EnableListen_IT(hi2c);

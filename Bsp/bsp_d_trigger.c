@@ -23,7 +23,7 @@
 
 #include "bsp_dwt.h" //for delay
 #include "cmsis_os2.h"
-
+#include "utils.h"
 static osMutexId_t s_d_trigger_mutex = NULL;
 static uint8_t s_d_trigger_mutex_ready = 0;
 
@@ -132,6 +132,24 @@ void bsp_d_trigger_lock_init(void)
     }
 }
 /**
+ * @brief 初始化所有 D 触发器的时钟脚与 8 路数据脚,关闭24,40pin引脚通道防止漏电,初始化互斥锁
+ */
+void bsp_all_d_trigger_init()
+{
+    bsp_d_trigger_init(d_1);
+    bsp_d_trigger_init(d_2);
+    bsp_d_trigger_init(d_3);
+    bsp_d_trigger_init(d_4);
+    bsp_d_trigger_init(d_5);
+    bsp_d_trigger_init(d_6);
+    bsp_d_trigger_init(d_7);
+    bsp_d_trigger_init(d_8);
+    bsp_d_trigger_set(enabled);
+    bsp_close_24pin_channel();
+    bsp_close_40pin_channel();
+    bsp_d_trigger_lock_init();
+}
+/**
  * @brief 初始化一路 D 触发器的时钟脚与 8 路数据脚
  * @param cfg 触发器配置（可传 d_1 ~ d_8）
  */
@@ -212,7 +230,7 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         else
             s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
     }
-    printf("set s_d_trigger_shadow[%d]:%x\r\n", idx, s_d_trigger_shadow[idx]);
+    // printf("set s_d_trigger_shadow[%d]:%x\r\n", idx, s_d_trigger_shadow[idx]);
     /* 2) 按缓存回放全部8路数据脚，避免只改1路导致其余路状态丢失 */
     uint8_t shadow = s_d_trigger_shadow[idx];
     for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)

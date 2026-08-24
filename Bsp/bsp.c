@@ -30,6 +30,8 @@
 #include "bsp_spi_flash.h"
 #include "bsp_calibration.h"
 #include "bsp_power.h"
+#include "task_sample.h"
+#include "calibration_utils.h"
 /* Private function prototypes */
 static void bsp_print_version_info(void);
 static HAL_StatusTypeDef bsp_init_adc_system(void);
@@ -75,28 +77,18 @@ void bsp_init()
     bsp_lcd_reset(&lcd);
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
-    bsp_d_trigger_init(d_1);
-    bsp_d_trigger_init(d_2);
-    bsp_d_trigger_init(d_3);
-    bsp_d_trigger_init(d_4);
-    bsp_d_trigger_init(d_5);
-    bsp_d_trigger_init(d_6);
-    bsp_d_trigger_init(d_7);
-    bsp_d_trigger_init(d_8);
-    bsp_d_trigger_set(enabled);
-    bsp_close_24pin_channel();
-    bsp_close_40pin_channel();
-    bsp_d_trigger_lock_init();
-    printf("all set ma \r\n");
+    bsp_all_d_trigger_init();
+    printf("\r\n==================================================\r\n");
+    printf(" all rly set ma.\r\n");
+    printf("==================================================\r\n\r\n");
     bsp_rly_gear_set_all(GEAR_mA);
-    // calibration_set_defaults();
-    //   calibration_save();
-
+    printf("\r\n==================================================\r\n");
+    printf(" calibration loading...\r\n");
+    printf("==================================================\r\n\r\n");
     calibration_load();
     power_set_defaults();
     calibration_save();
-    // calibration_set_defaults();
-    print_all_calibration_data();
+    // print_all_calibration_data();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
     /*-------------ADC END---------------------------*/
@@ -104,14 +96,26 @@ void bsp_init()
     /*-------------DAC and LIMIT CURRENT START----------*/
     bsp_dac_init();
     LEVEL_SHIFT_ENABLE();
+
     /*-------------DAC and LIMIT CURRENT END------------*/
     /*-------------PWM START----------------*/
     bsp_led_pwm_init(47);   // step1
     bsp_blasi_pwm_init(10); // step1
     enableTim1PWMOutput();  // step2
-    enableTim2PWMOutput();
+    enableTim2PWMOutput();  // step2
 
     bsp_lim_rst_set(0);
+
+    //  自检开始提示
+    printf("\r\n==================================================\r\n");
+    printf(" Start self-test (Zero Calibration)...\r\n");
+    printf(" Please wait...\r\n");
+    printf("==================================================\r\n");
+    self_test();
+    // 自检结束提示
+    printf("\r\n==================================================\r\n");
+    printf(" Self-test finished. System ready.\r\n");
+    printf("==================================================\r\n\r\n");
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();
@@ -168,7 +172,6 @@ static void bsp_print_version_info(void)
     MIPI_CMD_INFO("Hardware Name: %s\r\n", hw_name);
     MIPI_CMD_INFO("Hardware Version: %d.%d.%d.%d\r\n",
                   hw_version[0], hw_version[1], hw_version[2], hw_version[3]);
-    MIPI_CMD_INFO("================================================\r\n");
 }
 
 /**
@@ -336,4 +339,61 @@ void test_ccp(void)
     enableTim1CaptureCompareInterrupt(); // step2
     app_delay(5000);
     disableTim1CaptureCompareInterrupt(); // step3
+}
+
+void self_test(void)
+{
+    uint8_t ads1256_ch_index;
+    uint8_t d_trigger_ch_index;
+    extern const uint8_t sample_vol_map[15][2];
+    extern const uint8_t sample_cur_map[11][2];
+    float gain, offset;
+
+    uint8_t data_type = 1; // cur
+    for (int8_t gear = 1; gear >= 0; gear--)
+    {
+        bsp_rly_gear_set_all(gear);
+        for (uint8_t usr_idx = 0; usr_idx < 8; usr_idx++)
+        {
+            if (data_type == 0) // 电压
+            {
+                ads1256_ch_index = sample_vol_map[usr_idx][0];
+                d_trigger_ch_index = sample_vol_map[usr_idx][1];
+            }
+            else if (data_type == 1) // 电流
+            {
+                ads1256_ch_index = sample_cur_map[usr_idx][0];
+                d_trigger_ch_index = sample_cur_map[usr_idx][1];
+            }
+            HAL_NVIC_DisableIRQ(EXTI2_IRQn); // 切采样通道时临时屏蔽采样中断
+            if (ads1256_ch_index == 0 && d_trigger_ch_index != 0xff)
+                bsp_ads1256_ch0_select(d_trigger_ch_index);
+            else if (ads1256_ch_index == 1 && d_trigger_ch_index != 0xff)
+                bsp_ads1256_ch1_select(d_trigger_ch_index);
+            else if (ads1256_ch_index == 2 && d_trigger_ch_index != 0xff)
+                bsp_ads1256_ch2_select(d_trigger_ch_index);
+            HAL_NVIC_EnableIRQ(EXTI2_IRQn); // 切完采样通道时打开采样中断
+            if (ads1256_ch_index < 3 && d_trigger_ch_index != 0xff)
+            {
+                uint32_t t0 = HAL_GetTick();
+                while (latest_sample_ch_sel[ads1256_ch_index] != d_trigger_ch_index)
+                {
+                    if ((HAL_GetTick() - t0) >= 2000U) // 最多等待2s
+                    {
+                        M_SPI_INFO("SINGLE_VOL_GET timeout\r\n");
+                        break;
+                    }
+                    bsp_delay_ms(1);
+                }
+            }
+            for (uint8_t i = 0; i < 8; i++)
+                wait_adc_one_round(200);     // 一轮采样140ms
+            HAL_NVIC_DisableIRQ(EXTI2_IRQn); // 修改校准值时关闭采样中断
+            sel_cali_param(ads1256_ch_index, d_trigger_ch_index, &offset, &gain);
+            offset = -latest_sample_raw_data[ads1256_ch_index] * gain;
+            set_cali_param(ads1256_ch_index, d_trigger_ch_index, offset, gain);
+            HAL_NVIC_EnableIRQ(EXTI2_IRQn); // 修改校准值完打开采样中断
+        }
+    }
+    bsp_rly_gear_set_all(GEAR_mA);
 }

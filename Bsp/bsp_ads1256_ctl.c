@@ -24,7 +24,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 static uint8_t channel_num = 0;
-static float offset, gain, IV_data = 0.0f;
+float offset, gain, IV_data = 0.0f;
 float raw_data_queue[RAW_DATA_QUEUE_SIZE] __attribute__((section(".raw_data_queue"))) __attribute__((aligned(4))); // align 4B , size 4092
 uint8_t raw_data_index_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
 uint8_t raw_data_ch_sel_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
@@ -60,7 +60,7 @@ int wait_adc_one_round(uint32_t timeout_ms)
     {
         if ((HAL_GetTick() - t0) >= timeout_ms)
             return -1;
-        osDelay(1);
+        bsp_delay_ms(1);
     }
 
     // 2) 再等回到6：表示完成一整轮
@@ -68,7 +68,7 @@ int wait_adc_one_round(uint32_t timeout_ms)
     {
         if ((HAL_GetTick() - t0) >= timeout_ms)
             return -1;
-        osDelay(1);
+        bsp_delay_ms(1);
     }
 
     return 0;

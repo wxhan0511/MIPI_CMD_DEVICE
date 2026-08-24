@@ -340,7 +340,7 @@ HAL_StatusTypeDef calibration_load(void)
     }
     else
     {
-        W25Q256JVEQ_INFO("Loaded calibration data with magic number: 0x%08lX\r\n", cal->magic);
+        // W25Q256JVEQ_INFO("Loaded calibration data with magic number: 0x%08lX\r\n", cal->magic);
     }
     if (cal->version > CALIBRATION_MAX_VERSION)
     {
@@ -364,68 +364,68 @@ HAL_StatusTypeDef calibration_load(void)
 void print_all_calibration_data(void)
 {
     calibration_data_t *cal = &g_calibration_manager.data;
-    printf("\r\n==================== All Cali Value Print ====================\r\n");
+    M_SPI_DEBUG("\r\n==================== All Cali Value Print ====================\r\n");
     // 1. Header Info
-    printf("[Header Info]\r\n");
-    printf("  Magic:     0x%08X\r\n", cal->magic);
-    printf("  Version:   %d\r\n", cal->version);
-    printf("  Timestamp: %lu\r\n", cal->timestamp);
-    printf("  CRC32:     0x%08X\r\n", cal->crc32);
+    M_SPI_DEBUG("[Header Info]\r\n");
+    M_SPI_DEBUG("  Magic:     0x%08X\r\n", cal->magic);
+    M_SPI_DEBUG("  Version:   %d\r\n", cal->version);
+    M_SPI_DEBUG("  Timestamp: %lu\r\n", cal->timestamp);
+    M_SPI_DEBUG("  CRC32:     0x%08X\r\n", cal->crc32);
     // 2. DA Calibration - Vadj, Level Shift, Ref Freq
-    printf("\r\n[DA Data - Vadj & Level Shift & Freq]\r\n");
-    printf("  vadj_n:        gain=%.4f, offset=%.4f\r\n", cal->da_data.vadj_n_gain, cal->da_data.vadj_n_offset);
-    printf("  vadj_p:        gain=%.4f, offset=%.4f\r\n", cal->da_data.vadj_p_gain, cal->da_data.vadj_p_offset);
-    printf("  v_level_shift: gain=%.4f, offset=%.4f\r\n", cal->da_data.v_level_shift_gain, cal->da_data.v_level_shift_offset);
-    printf("  ref_freq:      gain=%.4f, offset=%.4f\r\n", cal->da_data.ref_freq_gain, cal->da_data.ref_freq_offset);
+    M_SPI_DEBUG("\r\n[DA Data - Vadj & Level Shift & Freq]\r\n");
+    M_SPI_DEBUG("  vadj_n:        gain=%.4f, offset=%.4f\r\n", cal->da_data.vadj_n_gain, cal->da_data.vadj_n_offset);
+    M_SPI_DEBUG("  vadj_p:        gain=%.4f, offset=%.4f\r\n", cal->da_data.vadj_p_gain, cal->da_data.vadj_p_offset);
+    M_SPI_DEBUG("  v_level_shift: gain=%.4f, offset=%.4f\r\n", cal->da_data.v_level_shift_gain, cal->da_data.v_level_shift_offset);
+    M_SPI_DEBUG("  ref_freq:      gain=%.4f, offset=%.4f\r\n", cal->da_data.ref_freq_gain, cal->da_data.ref_freq_offset);
     // 3. DA Calibration - Power Refs
-    printf("\r\n[DA Data - Power Refs]\r\n");
-    printf("  VCC:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vcc_ref_gain, cal->da_data.vcc_ref_offset);
-    printf("  IOVCC:  gain=%.4f, offset=%.4f\r\n", cal->da_data.iovcc_ref_gain, cal->da_data.iovcc_ref_offset);
-    printf("  VSP:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsp_ref_gain, cal->da_data.vsp_ref_offset);
-    printf("  VSN:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsn_ref_gain, cal->da_data.vsn_ref_offset);
-    printf("  AVDD:   gain=%.4f, offset=%.4f\r\n", cal->da_data.avdd_ref_gain, cal->da_data.avdd_ref_offset);
-    printf("  VDD:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vdd_ref_gain, cal->da_data.vdd_ref_offset);
-    printf("  ELVDD:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvdd_ref_gain, cal->da_data.elvdd_ref_offset);
-    printf("  ELVSS:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvss_ref_gain, cal->da_data.elvss_ref_offset);
+    M_SPI_DEBUG("\r\n[DA Data - Power Refs]\r\n");
+    M_SPI_DEBUG("  VCC:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vcc_ref_gain, cal->da_data.vcc_ref_offset);
+    M_SPI_DEBUG("  IOVCC:  gain=%.4f, offset=%.4f\r\n", cal->da_data.iovcc_ref_gain, cal->da_data.iovcc_ref_offset);
+    M_SPI_DEBUG("  VSP:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsp_ref_gain, cal->da_data.vsp_ref_offset);
+    M_SPI_DEBUG("  VSN:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsn_ref_gain, cal->da_data.vsn_ref_offset);
+    M_SPI_DEBUG("  AVDD:   gain=%.4f, offset=%.4f\r\n", cal->da_data.avdd_ref_gain, cal->da_data.avdd_ref_offset);
+    M_SPI_DEBUG("  VDD:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vdd_ref_gain, cal->da_data.vdd_ref_offset);
+    M_SPI_DEBUG("  ELVDD:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvdd_ref_gain, cal->da_data.elvdd_ref_offset);
+    M_SPI_DEBUG("  ELVSS:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvss_ref_gain, cal->da_data.elvss_ref_offset);
     // 4. DA Calibration - Power Sets
-    printf("\r\n[DA Data - Power Sets]\r\n");
-    printf("  ELVSS:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvss_set_gain, cal->da_data.elvss_set_offset);
-    printf("  VSN:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsn_set_gain, cal->da_data.vsn_set_offset);
-    printf("  VCC:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vcc_set_gain, cal->da_data.vcc_set_offset);
-    printf("  IOVCC:  gain=%.4f, offset=%.4f\r\n", cal->da_data.iovcc_set_gain, cal->da_data.iovcc_set_offset);
-    printf("  VSP:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsp_set_gain, cal->da_data.vsp_set_offset);
-    printf("  AVDD:   gain=%.4f, offset=%.4f\r\n", cal->da_data.avdd_set_gain, cal->da_data.avdd_set_offset);
-    printf("  VDD:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vdd_set_gain, cal->da_data.vdd_set_offset);
-    printf("  ELVDD:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvdd_set_gain, cal->da_data.elvdd_set_offset);
+    M_SPI_DEBUG("\r\n[DA Data - Power Sets]\r\n");
+    M_SPI_DEBUG("  ELVSS:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvss_set_gain, cal->da_data.elvss_set_offset);
+    M_SPI_DEBUG("  VSN:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsn_set_gain, cal->da_data.vsn_set_offset);
+    M_SPI_DEBUG("  VCC:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vcc_set_gain, cal->da_data.vcc_set_offset);
+    M_SPI_DEBUG("  IOVCC:  gain=%.4f, offset=%.4f\r\n", cal->da_data.iovcc_set_gain, cal->da_data.iovcc_set_offset);
+    M_SPI_DEBUG("  VSP:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vsp_set_gain, cal->da_data.vsp_set_offset);
+    M_SPI_DEBUG("  AVDD:   gain=%.4f, offset=%.4f\r\n", cal->da_data.avdd_set_gain, cal->da_data.avdd_set_offset);
+    M_SPI_DEBUG("  VDD:    gain=%.4f, offset=%.4f\r\n", cal->da_data.vdd_set_gain, cal->da_data.vdd_set_offset);
+    M_SPI_DEBUG("  ELVDD:  gain=%.4f, offset=%.4f\r\n", cal->da_data.elvdd_set_gain, cal->da_data.elvdd_set_offset);
     // 5. Last Values (Voltages & Refs) - Cast to float for printing
-    printf("\r\n[Last Values]\r\n");
-    printf("  Voltages (mV): VSN=%.4f, VSP=%.4f, IOVCC=%.4f, VCC=%.4f, ELVSS=%.4f, ELVDD=%.4f, VDD=%.4f, AVDD=%.4f\r\n",
-           (float)cal->vsn_last_voltage, (float)cal->vsp_last_voltage, (float)cal->iovcc_last_voltage, (float)cal->vcc_last_voltage,
-           (float)cal->elvss_last_voltage, (float)cal->elvdd_last_voltage, (float)cal->vdd_last_voltage, (float)cal->avdd_last_voltage);
-    printf("  Refs: VCC=%.4f, IOVCC=%.4f, VSP=%.4f, VSN=%.4f, AVDD=%.4f, VDD=%.4f, ELVDD=%.4f, ELVSS=%.4f\r\n",
-           (float)cal->vcc_ref_last, (float)cal->iovcc_ref_last, (float)cal->vsp_ref_last, (float)cal->vsn_ref_last,
-           (float)cal->avdd_ref_last, (float)cal->vdd_ref_last, (float)cal->elvdd_ref_last, (float)cal->elvss_ref_last);
-    printf("  Others: v_level_shift=%.4f, ref_freq=%.4f, vadj_p=%.4f, vadj_n=%.4f\r\n",
-           (float)cal->v_level_shift_last, (float)cal->ref_freq_last, (float)cal->vadj_p_last, (float)cal->vadj_n_last);
+    M_SPI_DEBUG("\r\n[Last Values]\r\n");
+    M_SPI_DEBUG("  Voltages (mV): VSN=%.4f, VSP=%.4f, IOVCC=%.4f, VCC=%.4f, ELVSS=%.4f, ELVDD=%.4f, VDD=%.4f, AVDD=%.4f\r\n",
+                (float)cal->vsn_last_voltage, (float)cal->vsp_last_voltage, (float)cal->iovcc_last_voltage, (float)cal->vcc_last_voltage,
+                (float)cal->elvss_last_voltage, (float)cal->elvdd_last_voltage, (float)cal->vdd_last_voltage, (float)cal->avdd_last_voltage);
+    M_SPI_DEBUG("  Refs: VCC=%.4f, IOVCC=%.4f, VSP=%.4f, VSN=%.4f, AVDD=%.4f, VDD=%.4f, ELVDD=%.4f, ELVSS=%.4f\r\n",
+                (float)cal->vcc_ref_last, (float)cal->iovcc_ref_last, (float)cal->vsp_ref_last, (float)cal->vsn_ref_last,
+                (float)cal->avdd_ref_last, (float)cal->vdd_ref_last, (float)cal->elvdd_ref_last, (float)cal->elvss_ref_last);
+    M_SPI_DEBUG("  Others: v_level_shift=%.4f, ref_freq=%.4f, vadj_p=%.4f, vadj_n=%.4f\r\n",
+                (float)cal->v_level_shift_last, (float)cal->ref_freq_last, (float)cal->vadj_p_last, (float)cal->vadj_n_last);
     // 6. AD Calibration - Ch0~Ch2 (Arrays)
     const char *ch0_name = "CH0 (Voltage)";
     const char *ch1_name = "CH1 (Current)";
     const char *ch2_name = "CH2 (Other)";
-    printf("\r\n[AD Data - Channel 0/1/2]\r\n");
+    M_SPI_DEBUG("\r\n[AD Data - Channel 0/1/2]\r\n");
     for (uint8_t i = 0; i < 8; i++)
     {
-        printf("  %s[%d]: gain=%.4f, offset=%.4f | ", ch0_name, i, cal->ad_data.ch0_gain[i], cal->ad_data.ch0_offset[i]);
-        printf("%s[%d]: gain=%.4f, offset=%.4f | ", ch1_name, i, cal->ad_data.ch1_gain[i], cal->ad_data.ch1_offset[i]);
-        printf("%s[%d]: gain=%.4f, offset=%.4f\r\n", ch2_name, i, cal->ad_data.ch2_gain[i], cal->ad_data.ch2_offset[i]);
+        M_SPI_DEBUG("  %s[%d]: gain=%.4f, offset=%.4f | ", ch0_name, i, cal->ad_data.ch0_gain[i], cal->ad_data.ch0_offset[i]);
+        M_SPI_DEBUG("%s[%d]: gain=%.4f, offset=%.4f | ", ch1_name, i, cal->ad_data.ch1_gain[i], cal->ad_data.ch1_offset[i]);
+        M_SPI_DEBUG("%s[%d]: gain=%.4f, offset=%.4f\r\n", ch2_name, i, cal->ad_data.ch2_gain[i], cal->ad_data.ch2_offset[i]);
     }
     // 7. AD Calibration - Ch3~Ch7 (Variables)
-    printf("\r\n[AD Data - Channel 3 to 7]\r\n");
-    printf("  CH3: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch3_gain, cal->ad_data.ch3_offset);
-    printf("  CH4: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch4_gain, cal->ad_data.ch4_offset);
-    printf("  CH5: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch5_gain, cal->ad_data.ch5_offset);
-    printf("  CH6: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch6_gain, cal->ad_data.ch6_offset);
-    printf("  CH7: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch7_gain, cal->ad_data.ch7_offset);
-    printf("========================================================\r\n");
+    M_SPI_DEBUG("\r\n[AD Data - Channel 3 to 7]\r\n");
+    M_SPI_DEBUG("  CH3: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch3_gain, cal->ad_data.ch3_offset);
+    M_SPI_DEBUG("  CH4: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch4_gain, cal->ad_data.ch4_offset);
+    M_SPI_DEBUG("  CH5: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch5_gain, cal->ad_data.ch5_offset);
+    M_SPI_DEBUG("  CH6: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch6_gain, cal->ad_data.ch6_offset);
+    M_SPI_DEBUG("  CH7: gain=%.4f, offset=%.4f\r\n", cal->ad_data.ch7_gain, cal->ad_data.ch7_offset);
+    M_SPI_DEBUG("========================================================\r\n");
 }
 /**
  * @brief 保存校准数据到Flash

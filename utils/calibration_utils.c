@@ -161,7 +161,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         else if (sub_index == 7)
         {
             gear = bsp_rly_get_gear_isr(AVDD_RLY);
-            printf("avdd_gear gear:%d\r\n", gear);
+
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(AVDD_RLY);
@@ -304,6 +304,230 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         // 理论上不会走到这里，因为前面已经拦截了 > 7 的情况
         *offset = 0.0f;
         *gain = 1.0f;
+        break;
+    }
+}
+
+/**
+ * @brief 写入校准参数到全局结构体 g_calibration_manager.data 中
+ * @param main_index 主通道索引 (0-7)
+ * @param sub_index 子通道索引
+ * @param offset 待写入的偏移量
+ * @param gain 待写入的增益
+ */
+void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float gain)
+{
+    // 1. 安全校验
+    if (main_index > 7)
+    {
+        return; // 非法通道，直接忽略
+    }
+    calibration_data_t *cal = &g_calibration_manager.data;
+    TEST_CUR_GEAR gear;
+    int16_t last_vol;
+    // 2. 根据通道索引选择参数并写入
+    switch (main_index)
+    {
+    /* --- 非电流通道 (只有一套参数) --- */
+    case 0:
+        cal->ad_data.ch0_offset[sub_index] = offset;
+        cal->ad_data.ch0_gain[sub_index] = gain;
+        break;
+    case 2:
+        cal->ad_data.ch2_offset[sub_index] = offset;
+        cal->ad_data.ch2_gain[sub_index] = gain;
+        break;
+    /* --- ch1: sub_index 为 2, 3, 7 时是电流通道，需单独判断挡位 --- */
+    case 1:
+        if (sub_index == 2)
+        {
+            gear = bsp_rly_get_gear_isr(ELVDD_RLY);
+            if (gear == GEAR_uA)
+            {
+                last_vol = bsp_rly_get_last_voltage_isr(ELVDD_RLY);
+                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                {
+                    cal->ad_data.ch1_offset_ua1[2] = offset;
+                    cal->ad_data.ch1_gain_ua1[2] = gain;
+                }
+                else
+                {
+                    cal->ad_data.ch1_offset_ua[2] = offset;
+                    cal->ad_data.ch1_gain_ua[2] = gain;
+                }
+            }
+            else
+            {
+                cal->ad_data.ch1_offset[2] = offset;
+                cal->ad_data.ch1_gain[2] = gain;
+            }
+        }
+        else if (sub_index == 3)
+        {
+            gear = bsp_rly_get_gear_isr(ELVSS_RLY);
+            if (gear == GEAR_uA)
+            {
+                last_vol = bsp_rly_get_last_voltage_isr(ELVSS_RLY);
+                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                {
+                    cal->ad_data.ch1_offset_ua1[3] = offset;
+                    cal->ad_data.ch1_gain_ua1[3] = gain;
+                }
+                else
+                {
+                    cal->ad_data.ch1_offset_ua[3] = offset;
+                    cal->ad_data.ch1_gain_ua[3] = gain;
+                }
+            }
+            else
+            {
+                cal->ad_data.ch1_offset[3] = offset;
+                cal->ad_data.ch1_gain[3] = gain;
+            }
+        }
+        else if (sub_index == 7)
+        {
+            gear = bsp_rly_get_gear_isr(AVDD_RLY);
+            if (gear == GEAR_uA)
+            {
+                last_vol = bsp_rly_get_last_voltage_isr(AVDD_RLY);
+                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                {
+                    cal->ad_data.ch1_offset_ua1[7] = offset;
+                    cal->ad_data.ch1_gain_ua1[7] = gain;
+                }
+                else
+                {
+                    cal->ad_data.ch1_offset_ua[7] = offset;
+                    cal->ad_data.ch1_gain_ua[7] = gain;
+                }
+            }
+            else
+            {
+                cal->ad_data.ch1_offset[7] = offset;
+                cal->ad_data.ch1_gain[7] = gain;
+            }
+        }
+        else
+        {
+            // 非电流通道，直接写入普通值
+            cal->ad_data.ch1_offset[sub_index] = offset;
+            cal->ad_data.ch1_gain[sub_index] = gain;
+        }
+        break;
+    /* --- ch3~ch7: 标量结构，只要 main_index 匹配即为电流通道 --- */
+    case 3:
+        gear = bsp_rly_get_gear_isr(VCC_RLY);
+        if (gear == GEAR_uA)
+        {
+            last_vol = bsp_rly_get_last_voltage_isr(VCC_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                cal->ad_data.ch3_offset_ua1 = offset;
+                cal->ad_data.ch3_gain_ua1 = gain;
+            }
+            else
+            {
+                cal->ad_data.ch3_offset_ua = offset;
+                cal->ad_data.ch3_gain_ua = gain;
+            }
+        }
+        else
+        {
+            cal->ad_data.ch3_offset = offset;
+            cal->ad_data.ch3_gain = gain;
+        }
+        break;
+    case 4:
+        gear = bsp_rly_get_gear_isr(IOVCC_RLY);
+        if (gear == GEAR_uA)
+        {
+            last_vol = bsp_rly_get_last_voltage_isr(IOVCC_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                cal->ad_data.ch4_offset_ua1 = offset;
+                cal->ad_data.ch4_gain_ua1 = gain;
+            }
+            else
+            {
+                cal->ad_data.ch4_offset_ua = offset;
+                cal->ad_data.ch4_gain_ua = gain;
+            }
+        }
+        else
+        {
+            cal->ad_data.ch4_offset = offset;
+            cal->ad_data.ch4_gain = gain;
+        }
+        break;
+    case 5:
+        gear = bsp_rly_get_gear_isr(VSP_RLY);
+        if (gear == GEAR_uA)
+        {
+            last_vol = bsp_rly_get_last_voltage_isr(VSP_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                cal->ad_data.ch5_offset_ua1 = offset;
+                cal->ad_data.ch5_gain_ua1 = gain;
+            }
+            else
+            {
+                cal->ad_data.ch5_offset_ua = offset;
+                cal->ad_data.ch5_gain_ua = gain;
+            }
+        }
+        else
+        {
+            cal->ad_data.ch5_offset = offset;
+            cal->ad_data.ch5_gain = gain;
+        }
+        break;
+    case 6:
+        gear = bsp_rly_get_gear_isr(VSN_RLY);
+        if (gear == GEAR_uA)
+        {
+            last_vol = bsp_rly_get_last_voltage_isr(VSN_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                cal->ad_data.ch6_offset_ua1 = offset;
+                cal->ad_data.ch6_gain_ua1 = gain;
+            }
+            else
+            {
+                cal->ad_data.ch6_offset_ua = offset;
+                cal->ad_data.ch6_gain_ua = gain;
+            }
+        }
+        else
+        {
+            cal->ad_data.ch6_offset = offset;
+            cal->ad_data.ch6_gain = gain;
+        }
+        break;
+    case 7:
+        gear = bsp_rly_get_gear_isr(VDD_RLY);
+        if (gear == GEAR_uA)
+        {
+            last_vol = bsp_rly_get_last_voltage_isr(VDD_RLY);
+            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            {
+                cal->ad_data.ch7_offset_ua1 = offset;
+                cal->ad_data.ch7_gain_ua1 = gain;
+            }
+            else
+            {
+                cal->ad_data.ch7_offset_ua = offset;
+                cal->ad_data.ch7_gain_ua = gain;
+            }
+        }
+        else
+        {
+            cal->ad_data.ch7_offset = offset;
+            cal->ad_data.ch7_gain = gain;
+        }
+        break;
+    default:
+        // 理论上不会走到这里
         break;
     }
 }

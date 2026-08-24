@@ -108,7 +108,7 @@ lim_status_func_t lim_gear_status[8] = {
     get_ELVSS_lim_status};
 
 // 0xff:不需要dtrigger次级选通
-uint8_t sample_cur_map[11][2] = {
+const uint8_t sample_cur_map[11][2] = {
     {3, 0xff}, // power:0,VCC → ch_index、d_trigger_ch_index
     {4, 0xff}, // power:1,IOVCC → ch_index、d_trigger_ch_index
     {5, 0xff}, // power:2,VSP → ch_index、d_trigger_ch_index
@@ -121,7 +121,7 @@ uint8_t sample_cur_map[11][2] = {
     {1, 5},    // power:9,AD_I_BLAS_V → ch_index、d_trigger_ch_index
     {1, 6},    // power:10,AD_I_BL → ch_index、d_trigger_ch_index
 };
-uint8_t sample_vol_map[15][2] = {
+const uint8_t sample_vol_map[15][2] = {
     {0, 0}, // power:0,VCC → ch_index、d_trigger_ch_index
     {0, 1}, // power:1,IOVCC → ch_index、d_trigger_ch_index
     {0, 7}, // power:2,VSP → ch_index、d_trigger_ch_index
@@ -691,7 +691,7 @@ void task_sample_run(void *argument)
             break;
         case WRITE_CALI_DATA:
         {
-            printf("WRITE_CALI_DATA\r\n");
+            M_SPI_DEBUG("WRITE_CALI_DATA\r\n");
             calibration_data_t *cal = &g_calibration_manager.data;
 
             // 80 个 float 的临时拼接缓存
@@ -710,7 +710,7 @@ void task_sample_run(void *argument)
             // 防止 num 越界 (合法值为 0~7)
             if (num > 7)
             {
-                printf("Invalid num: %d\r\n", num);
+                M_SPI_DEBUG("Invalid num: %d\r\n", num);
                 task_com_resume();
                 g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
                 break;
@@ -748,7 +748,7 @@ void task_sample_run(void *argument)
                 memcpy(ad_c_i_cali_data, p_src, sizeof(ad_c_i_cali_data));
                 p_src += sizeof(ad_c_i_cali_data);
 
-                printf("All 80 calibration data received!\r\n");
+                M_SPI_DEBUG("All 80 calibration data received!\r\n");
                 // TODO: 在这里执行实际的校准应用或写入 Flash 操作
                 // ================= 开始写入校准值 =================
 
@@ -841,59 +841,59 @@ void task_sample_run(void *argument)
                 cal->ad_data.ch1_gain_ua1[3] = -ad_c_i_cali_data[6];
                 cal->ad_data.ch1_offset_ua1[3] = -ad_c_i_cali_data[7];
 
-                printf("Calibration data applied successfully!\r\n");
+                M_SPI_DEBUG("Calibration data applied successfully!\r\n");
 
                 // ================= 打印赋值后的最终校准值 =================
                 const char *pwr_names[8] = {"VCC", "IOVCC", "VSP", "VSN", "AVDD", "VDD", "ELVDD", "ELVSS"};
                 const char *cur_names[8] = {"CH3", "CH4", "CH5", "CH6", "CH1[7]", "CH7", "CH1[2]", "CH1[3]"};
-                printf("\r\n========== 1. DA 设定电压最终校准值 ==========\r\n");
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[0], cal->da_data.vcc_set_gain, cal->da_data.vcc_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[1], cal->da_data.iovcc_set_gain, cal->da_data.iovcc_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[2], cal->da_data.vsp_set_gain, cal->da_data.vsp_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[3], cal->da_data.vsn_set_gain, cal->da_data.vsn_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[4], cal->da_data.avdd_set_gain, cal->da_data.avdd_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[5], cal->da_data.vdd_set_gain, cal->da_data.vdd_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[6], cal->da_data.elvdd_set_gain, cal->da_data.elvdd_set_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[7], cal->da_data.elvss_set_gain, cal->da_data.elvss_set_offset);
-                printf("\r\n========== 2. AD 采集电压最终校准值 (物理通道0~7) ==========\r\n");
+                M_SPI_DEBUG("\r\n========== 1. DA 设定电压最终校准值 ==========\r\n");
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[0], cal->da_data.vcc_set_gain, cal->da_data.vcc_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[1], cal->da_data.iovcc_set_gain, cal->da_data.iovcc_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[2], cal->da_data.vsp_set_gain, cal->da_data.vsp_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[3], cal->da_data.vsn_set_gain, cal->da_data.vsn_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[4], cal->da_data.avdd_set_gain, cal->da_data.avdd_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[5], cal->da_data.vdd_set_gain, cal->da_data.vdd_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[6], cal->da_data.elvdd_set_gain, cal->da_data.elvdd_set_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", pwr_names[7], cal->da_data.elvss_set_gain, cal->da_data.elvss_set_offset);
+                M_SPI_DEBUG("\r\n========== 2. AD 采集电压最终校准值 (物理通道0~7) ==========\r\n");
                 for (uint8_t i = 0; i < 8; i++)
                 {
                     // 打印物理通道 i 的名字，以及对应的 gain 和 offset (注意 offset 已经乘了 0.001)
-                    printf("PHY_CH%d: gain=%.6f, offset=%.6f\r\n", i, cal->ad_data.ch0_gain[i], cal->ad_data.ch0_offset[i]);
+                    M_SPI_DEBUG("PHY_CH%d: gain=%.6f, offset=%.6f\r\n", i, cal->ad_data.ch0_gain[i], cal->ad_data.ch0_offset[i]);
                 }
-                printf("\r\n========== 3. AD 采集 mA 电流最终校准值 ==========\r\n");
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain, cal->ad_data.ch3_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain, cal->ad_data.ch4_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain, cal->ad_data.ch5_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain, cal->ad_data.ch6_offset); // 已取反
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain[7], cal->ad_data.ch1_offset[7]);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain, cal->ad_data.ch7_offset);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain[2], cal->ad_data.ch1_offset[2]);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain[3], cal->ad_data.ch1_offset[3]); // 已取反
-                printf("\r\n========== 4. AD 采集 uA 电流最终校准值 ==========\r\n");
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain_ua, cal->ad_data.ch3_offset_ua);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain_ua, cal->ad_data.ch4_offset_ua);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain_ua, cal->ad_data.ch5_offset_ua);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain_ua, cal->ad_data.ch6_offset_ua); // 已取反
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain_ua[7], cal->ad_data.ch1_offset_ua[7]);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua, cal->ad_data.ch7_offset_ua);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua[2], cal->ad_data.ch1_offset_ua[2]);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua[3], cal->ad_data.ch1_offset_ua[3]); // 已取反
+                M_SPI_DEBUG("\r\n========== 3. AD 采集 mA 电流最终校准值 ==========\r\n");
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain, cal->ad_data.ch3_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain, cal->ad_data.ch4_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain, cal->ad_data.ch5_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain, cal->ad_data.ch6_offset); // 已取反
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain[7], cal->ad_data.ch1_offset[7]);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain, cal->ad_data.ch7_offset);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain[2], cal->ad_data.ch1_offset[2]);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain[3], cal->ad_data.ch1_offset[3]); // 已取反
+                M_SPI_DEBUG("\r\n========== 4. AD 采集 uA 电流最终校准值 ==========\r\n");
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain_ua, cal->ad_data.ch3_offset_ua);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain_ua, cal->ad_data.ch4_offset_ua);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain_ua, cal->ad_data.ch5_offset_ua);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain_ua, cal->ad_data.ch6_offset_ua); // 已取反
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain_ua[7], cal->ad_data.ch1_offset_ua[7]);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua, cal->ad_data.ch7_offset_ua);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua[2], cal->ad_data.ch1_offset_ua[2]);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua[3], cal->ad_data.ch1_offset_ua[3]); // 已取反
 
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain_ua1, cal->ad_data.ch3_offset_ua1);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain_ua1, cal->ad_data.ch4_offset_ua1);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain_ua1, cal->ad_data.ch5_offset_ua1);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain_ua1, cal->ad_data.ch6_offset_ua1); // 已取反
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain_ua1[7], cal->ad_data.ch1_offset_ua1[7]);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua1, cal->ad_data.ch7_offset_ua1);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua1[2], cal->ad_data.ch1_offset_ua1[2]);
-                printf("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua1[3], cal->ad_data.ch1_offset_ua1[3]); // 已取反
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[0], cal->ad_data.ch3_gain_ua1, cal->ad_data.ch3_offset_ua1);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[1], cal->ad_data.ch4_gain_ua1, cal->ad_data.ch4_offset_ua1);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[2], cal->ad_data.ch5_gain_ua1, cal->ad_data.ch5_offset_ua1);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[3], cal->ad_data.ch6_gain_ua1, cal->ad_data.ch6_offset_ua1); // 已取反
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[4], cal->ad_data.ch1_gain_ua1[7], cal->ad_data.ch1_offset_ua1[7]);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[5], cal->ad_data.ch7_gain_ua1, cal->ad_data.ch7_offset_ua1);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua1[2], cal->ad_data.ch1_offset_ua1[2]);
+                M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua1[3], cal->ad_data.ch1_offset_ua1[3]); // 已取反
 
                 // =========================================================
-                printf("Calibration data applied successfully!\r\n");
+                M_SPI_DEBUG("Calibration data applied successfully!\r\n");
                 calibration_save();
 
-                printf("Calibration data applied successfully!\r\n");
+                M_SPI_DEBUG("Calibration data applied successfully!\r\n");
 
                 calibration_save();
             }
@@ -914,6 +914,8 @@ void task_sample_run(void *argument)
 
 void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
 {
+    printf("sample_id:%d\r\n", sample_id);
+    printf("%d\r\n", type);
     if (type == 0) // 电压
     {
         ads1256_ch_index = sample_vol_map[sample_id][0];
@@ -924,13 +926,14 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
         ads1256_ch_index = sample_cur_map[sample_id][0];
         d_trigger_ch_index = sample_cur_map[sample_id][1];
     }
-
+    HAL_NVIC_DisableIRQ(EXTI2_IRQn); // 切采样通道时临时屏蔽采样中断
     if (ads1256_ch_index == 0 && d_trigger_ch_index != 0xff)
         bsp_ads1256_ch0_select(d_trigger_ch_index);
     else if (ads1256_ch_index == 1 && d_trigger_ch_index != 0xff)
         bsp_ads1256_ch1_select(d_trigger_ch_index);
     else if (ads1256_ch_index == 2 && d_trigger_ch_index != 0xff)
         bsp_ads1256_ch2_select(d_trigger_ch_index);
+    HAL_NVIC_EnableIRQ(EXTI2_IRQn);
     if (ads1256_ch_index < 3 && d_trigger_ch_index != 0xff)
     {
         uint32_t t0 = HAL_GetTick();
@@ -947,6 +950,8 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
     }
     for (uint8_t i = 0; i < 8; i++)
         wait_adc_one_round(200); // 一轮采样140ms
+    printf("ads1256_ch_index:%d\r\n", ads1256_ch_index);
+    printf("%d\r\n", d_trigger_ch_index);
 }
 void task_sample_suspend(void)
 {
