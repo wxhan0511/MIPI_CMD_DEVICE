@@ -88,7 +88,7 @@ void bsp_init()
     calibration_load();
     power_set_defaults();
     calibration_save();
-    // print_all_calibration_data();
+    print_all_calibration_data();
     /*-------------ADC START---------------------------*/
     bsp_init_adc_system();
     /*-------------ADC END---------------------------*/
