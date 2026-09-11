@@ -31,12 +31,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-dev_mcp4728_t dac_1 = {0xC0, DAC_LDAC1_GPIO_Port, DAC_LDAC1_Pin}; // 默认地址0xC0
+dev_mcp4728_t dac_1 = {0xC0, DAC_LDAC1_GPIO_Port, DAC_LDAC1_Pin}; // Default address 0xC0
 dev_mcp4728_t dac_2 = {0xC0, DAC_LDAC2_GPIO_Port, DAC_LDAC2_Pin};
 dev_mcp4728_t dac_3 = {0xC0, DAC_LDAC3_GPIO_Port, DAC_LDAC3_Pin};
 dev_mcp4728_t dac_4 = {0xC0, DAC_LDAC4_GPIO_Port, DAC_LDAC4_Pin};
 dev_mcp4728_t dac_5 = {0xC0, DAC_LDAC5_GPIO_Port, DAC_LDAC5_Pin};
-// I2C总线1设备结构体，配置I2C句柄和MCP4728器件地址
+// I2C bus 1 device struct: configures the I2C handle and the MCP4728 device addresses
 i2c_dev_t i2c_bus_1 = {
     .handle = &hi2c1,
     .dev_addr = {DAC1_ADDR, DAC2_ADDR, DAC3_ADDR, DAC4_ADDR, DAC5_ADDR},
@@ -53,9 +53,9 @@ dac_dev_t dac_chips[DAC_CHIP_MAX] = {
     {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_3, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
     {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_4, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}},
     {.i2c_bus = &i2c_bus_2, .chip_index = DAC_CHIP_5, .vref = {1, 1, 1, 1}, .gain = {MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2, MCP4728_GAIN_2}, .val = {1500, 1500, 1500, 1500}}};
-// 1. 定义映射表,按DAC_BSY号和通道号由小到大排序
+// 1. Mapping table, sorted by DAC chip number and then channel number in ascending order
 dac_config_table_t dac_config_table[20] = {
-    //  上次电压地址                                      | 偏移地址                                               | 增益地址                                             | 芯片       | 名称         | 通道 | 反 | id | res | 使能                    | 禁能
+    //  Last voltage address                              | Offset address                                        | Gain address                                         | Chip      | Name         | Chan  | Inv| id | res | Enable                    | Disable
     {&g_calibration_manager.data.vcc_last_voltage, &g_calibration_manager.data.da_data.vcc_set_offset, &g_calibration_manager.data.da_data.vcc_set_gain, DAC_CHIP_1, "VCC", 0, 0, 0, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+1"},
     {&g_calibration_manager.data.iovcc_last_voltage, &g_calibration_manager.data.da_data.iovcc_set_offset, &g_calibration_manager.data.da_data.iovcc_set_gain, DAC_CHIP_1, "IOVCC", 1, 0, 1, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+2"},
     {&g_calibration_manager.data.vsp_last_voltage, &g_calibration_manager.data.da_data.vsp_set_offset, &g_calibration_manager.data.da_data.vsp_set_gain, DAC_CHIP_1, "VSP", 2, 0, 2, 0, bsp_power_single_enable, bsp_power_single_disable, "CtrlV+3"},
@@ -78,7 +78,6 @@ dac_config_table_t dac_config_table[20] = {
     {&g_calibration_manager.data.vadj_n_last, &g_calibration_manager.data.da_data.vadj_n_offset, &g_calibration_manager.data.da_data.vadj_n_gain, DAC_CHIP_5, "VADJ_N", 0, 1, 19, 0, bsp_power_single_enable, bsp_power_single_disable, "Ctrl_VADJN"},
 };
 /* Private function prototypes -----------------------------------------------*/
-static void DAC_gpio_init(void);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -117,7 +116,7 @@ void bsp_cali_and_set_power(uint8_t power_id)
     MIPI_CMD_DEBUG("%s,%s: vi = %.2f mV (vo=%.2f mV, offset=%.2f, gain=%.2f)\r\n",
                    cfg->name, cfg->name1, val, *(cfg->last_voltage), *(cfg->offset), *(cfg->gain));
     MIPI_CMD_DEBUG("channel = %d, last_voltage = %.2f mV\r\n", cfg->channel, *(cfg->last_voltage));
-    // 最大输出电压 4.096V
+    // Maximum output voltage 4.096V
     dac_chips[cfg->chip].val[cfg->channel] = float_to_uint16_round(val);
 
     if (bsp_dac_single_voltage_set(&dac_chips[cfg->chip], cfg->channel, dac_chips[cfg->chip].val[cfg->channel], 0) != BSP_OK)
@@ -136,11 +135,11 @@ void all_mcp4728_sync_update()
 }
 void single_mcp4728_sync_update(uint8_t power_id)
 {
-    // 非法值直接返回
+    // Return directly on invalid values
     if (power_id > 19)
         return;
 
-    // 按范围直接判断，减少冗余case
+    // Range-based checks to avoid redundant cases
     if (power_id < 4)
         DAC_LDAC_1_L();
     else if (power_id < 8)
@@ -157,11 +156,11 @@ void bsp_dac_init()
     mcp4728_device_init(); // Initialize 5 DAC addresses
     I2C_CTRL_init();
     HAL_I2C_DeInit(&hi2c2);
-    HAL_I2C_Init(&hi2c2); // 用完模拟i2c需要重新初始化硬件i2c
+    HAL_I2C_Init(&hi2c2); // After using the bit-banged I2C, the hardware I2C must be re-initialized
 
     bsp_power_all_disable();
     bsp_limit_current_reset();
-    // 打印恢复电压信息
+    // Print the restored voltage information
     MIPI_CMD_INFO("Restore the voltage set last time\r\n");
     ADS1256_DEBUG("VSN : %f mV\r\n", g_calibration_manager.data.vsn_last_voltage);
     ADS1256_DEBUG("ELVSS : %f mV\r\n", g_calibration_manager.data.elvss_last_voltage);
@@ -188,7 +187,7 @@ void bsp_dac_init()
     ADS1256_DEBUG("VADJ_N: %f mV\r\n", g_calibration_manager.data.vadj_n_last);
     ADS1256_DEBUG("-----------------------------------\r\n");
 
-    // 循环一次性处理所有通道
+    // Process all channels in a single loop
     for (int i = 0; i < sizeof(dac_config_table) / sizeof(dac_config_table_t); i++)
     {
         bsp_cali_and_set_power(i);

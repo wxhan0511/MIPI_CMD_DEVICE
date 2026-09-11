@@ -119,24 +119,24 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-  // 定义故障状态寄存器变量
-  uint32_t hfsr = SCB->HFSR;   // 硬故障总状态寄存器
-  uint32_t cfsr = SCB->CFSR;   // 配置故障状态寄存器（包含Mem/Bus/Usage三类错误）
-  uint32_t mmfar = SCB->MMFAR; // 内存管理错误地址寄存器
-  uint32_t bfar = SCB->BFAR;   // 总线错误地址寄存器
+  // Fault status registers
+  uint32_t hfsr = SCB->HFSR;   // HardFault status register
+  uint32_t cfsr = SCB->CFSR;   // Configurable fault status register (Mem/Bus/Usage)
+  uint32_t mmfar = SCB->MMFAR; // MemManage fault address register
+  uint32_t bfar = SCB->BFAR;   // BusFault address register
 
-  // 打印HardFault标题
+  // Print HardFault banner
   MIPI_CMD_DEBUG("\r\n\r\n==================== HardFault ====================\r\n");
   MIPI_CMD_ERROR("HFSR = 0x%08X\r\n", hfsr);
   MIPI_CMD_ERROR("CFSR = 0x%08X\r\n", cfsr);
 
-  // 拆分三类错误状态
-  uint8_t mmfsr = (cfsr >> 0) & 0xFF;    // 内存管理错误状态
-  uint8_t bfsr = (cfsr >> 8) & 0xFF;     // 总线错误状态
-  uint16_t ufsr = (cfsr >> 16) & 0xFFFF; // 用法错误状态
+  // Split the three fault status groups
+  uint8_t mmfsr = (cfsr >> 0) & 0xFF;    // MemManage fault status
+  uint8_t bfsr = (cfsr >> 8) & 0xFF;     // BusFault status
+  uint16_t ufsr = (cfsr >> 16) & 0xFFFF; // UsageFault status
 
   // ==============================================
-  // 内存管理错误解析（打印英文，注释中文）
+  // MemManage fault decode
   // ==============================================
   if (mmfsr != 0)
   {
@@ -154,7 +154,7 @@ void HardFault_Handler(void)
     if (mmfsr & (1 << 6))
       MIPI_CMD_ERROR("  MMARVALID: MMFAR address valid\r\n");
 
-    // 若错误地址有效，则打印出错地址
+    // If the fault address is valid, print it
     if (mmfsr & (1 << 6))
     {
       MIPI_CMD_ERROR("  Fault Address MMFAR = 0x%08X\r\n", mmfar);
@@ -162,7 +162,7 @@ void HardFault_Handler(void)
   }
 
   // ==============================================
-  // 总线错误解析（打印英文，注释中文）
+  // BusFault decode
   // ==============================================
   if (bfsr != 0)
   {
@@ -182,7 +182,7 @@ void HardFault_Handler(void)
     if (bfsr & (1 << 6))
       MIPI_CMD_ERROR("  BFARVALID: BFAR address valid\r\n");
 
-    // 若错误地址有效，则打印出错地址
+    // If the fault address is valid, print it
     if (bfsr & (1 << 6))
     {
       MIPI_CMD_ERROR("  Fault Address BFAR = 0x%08X\r\n", bfar);
@@ -190,7 +190,7 @@ void HardFault_Handler(void)
   }
 
   // ==============================================
-  // 用法错误解析（打印英文，注释中文）
+  // UsageFault decode
   // ==============================================
   if (ufsr != 0)
   {
@@ -210,7 +210,7 @@ void HardFault_Handler(void)
   }
 
   // ==============================================
-  // 硬故障总标志解析
+  // HardFault status flags
   // ==============================================
   if (hfsr & (1 << 1))
     MIPI_CMD_ERROR("  VECTBL: Vector table read fault\r\n");
@@ -220,17 +220,17 @@ void HardFault_Handler(void)
     MIPI_CMD_ERROR("  DEBUGEVT: Debug event\r\n");
 
   // ==============================================
-  // 获取当前栈指针（MSP/PSP自动判断）
+  // Get the current stack pointer (MSP/PSP auto-detected)
   // ==============================================
   uint32_t *sp;
   __ASM volatile(
-      "TST lr, #4 \n" // 判断LR的bit4，确定使用MSP还是PSP
+      "TST lr, #4 \n"     // Test LR bit4 to determine MSP or PSP
       "ITE EQ \n"
-      "MRSEQ %0, MSP \n" // 等于0时使用MSP
-      "MRSNE %0, PSP \n" // 等于1时使用PSP
+      "MRSEQ %0, MSP \n"  // If equal, use MSP
+      "MRSNE %0, PSP \n"  // Otherwise use PSP
       : "=r"(sp));
 
-  // 打印触发HardFault的PC指针（栈中偏移6*4位置）
+  // Print the PC that triggered the HardFault (stack offset 6*4)
   MIPI_CMD_ERROR("\r\n>>>>>> Fault PC = 0x%08X <<<<<<\r\n", sp[6]);
   MIPI_CMD_ERROR("=====================================================\r\n");
 
@@ -531,7 +531,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
   if (hspi->Instance == SPI2)
   {
-    // 处理错误
+    // Handle the error. HAL_SPI error codes for reference:
     // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
     // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
     // #define HAL_SPI_ERROR_CRC               (0x00000002U)   /*!< CRC error                              */
@@ -659,7 +659,6 @@ void DMA2_Stream7_IRQHandler(void)
 
 void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-  uint8_t offset = 0;
   i2c1_rx_ready_flag = 1;
   I2C_DEBUG("I2C Listen Complete Callback\r\n");
   HAL_I2C_EnableListen_IT(hi2c);
@@ -684,94 +683,94 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
   if (hi2c->Instance == hi2c1.Instance)
   {
 #if 0
-    // 打印错误码
+    // Print the error code
     I2C_DEBUG("I2C Error: Instance=0x%p, ErrorCode=0x%08lX\r\n", hi2c->Instance, hi2c->ErrorCode);
 
-    // 根据错误类型做细致处理
+    // Fine-grained handling per error type
     if (hi2c->ErrorCode & HAL_I2C_ERROR_AF) {
         I2C_DEBUG("I2C Error: NACK received (AF)\r\n");
-        // 可做重试或通知主机
+        // Retry or notify the host
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_ARLO) {
         I2C_DEBUG("I2C Error: Arbitration lost (ARLO)\r\n");
-        // 多主机场景可做仲裁恢复
+        // Arbitration recovery in multi-master scenarios
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_BERR) {
         I2C_DEBUG("I2C Error: Bus error (BERR)\r\n");
-        // 可做总线复位
+        // Bus reset
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_OVR) {
         I2C_DEBUG("I2C Error: Overrun/Underrun (OVR)\r\n");
-        // 可清理缓冲区
+        // Flush buffers
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_TIMEOUT) {
         I2C_DEBUG("I2C Error: Timeout\r\n");
-        // 可做超时重试
+        // Timeout retry
     }
-    // 清理自定义状态变量
+    // Reset custom state variables
     first_byte_state = 1;
     offset = 0;
 #endif
     if (I2C_IsSDALow(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7))
     {
-      // 如果 SDA 被拉低，调用恢复函数
+      // SDA held low: run the recovery routine
       I2C_RecoverSDA(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7);
     }
     if (I2C_IsSCLLow(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7))
     {
-      // 如果 SCL 被拉低，调用恢复函数
+      // SCL held low: run the recovery routine
       I2C_RecoverSCL(hi2c, GPIOB, GPIO_PIN_6, GPIO_PIN_7);
     }
     MX_I2C1_Init();
 
-    // 重新使能侦听模式，保证从机持续响应主机
+    // Re-enable listen mode so the slave keeps responding to the host
     HAL_I2C_EnableListen_IT(&hi2c1);
   }
-  // 处理其他I2C实例的错误
+  // Handle errors on other I2C instances
   else if (hi2c->Instance == hi2c2.Instance)
   {
 #if 0
-        // 打印错误码
+        // Print the error code
     I2C_DEBUG("I2C Error: Instance=0x%p, ErrorCode=0x%08lX\r\n", hi2c->Instance, hi2c->ErrorCode);
 
-    // 根据错误类型做细致处理
+    // Fine-grained handling per error type
     if (hi2c->ErrorCode & HAL_I2C_ERROR_AF) {
         I2C_DEBUG("I2C Error: NACK received (AF)\r\n");
-        // 可做重试或通知主机
+        // Retry or notify the host
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_ARLO) {
         I2C_DEBUG("I2C Error: Arbitration lost (ARLO)\r\n");
-        // 多主机场景可做仲裁恢复
+        // Arbitration recovery in multi-master scenarios
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_BERR) {
         I2C_DEBUG("I2C Error: Bus error (BERR)\r\n");
-        // 可做总线复位
+        // Bus reset
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_OVR) {
         I2C_DEBUG("I2C Error: Overrun/Underrun (OVR)\r\n");
-        // 可清理缓冲区
+        // Flush buffers
     }
     if (hi2c->ErrorCode & HAL_I2C_ERROR_TIMEOUT) {
         I2C_DEBUG("I2C Error: Timeout\r\n");
-        // 可做超时重试
+        // Timeout retry
     }
 
-    // 清理自定义状态变量
+    // Reset custom state variables
     first_byte_state = 1;
     offset = 0;
 #endif
     if (I2C_IsSDALow(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11))
     {
-      // 如果 SDA 被拉低，调用恢复函数
+      // SDA held low: run the recovery routine
       I2C_RecoverSDA(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11);
     }
     if (I2C_IsSCLLow(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11))
     {
-      // 如果 SCL 被拉低，调用恢复函数
+      // SCL held low: run the recovery routine
       I2C_RecoverSCL(&hi2c2, GPIOB, GPIO_PIN_10, GPIO_PIN_11);
     }
     MX_I2C2_Init();
-    // 重新使能侦听模式，保证从机持续响应主机
+    // Re-enable listen mode so the slave keeps responding to the host
     HAL_I2C_EnableListen_IT(&hi2c2);
   }
 }
@@ -784,7 +783,7 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
 }
 
-// I2C中断回调
+// I2C interrupt callback
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
 }
@@ -807,9 +806,9 @@ void I2C2_ER_IRQHandler(void)
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
-  // 这里可以加断点、打印、重启等
+  // Add breakpoint, logging, or reboot handling here
   printf("Stack overflow in task: %s\r\n", pcTaskName);
-  // 或者点灯、记录日志等
+  // Or toggle an LED, record a log, etc.
 }
 
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)
@@ -867,7 +866,7 @@ void EXTI2_IRQHandler(void)
 {
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
 }
-// 电压电流采样回调函数
+// Voltage/current sampling callback
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == ADC_DRDY1_Pin)
@@ -971,34 +970,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
     // printf("te signal \r\n");
     // master_state.int_change_img_flag = 1;
-
-    //    if(master_state.int_change_img_flag == 1){
-    //        //printf("---\r\n");
-    //        tp_spi_cs_enable(false);
-    //        bsp_DelayUS(delay_num);
-    //        show_next_image(&image_status);
-    //        master_state.int_change_img_flag = 0;
-    //        tp_spi_cs_enable(true);
-    //    }
-
-    //    if(master_state.img_run_state == IMG_INT_MODE){
-    //        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, exit_state);
-    ////        tp_spi_cs_enable(exit_state);
-    ////        exit_state = ~ exit_state;
-    //        show_next_image(&master_status,&image_status);
-    ////        tp_spi_cs_enable(true);
-
-    //        exit_state = ~exit_state;
-    //    }else if(master_state.img_run_state == IMG_SINGLE_INT_MODE){
-    //        //printf("1111111111111\r\n");
-    //        //if(master_state.int_change_img_flag == 1)
-    //        {
-    //            show_next_image(&master_status,&image_status);
-    //            image_trigger_mode(0);
-    //            //master_state.img_run_state = IMG_TRANSFER_END;
-    //            printf("1111111111111\r\n");
-    //        }
-    //    }
   }
 }
 

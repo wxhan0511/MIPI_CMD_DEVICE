@@ -56,12 +56,12 @@ extern "C"
   void SPI2_Slave_StartRx_IT(void);
   HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len);
 
-  /* 供中断回调转发调用 */
+  /* Forwarding entry points called from the HAL interrupt callbacks */
   void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi);
   void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi);
   void SPI2_Slave_OnError_IT(SPI_HandleTypeDef *hspi);
 
-  /* 业务处理：你可在别的 .c 里重写 */
+  /* Frame processing: you may override this in another .c file */
   void SPI2_Slave_ProcessFrame(const uint8_t *rx, uint16_t rx_len, uint8_t *tx, uint16_t *tx_len);
 
   void M_INT_LOW();

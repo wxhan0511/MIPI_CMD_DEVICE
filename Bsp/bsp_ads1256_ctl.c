@@ -23,22 +23,21 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-static uint8_t channel_num = 0;
 float offset, gain, IV_data = 0.0f;
-float raw_data_queue[RAW_DATA_QUEUE_SIZE] __attribute__((section(".raw_data_queue"))) __attribute__((aligned(4))); // align 4B , size 4092
-uint8_t raw_data_index_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
-uint8_t raw_data_ch_sel_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
+static float raw_data_queue[RAW_DATA_QUEUE_SIZE] __attribute__((section(".raw_data_queue"))) __attribute__((aligned(4))); // align 4B , size 4092
+static uint8_t raw_data_index_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
+static uint8_t raw_data_ch_sel_queue[RAW_DATA_INDEX_QUEUE_SIZE] __attribute__((section(".raw_data_index_queue")));
 volatile uint16_t raw_data_queue_head = 0;
 volatile float latest_sample_raw_data[8] = {0};
 volatile uint8_t latest_sample_ch_sel[8] = {0};
 volatile double raw_data = 0;
 volatile float latest_sample_data[8] = {0};
-volatile uint8_t latest_sample_index[8] = {0};
-double cali_data = 0;
+static volatile uint8_t latest_sample_index[8] = {0};
+static double cali_data = 0;
 extern R_D_MODE r_d_mode;
 extern ads1256_dev_t dev_vol;
 
-__IO double cali_r_value[7][3] = {
+static __IO double cali_r_value[7][3] = {
     {0.000000621013436, 1.269563854760952, 128545.457705873996019}, // 10M
     {0.000002878590314, 1.612767830900360, 16471.438778921728954},  // 1M
     {0.000029345393638, 1.610968251555477, 1883.541990776575403},   // 100K
@@ -50,12 +49,12 @@ __IO double cali_r_value[7][3] = {
 /* Private function prototypes -----------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
-/*一轮大概140ms*/
+/* One round takes about 140 ms */
 int wait_adc_one_round(uint32_t timeout_ms)
 {
     uint32_t t0 = HAL_GetTick();
 
-    // 1) 先等离开“上一轮结束态(6)”：避免吃到旧状态
+    // 1) First wait for step_cnt to leave the "previous round end state (6)" to avoid a stale state
     while (dev_vol.step_cnt == 6)
     {
         if ((HAL_GetTick() - t0) >= timeout_ms)
@@ -63,7 +62,7 @@ int wait_adc_one_round(uint32_t timeout_ms)
         bsp_delay_ms(1);
     }
 
-    // 2) 再等回到6：表示完成一整轮
+    // 2) Then wait for it to return to 6, which means one full round is complete
     while (dev_vol.step_cnt != 6)
     {
         if ((HAL_GetTick() - t0) >= timeout_ms)
@@ -132,8 +131,6 @@ double bsp_adc_r_convert(const TEST_R_D_RES_LEVEL gear, const double input, cons
 }
 void sample_data_cali()
 {
-    float rt_value = 0xffffff;
-
     for (uint8_t i = 0; i < 8; i++)
     {
         sel_cali_param(i, latest_sample_ch_sel[i], &offset, &gain);
@@ -204,14 +201,12 @@ void sample_data_cali()
             IV_data = latest_sample_raw_data[i] * gain + offset;
             latest_sample_data[i] = IV_data;
         }
-
-        // printf("channel %d, raw data %f, cali data %f\r\n", i, latest_sample_raw_data[i], latest_sample_data[i]);
     }
 }
 /**
- * @brief get the index value from the ring buffer
- * @param index
- * @return
+ * @brief Get the index value from the ring buffer
+ * @param index Index position
+ * @return The channel index at the specified position in the queue
  */
 uint8_t raw_data_queue_get_index(uint16_t index)
 {
@@ -230,9 +225,9 @@ uint8_t raw_data_queue_get_index(uint16_t index)
 }
 
 /**
- * @brief 获取环形队列中的数据
- * @param index 索引位置
- * @return 队列中指定索引位置的数据
+ * @brief Get the data from the ring buffer
+ * @param index Index position
+ * @return The data at the specified index in the queue
  */
 float raw_data_queue_get_data(uint16_t index)
 {

@@ -1,8 +1,8 @@
 /**
- * @brief  任务层：通信任务
+ * @brief  Task layer: communication task
  */
 
-/* ==================== 1. 头文件包含 ==================== */
+/* ==================== 1. Includes ==================== */
 #include "task_com.h"
 #include "task_manage.h"
 #include "com_handle.h"
@@ -10,17 +10,17 @@
 #include <string.h>
 #include "spi.h"
 
-/* ==================== 2. 宏定义 ==================== */
-/* 无 */
+/* ==================== 2. Macros ==================== */
+/* None */
 
-/* ==================== 3. 类型定义（结构体、枚举、别名） ==================== */
-/* 无 */
+/* ==================== 3. Type definitions (structs, enums, aliases) ==================== */
+/* None */
 
-/* ==================== 4. 外部全局变量 ==================== */
+/* ==================== 4. External global variables ==================== */
 extern uint8_t meter_rx_buf[SPI2_SLAVE_RX_LEN];
 extern uint8_t meter_tx_buf[SPI2_SLAVE_TX_LEN];
 
-/* ==================== 5. 静态私有变量 ==================== */
+/* ==================== 5. Static private variables ==================== */
 volatile uint8_t meter_com_flag = 0;
 osThreadId_t task_com_handle;
 const osThreadAttr_t task_com_attributes = {
@@ -29,10 +29,10 @@ const osThreadAttr_t task_com_attributes = {
     .priority = (osPriority_t)osPriorityHigh,
 };
 
-/* ==================== 6. 静态函数声明 ==================== */
+/* ==================== 6. Static function declarations ==================== */
 static void task_com_run(void *arg);
 
-/* ==================== 7. 外部可调用函数实现 ==================== */
+/* ==================== 7. Public function implementations ==================== */
 void task_com_suspend(void)
 {
     osThreadSuspend(task_com_handle);
@@ -56,13 +56,13 @@ void task_com_init(void)
     }
 }
 
-/* ==================== 8. 静态私有函数实现 ==================== */
+/* ==================== 8. Static private function implementations ==================== */
 static void task_com_run(void *arg)
 {
     (void)arg;
     osDelay(1000);
     MX_SPI2_Init();
-    SPI2_Slave_StartRx_IT(); // 启动SPI2从机64字节接收
+    SPI2_Slave_StartRx_IT(); // Start SPI2 slave 64-byte reception
     M_INT_HIGH();
     while (1)
     {

@@ -58,7 +58,7 @@ typedef struct
 #define MCP4728_UDAC_NOLOAD 0x0
 
 extern i2c_dev_t dac;
-// 设备实例化
+// Device instances
 typedef struct
 {
     uint8_t i2c_dev_address;

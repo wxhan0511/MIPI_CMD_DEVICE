@@ -1,21 +1,21 @@
 /*
  * task_sample.h
- * 与上位机通信采样任务接口
+ * Sampling task interface for communicating with the host
  */
 
-/* ==================== 1. 头文件保护 ==================== */
+/* ==================== 1. Header guard ==================== */
 #ifndef _TASK_SAMPLE_H_
 #define _TASK_SAMPLE_H_
 
-/* ==================== 2. 头文件包含 ==================== */
+/* ==================== 2. Includes ==================== */
 #include "cmsis_os.h"
 #include "bsp.h"
 #include "task_manage.h"
 
-/* ==================== 3. 宏定义 ==================== */
-/* 无 */
+/* ==================== 3. Macros ==================== */
+/* None */
 
-/* ==================== 4. 类型定义 ==================== */
+/* ==================== 4. Type definitions ==================== */
 
 typedef enum
 {
@@ -97,7 +97,7 @@ typedef struct
     SetPowerDataFrame_S set_power_data_frame;
     PowerCmdStatus_E cmd_status;
     LimitValue_U limit_value;
-    uint8_t power_switch[8]; // 8个电源开关状态
+    uint8_t power_switch[8]; // State of the 8 power switches
 
 } SampleTask_S;
 
@@ -118,10 +118,10 @@ typedef struct
     __attribute__((aligned(4))) uint8_t print_cur_gear[8];
 } sample_data_t;
 
-/* ==================== 5. 外部全局变量声明 ==================== */
-/* 无 */
+/* ==================== 5. External global variable declarations ==================== */
+/* None */
 
-/* ==================== 6. 外部函数声明 ==================== */
+/* ==================== 6. External function declarations ==================== */
 void task_sample_init(void);
 void task_sample_run(void *argument);
 void task_sample_suspend(void);
@@ -130,5 +130,5 @@ void task_sample_task_mutex_acquire(void);
 void task_sample_task_mutex_release(void);
 void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type);
 
-/* ==================== 7. 结束头文件保护 ==================== */
+/* ==================== 7. End of header guard ==================== */
 #endif /* _TASK_SAMPLE_H_ */

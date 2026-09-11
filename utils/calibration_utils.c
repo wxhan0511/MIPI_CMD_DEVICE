@@ -31,18 +31,6 @@
  * @param value Float value to convert
  * @return Rounded int16 value
  */
-int16_t float_to_int16_round(float value)
-{
-    if (value >= 0)
-    {
-        return (int16_t)(value + 0.5f);
-    }
-    else
-    {
-        return (int16_t)(value - 0.5f);
-    }
-}
-
 uint16_t float_to_uint16_round(float value)
 {
     if (value >= 0)
@@ -53,11 +41,6 @@ uint16_t float_to_uint16_round(float value)
     {
         return (uint16_t)(value - 0.5f);
     }
-}
-
-float int32_to_float(int32_t value)
-{
-    return (float)value;
 }
 
 uint8_t float_to_uint8_round(float value)
@@ -72,22 +55,17 @@ uint8_t float_to_uint8_round(float value)
     }
 }
 
-/*
- * @brief Select calibration parameters based on main_index and sub_index
- * @param main_index : Channel number (0-7)
- * @param sub_index : d trigger selection sub index (0-7)
- */
 /**
- * @brief 根据通道选择校准参数
- * @param main_index 主通道索引 (0-7)
- * @param sub_index  子索引 (0-7)
- * @param offset     输出: 偏移参数指针
- * @param gain       输出: 增益参数指针
+ * @brief Select calibration parameters based on channel
+ * @param main_index Main channel index (0-7)
+ * @param sub_index  Sub index (0-7)
+ * @param offset     Output: pointer to the offset parameter
+ * @param gain       Output: pointer to the gain parameter
  */
 void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float *gain)
 {
-    // 1. 安全校验 (包含 sub_index 防越界)
-    if (main_index > 7 || offset == NULL || gain == NULL)
+    // 1. Safety checks (main_index and sub_index range, output pointers)
+    if (main_index > 7 || sub_index > 7 || offset == NULL || gain == NULL)
     {
         if (offset)
             *offset = 0.0f;
@@ -97,11 +75,11 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
     }
     calibration_data_t *cal = &g_calibration_manager.data;
     TEST_CUR_GEAR gear;
-    int16_t last_vol; // 用于保存获取到的历史电压
-    // 2. 根据通道索引选择参数
+    int16_t last_vol; // Holds the last sampled voltage
+    // 2. Select parameters based on channel index
     switch (main_index)
     {
-    /* --- 非电流通道 (只有一套参数) --- */
+    /* --- Non-current channels (single parameter set) --- */
     case 0:
         *offset = cal->ad_data.ch0_offset[sub_index];
         *gain = cal->ad_data.ch0_gain[sub_index];
@@ -110,7 +88,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         *offset = cal->ad_data.ch2_offset[sub_index];
         *gain = cal->ad_data.ch2_gain[sub_index];
         break;
-    /* --- ch1: sub_index 为 2, 3, 7 时是电流通道，需单独判断挡位 --- */
+    /* --- ch1: sub_index 2, 3 and 7 are current channels, gear must be checked separately --- */
     case 1:
         if (sub_index == 2)
         {
@@ -118,7 +96,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(ELVDD_RLY);
-                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
                 {
                     *offset = cal->ad_data.ch1_offset_ua1[2];
                     *gain = cal->ad_data.ch1_gain_ua1[2];
@@ -141,7 +119,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(ELVSS_RLY);
-                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
                 {
                     *offset = cal->ad_data.ch1_offset_ua1[3];
                     *gain = cal->ad_data.ch1_gain_ua1[3];
@@ -165,7 +143,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(AVDD_RLY);
-                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
                 {
                     *offset = cal->ad_data.ch1_offset_ua1[7];
                     *gain = cal->ad_data.ch1_gain_ua1[7];
@@ -184,18 +162,18 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         else
         {
-            // 非电流通道，直接读取普通值
+            // Non-current channel, read the normal values directly
             *offset = cal->ad_data.ch1_offset[sub_index];
             *gain = cal->ad_data.ch1_gain[sub_index];
         }
         break;
-    /* --- ch3~ch7: 标量结构，只要 main_index 匹配即为电流通道 --- */
+    /* --- ch3~ch7: scalar members; any matching main_index is a current channel --- */
     case 3:
         gear = bsp_rly_get_gear_isr(VCC_RLY);
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VCC_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 *offset = cal->ad_data.ch3_offset_ua1;
                 *gain = cal->ad_data.ch3_gain_ua1;
@@ -217,7 +195,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(IOVCC_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 *offset = cal->ad_data.ch4_offset_ua1;
                 *gain = cal->ad_data.ch4_gain_ua1;
@@ -239,7 +217,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VSP_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 *offset = cal->ad_data.ch5_offset_ua1;
                 *gain = cal->ad_data.ch5_gain_ua1;
@@ -261,7 +239,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VSN_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 *offset = cal->ad_data.ch6_offset_ua1;
                 *gain = cal->ad_data.ch6_gain_ua1;
@@ -283,7 +261,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VDD_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 *offset = cal->ad_data.ch7_offset_ua1;
                 *gain = cal->ad_data.ch7_gain_ua1;
@@ -301,7 +279,7 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
         }
         break;
     default:
-        // 理论上不会走到这里，因为前面已经拦截了 > 7 的情况
+        // Should never be reached: main_index > 7 is rejected above
         *offset = 0.0f;
         *gain = 1.0f;
         break;
@@ -309,26 +287,26 @@ void sel_cali_param(uint8_t main_index, uint8_t sub_index, float *offset, float 
 }
 
 /**
- * @brief 写入校准参数到全局结构体 g_calibration_manager.data 中
- * @param main_index 主通道索引 (0-7)
- * @param sub_index 子通道索引
- * @param offset 待写入的偏移量
- * @param gain 待写入的增益
+ * @brief Write calibration parameters into the global g_calibration_manager.data structure
+ * @param main_index Main channel index (0-7)
+ * @param sub_index  Sub channel index
+ * @param offset     Offset value to write
+ * @param gain       Gain value to write
  */
 void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float gain)
 {
-    // 1. 安全校验
-    if (main_index > 7)
+    // 1. Safety check
+    if (main_index > 7 || sub_index > 7)
     {
-        return; // 非法通道，直接忽略
+        return; // Invalid channel, ignore
     }
     calibration_data_t *cal = &g_calibration_manager.data;
     TEST_CUR_GEAR gear;
     int16_t last_vol;
-    // 2. 根据通道索引选择参数并写入
+    // 2. Select the target by channel index and write
     switch (main_index)
     {
-    /* --- 非电流通道 (只有一套参数) --- */
+    /* --- Non-current channels (single parameter set) --- */
     case 0:
         cal->ad_data.ch0_offset[sub_index] = offset;
         cal->ad_data.ch0_gain[sub_index] = gain;
@@ -337,7 +315,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         cal->ad_data.ch2_offset[sub_index] = offset;
         cal->ad_data.ch2_gain[sub_index] = gain;
         break;
-    /* --- ch1: sub_index 为 2, 3, 7 时是电流通道，需单独判断挡位 --- */
+    /* --- ch1: sub_index 2, 3 and 7 are current channels, gear must be checked separately --- */
     case 1:
         if (sub_index == 2)
         {
@@ -345,7 +323,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(ELVDD_RLY);
-                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
                 {
                     cal->ad_data.ch1_offset_ua1[2] = offset;
                     cal->ad_data.ch1_gain_ua1[2] = gain;
@@ -368,7 +346,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(ELVSS_RLY);
-                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
                 {
                     cal->ad_data.ch1_offset_ua1[3] = offset;
                     cal->ad_data.ch1_gain_ua1[3] = gain;
@@ -391,7 +369,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
             if (gear == GEAR_uA)
             {
                 last_vol = bsp_rly_get_last_voltage_isr(AVDD_RLY);
-                if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+                if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
                 {
                     cal->ad_data.ch1_offset_ua1[7] = offset;
                     cal->ad_data.ch1_gain_ua1[7] = gain;
@@ -410,18 +388,18 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         }
         else
         {
-            // 非电流通道，直接写入普通值
+            // Non-current channel, write the normal values directly
             cal->ad_data.ch1_offset[sub_index] = offset;
             cal->ad_data.ch1_gain[sub_index] = gain;
         }
         break;
-    /* --- ch3~ch7: 标量结构，只要 main_index 匹配即为电流通道 --- */
+    /* --- ch3~ch7: scalar members; any matching main_index is a current channel --- */
     case 3:
         gear = bsp_rly_get_gear_isr(VCC_RLY);
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VCC_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 cal->ad_data.ch3_offset_ua1 = offset;
                 cal->ad_data.ch3_gain_ua1 = gain;
@@ -443,7 +421,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(IOVCC_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 cal->ad_data.ch4_offset_ua1 = offset;
                 cal->ad_data.ch4_gain_ua1 = gain;
@@ -465,7 +443,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VSP_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 cal->ad_data.ch5_offset_ua1 = offset;
                 cal->ad_data.ch5_gain_ua1 = gain;
@@ -487,7 +465,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VSN_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 cal->ad_data.ch6_offset_ua1 = offset;
                 cal->ad_data.ch6_gain_ua1 = gain;
@@ -509,7 +487,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         if (gear == GEAR_uA)
         {
             last_vol = bsp_rly_get_last_voltage_isr(VDD_RLY);
-            if (last_vol > 2250 || last_vol < -2250) // 绝对值大于 2250
+            if (last_vol > 2250 || last_vol < -2250) // absolute value greater than 2250
             {
                 cal->ad_data.ch7_offset_ua1 = offset;
                 cal->ad_data.ch7_gain_ua1 = gain;
@@ -527,7 +505,7 @@ void set_cali_param(uint8_t main_index, uint8_t sub_index, float offset, float g
         }
         break;
     default:
-        // 理论上不会走到这里
+        // Should never be reached
         break;
     }
 }

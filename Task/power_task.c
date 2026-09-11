@@ -26,9 +26,9 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-osThreadId_t powertaskhandle = NULL;
+static osThreadId_t powertaskhandle = NULL;
 
-const osThreadAttr_t powertask_attributes = {
+static const osThreadAttr_t powertask_attributes = {
     .name = "PowerTask",
     .priority = osPriorityHigh7,
     .stack_size = 128 * 4};
@@ -66,12 +66,12 @@ void PowerTask(void *argument)
         //             }
         //             osDelay(10);
         //             MIPI_CMD_DEBUG("bsp_dac_single_voltage_set channel 0 ELVDD: %d\r\n", dac_dev.val[0]);
-        //             ELVDD_ENABLE(); // 重新使能ELVDD
+        //             ELVDD_ENABLE(); // Re-enable ELVDD
         //             HAL_GPIO_WritePin(LDAC_Port, LDAC_Pin, GPIO_PIN_RESET);
         //             MIPI_CMD_DEBUG("ELVDD output enabled\r\n");
         //         }
         //         falling_edge_detected = 2;
-        //         HAL_Delay(10000); // 消抖延时
+        //         HAL_Delay(10000); // Debounce delay
         //     }
         // }
         // else

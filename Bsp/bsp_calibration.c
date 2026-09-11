@@ -8,7 +8,7 @@
  * @license    MIT License
  ************************************************************/
 
-/*==================== 1. 头文件包含 ====================*/
+/*==================== 1. Includes ====================*/
 #include "bsp_calibration.h"
 #include "bsp_spi_flash.h"
 #include <string.h>
@@ -16,29 +16,29 @@
 #include "crc.h"
 #include "math.h"
 
-/*==================== 2. 宏定义 ====================*/
-// 此处可添加本文件专用宏定义
+/*==================== 2. Macro definitions ====================*/
+// Add file-specific macro definitions here
 
-/*==================== 3. 类型定义（结构体、枚举、别名） ====================*/
-// 本文件无新增类型定义，相关类型在 .h 文件中定义
+/*==================== 3. Type definitions (structs, enums, aliases) ====================*/
+// No new type definitions in this file; related types are defined in the .h file
 
-/*==================== 4. 外部全局变量 ====================*/
+/*==================== 4. Global variables ====================*/
 calibration_manager_t g_calibration_manager = {0};
 
-/*==================== 5. 静态私有变量 ====================*/
-static uint8_t cal_buffer[sizeof(calibration_data_t) + 256]; // Flash操作缓冲区
+/*==================== 5. Static private variables ====================*/
+static uint8_t cal_buffer[sizeof(calibration_data_t) + 256]; // Buffer for Flash operations
 static const float vi[20][2] = {
     {2000, 1500}, {1500, 1300}, {1500, 1200}, {1500, 2000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 1550}, {1500, 1400}, {1500, 1100}, {1500, 1100}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {2500, 2400}, {3000, 2000}};
 static const float vo[20][2] = {
     {1505.5, 4946}, {2623, 4003}, {2792.5, 5312}, {-3219, -1235.7}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {4894, 4546}, {2702, 3535.7}, {2637.6, 6000.6}, {-3115, -5796}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {1500, 3000}, {8526, 9198}, {-18441, -14282}};
 
-/*==================== 6. 静态函数声明 ====================*/
+/*==================== 6. Static function declarations ====================*/
 static HAL_StatusTypeDef calu_calibration_data(void);
 
-/*==================== 7. 外部可调用函数实现 ====================*/
+/*==================== 7. Public function implementations ====================*/
 
 /**
- * @brief CRC32计算（使用STM32硬件CRC）
+ * @brief CRC32 calculation (uses the STM32 hardware CRC)
  */
 uint32_t calibration_calculate_crc32(uint8_t *data, uint32_t length)
 {
@@ -70,7 +70,7 @@ uint32_t calibration_calculate_crc32(uint8_t *data, uint32_t length)
 }
 
 /**
- * @brief 校验校准数据CRC
+ * @brief Verify the calibration data CRC
  */
 HAL_StatusTypeDef calibration_verify_crc(calibration_data_t *cal_data)
 {
@@ -89,7 +89,7 @@ HAL_StatusTypeDef calibration_verify_crc(calibration_data_t *cal_data)
 }
 
 /**
- * @brief SPI Flash初始化
+ * @brief SPI Flash initialization
  */
 HAL_StatusTypeDef calibration_flash_init(void)
 {
@@ -110,7 +110,7 @@ HAL_StatusTypeDef calibration_flash_init(void)
 }
 
 /**
- * @brief 设置校准默认值
+ * @brief Set default calibration values
  */
 HAL_StatusTypeDef calibration_set_defaults(void)
 {
@@ -214,7 +214,7 @@ HAL_StatusTypeDef calibration_set_defaults(void)
 
     cal->ad_data.ch1_gain[0] = 6.0f;
     cal->ad_data.ch1_offset[0] = 0.0f;
-    cal->ad_data.ch1_gain[1] = 1.0f; // 无
+    cal->ad_data.ch1_gain[1] = 1.0f; // None
     cal->ad_data.ch1_offset[1] = 0.0f;
     cal->ad_data.ch1_gain[2] = 0.2f;
     cal->ad_data.ch1_offset[2] = 0.0f;
@@ -229,13 +229,13 @@ HAL_StatusTypeDef calibration_set_defaults(void)
     cal->ad_data.ch1_gain[7] = 0.2f;
     cal->ad_data.ch1_offset[7] = 0.0f;
 
-    cal->ad_data.ch2_gain[0] = 1.0f; // R=VoRt/(0.5-Vo) Vo为AD值    二极管模式采到的即为实际压降,必须用4.7K电阻档
+    cal->ad_data.ch2_gain[0] = 1.0f; // R=VoRt/(0.5-Vo) where Vo is the AD value; diode mode reads the actual voltage drop directly, must use the 4.7K resistor range
     cal->ad_data.ch2_offset[0] = 0.0f;
-    cal->ad_data.ch2_gain[1] = 1.0f; // 无
+    cal->ad_data.ch2_gain[1] = 1.0f; // None
     cal->ad_data.ch2_offset[1] = 0.0f;
     cal->ad_data.ch2_gain[2] = 11.0f;
     cal->ad_data.ch2_offset[2] = -27.5f;
-    cal->ad_data.ch2_gain[3] = 1.0f; // 无
+    cal->ad_data.ch2_gain[3] = 1.0f; // None
     cal->ad_data.ch2_offset[3] = 0.0f;
     cal->ad_data.ch2_gain[4] = 1.0f; // AD_V_BLAS_I
     cal->ad_data.ch2_offset[4] = 0.0f;
@@ -320,7 +320,7 @@ HAL_StatusTypeDef power_set_defaults(void)
     return HAL_OK;
 }
 /**
- * @brief 从Flash加载校准数据
+ * @brief Load calibration data from Flash
  */
 HAL_StatusTypeDef calibration_load(void)
 {
@@ -428,7 +428,7 @@ void print_all_calibration_data(void)
     M_SPI_DEBUG("========================================================\r\n");
 }
 /**
- * @brief 保存校准数据到Flash
+ * @brief Save calibration data to Flash
  */
 HAL_StatusTypeDef calibration_save(void)
 {
@@ -461,7 +461,7 @@ HAL_StatusTypeDef calibration_save(void)
 }
 
 /**
- * @brief 备份校准数据
+ * @brief Back up calibration data
  */
 HAL_StatusTypeDef calibration_backup(void)
 {
@@ -478,7 +478,7 @@ HAL_StatusTypeDef calibration_backup(void)
 }
 
 /**
- * @brief 从备份恢复校准数据
+ * @brief Restore calibration data from backup
  */
 HAL_StatusTypeDef calibration_restore_from_backup(void)
 {
@@ -501,7 +501,7 @@ HAL_StatusTypeDef calibration_restore_from_backup(void)
 }
 
 /**
- * @brief 恢复出厂设置
+ * @brief Factory reset
  */
 HAL_StatusTypeDef calibration_factory_reset(void)
 {
@@ -513,7 +513,7 @@ HAL_StatusTypeDef calibration_factory_reset(void)
 }
 
 /**
- * @brief 校准数据系统初始化
+ * @brief Calibration data system initialization
  */
 HAL_StatusTypeDef calibration_init(void)
 {
@@ -539,7 +539,7 @@ HAL_StatusTypeDef calibration_init(void)
 }
 
 /**
- * @brief 获取校准数据指针
+ * @brief Get the calibration data pointer
  */
 calibration_data_t *calibration_get_data(void)
 {
@@ -551,7 +551,7 @@ calibration_data_t *calibration_get_data(void)
 }
 
 /**
- * @brief 校准数据有效性检查
+ * @brief Calibration data validity check
  */
 bool calibration_is_valid(void)
 {
@@ -559,7 +559,7 @@ bool calibration_is_valid(void)
 }
 
 /**
- * @brief Flash数据转储（调试用）
+ * @brief Flash data dump (for debugging)
  */
 void calibration_dump_data(uint32_t addr, uint32_t size)
 {
@@ -581,7 +581,7 @@ void calibration_dump_data(uint32_t addr, uint32_t size)
 }
 
 /**
- * @brief CRC功能测试
+ * @brief CRC function test
  */
 void calibration_test_crc(void)
 {
@@ -601,10 +601,10 @@ void calibration_test_crc(void)
     }
 }
 
-/*==================== 8. 静态私有函数实现 ====================*/
+/*==================== 8. Static private function implementations ====================*/
 
 /**
- * @brief 计算校准参数
+ * @brief Calculate calibration parameters
  */
 static HAL_StatusTypeDef calu_calibration_data(void)
 {

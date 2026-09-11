@@ -25,7 +25,7 @@
  extern "C" {
 #endif
 
-extern volatile uint8_t i2c_data_ready; // 主机全局变量，用于标记I2C数据是否准备好
+extern volatile uint8_t i2c_data_ready; // Global flag indicating whether I2C data is ready
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 

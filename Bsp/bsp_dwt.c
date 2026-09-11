@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-16.
+// Created by xuebin on 24-8-16.
 //
 
 #include "bsp_dwt.h"
@@ -17,11 +17,12 @@ void bsp_init_dwt(void)
 
 /*
 *********************************************************************************************************
-*	函 数 名: bsp_delay_ms
-*	功能说明: 为了让底层驱动在带RTOS和裸机情况下有更好的兼容性
-*             专门制作一个阻塞式的延迟函数，在底层驱动中ms毫秒延迟主要用于初始化，并不会影响实时性。
-*	形    参: n 延迟长度，单位1 ms
-*	返 回 值: 无
+*	Function: bsp_delay_ms
+*	Description: To make the low-level drivers compatible with both RTOS and bare-metal environments,
+*             a blocking delay function is provided. In low-level drivers, the ms delay is mainly
+*             used during initialization and does not affect real-time behavior.
+*	Parameter: n Delay length, in 1 ms units
+*	Return: None
 *********************************************************************************************************
 */
 void bsp_delay_ms(uint32_t time)
@@ -31,25 +32,25 @@ void bsp_delay_ms(uint32_t time)
 
 /*
 *********************************************************************************************************
-*	函 数 名: bsp_delay_us
-*	功能说明: 这里的延时采用CPU的内部计数实现，32位计数器
+*	Function: bsp_delay_us
+*	Description: The delay is implemented with the CPU's internal counter, a 32-bit counter.
 *             	OSSchedLock(&err);
 *				bsp_delay_us(5);
-*				OSSchedUnlock(&err); 根据实际情况看看是否需要加调度锁或选择关中断
-*	形    参: time  延迟长度，单位1 us
-*	返 回 值: 无
-*   说    明: 1. 主频168MHz的情况下，32位计数器计满是2^32/168000000 = 25.565秒
-*                建议使用本函数做延迟的话，延迟在1秒以下。
-*             2. 实际通过示波器测试，微妙延迟函数比实际设置实际多运行0.25us左右的时间。
-*             下面数据测试条件：
-*             （1）. MDK5.15，优化等级0, 不同的MDK优化等级对其没有影响。
-*             （2）. STM32F407IGT6
-*             （3）. 测试方法：
+*				OSSchedUnlock(&err); Depending on the situation, decide whether a scheduler lock or disabled interrupts are needed
+*	Parameter: time  Delay length, in 1 us units
+*	Return: None
+*   Note: 1. At a 168 MHz core clock, the 32-bit counter overflows after 2^32/168000000 = 25.565 s.
+*                It is recommended to keep delays below 1 second when using this function.
+*             2. Measured with an oscilloscope, the us delay function runs about 0.25 us longer than the requested time.
+*             Test conditions for the data below:
+*             (1) MDK5.15, optimization level 0 (the MDK optimization level has no effect on it).
+*             (2) STM32F407IGT6
+*             (3) Test method:
 *				 GPIOI->BSRRL = GPIO_Pin_8;
 *				 bsp_delay_us(10);
 *				 GPIOI->BSRRH = GPIO_Pin_8;
 *             -------------------------------------------
-*                测试                 实际执行
+*                Requested               Actual
 *             bsp_delay_us(1)          1.2360us
 *             bsp_delay_us(2)          2.256us
 *             bsp_delay_us(3)          3.256us
@@ -60,10 +61,11 @@ void bsp_delay_ms(uint32_t time)
 *             bsp_delay_us(8)          8.276us
 *             bsp_delay_us(9)          9.276us
 *             bsp_delay_us(10)         10.28us
-*            3. 两个32位无符号数相减，获取的结果再赋值给32位无符号数依然可以正确的获取差值。
-*              假如A,B,C都是32位无符号数。
-*              如果A > B  那么A - B = C，这个很好理解，完全没有问题
-*              如果A < B  那么A - B = C， C的数值就是0xFFFFFFFF - B + A + 1。这一点要特别注意，正好用于本函数。
+*            3. Subtracting two unsigned 32-bit numbers and assigning the result to an unsigned 32-bit
+*              number still yields the correct difference.
+*              Suppose A, B, C are all unsigned 32-bit numbers.
+*              If A > B, then A - B = C, which is straightforward and has no problems.
+*              If A < B, then A - B = C, where C = 0xFFFFFFFF - B + A + 1. Pay special attention to this; it is exactly what this function relies on.
 *********************************************************************************************************
 */
 void bsp_delay_us(uint32_t time)
@@ -71,13 +73,13 @@ void bsp_delay_us(uint32_t time)
     uint32_t tCnt, tDelayCnt;
 	uint32_t tStart;
 
-	tStart = DWT_CYCCNT;                                     /* 刚进入时的计数器值 */
+	tStart = DWT_CYCCNT;                                     /* Counter value on entry */
 	tCnt = 0;
-	tDelayCnt = time * (SystemCoreClock / 1000000);	 /* 需要的节拍数 */
+	tDelayCnt = time * (SystemCoreClock / 1000000);	 /* Number of ticks required */
 
 	while(tCnt < tDelayCnt)
 	{
-		tCnt = DWT_CYCCNT - tStart; /* 求减过程中，如果发生第一次32位计数器重新计数，依然可以正确计算 */
+		tCnt = DWT_CYCCNT - tStart; /* Subtraction is still correct even if the 32-bit counter wraps around */
 	}
 }
 uint32_t dwt_get_ms(void)
@@ -90,11 +92,11 @@ void bsp_delay_dwt(uint32_t time)
 	uint32_t tStart;
 
 	tCnt = 0;
-	tDelayCnt = time;	 /* 需要的节拍数 */
-	tStart = DWT_CYCCNT;         /* 刚进入时的计数器值 */
+	tDelayCnt = time;	 /* Number of ticks required */
+	tStart = DWT_CYCCNT;         /* Counter value on entry */
 
 	while(tCnt < tDelayCnt)
 	{
-		tCnt = DWT_CYCCNT - tStart; /* 求减过程中，如果发生第一次32位计数器重新计数，依然可以正确计算 */
+		tCnt = DWT_CYCCNT - tStart; /* Subtraction is still correct even if the 32-bit counter wraps around */
 	}
 }

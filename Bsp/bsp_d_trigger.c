@@ -1,22 +1,22 @@
 /**
  * @file bsp_d_trigger.c
- * @brief D 触发器控制模块
+ * @brief D flip-flop control module
  *
- * 使用说明（推荐流程）：
- * 1) 先初始化具体一路触发器（d_1 ~ d_8）：
+ * Usage (recommended flow):
+ * 1) First initialize a specific flip-flop (d_1 ~ d_8):
  *      bsp_d_trigger_init(d_1);
- * 2) 使能总输出（OE，注意本函数内部是反相写入）：
- *      bsp_d_trigger_set(1);   // 1=使能输出，0=关闭输出
- * 3) 设置某一路通道状态并锁存到触发器：
- *      bsp_d_trigger_set_channel(&d_1, 0, 1); // d_1 的 CH0 置高
- *      bsp_d_trigger_set_channel(&d_1, 3, 0); // d_1 的 CH3 置低
+ * 2) Enable the master output (OE, note that this function writes inverted):
+ *      bsp_d_trigger_set(1);   // 1=enable output, 0=disable output
+ * 3) Set a channel state and latch it into the flip-flop:
+ *      bsp_d_trigger_set_channel(&d_1, 0, 1); // Set d_1 CH0 high
+ *      bsp_d_trigger_set_channel(&d_1, 3, 0); // Set d_1 CH3 low
  *
- * 参数约定：
- * - channel: 0~7（共 8 路）
- * - enable : 0/1（低/高）
+ * Parameter conventions:
+ * - channel: 0~7 (8 channels in total)
+ * - enable : 0/1 (low/high)
  *
- * 时序说明：
- * - 先写数据脚，再对 d_clk 产生一个上升沿-下降沿脉冲完成锁存。
+ * Timing notes:
+ * - Write the data pins first, then generate a rising-edge/falling-edge pulse on d_clk to complete the latch.
  */
 
 #include "bsp_d_trigger.h"
@@ -30,7 +30,7 @@ static uint8_t s_d_trigger_mutex_ready = 0;
 #define D_TRIGGER_CHANNEL_NUM 8
 #define D_TRIGGER_DEVICE_NUM 8
 
-/* 每个D触发器8路通道状态缓存：bit0~bit7 对应 channel 0~7 */
+/* 8-channel state cache per D flip-flop: bit0~bit7 correspond to channel 0~7 */
 static volatile uint8_t s_d_trigger_shadow[D_TRIGGER_DEVICE_NUM] = {0};
 GPIO_TypeDef *latch_group[8] = {
     LATCH_0_GPIO_Port,
@@ -52,17 +52,6 @@ uint16_t latch_pin[8] = {
     LATCH_5_Pin,
     LATCH_6_Pin,
     LATCH_7_Pin,
-};
-
-uint16_t latch_pin_2[8] = {
-    LATCH_7_Pin,
-    LATCH_6_Pin,
-    LATCH_5_Pin,
-    LATCH_4_Pin,
-    LATCH_3_Pin,
-    LATCH_2_Pin,
-    LATCH_1_Pin,
-    LATCH_0_Pin,
 };
 
 const d_trigger_t d_1 = {
@@ -132,7 +121,7 @@ void bsp_d_trigger_lock_init(void)
     }
 }
 /**
- * @brief 初始化所有 D 触发器的时钟脚与 8 路数据脚,关闭24,40pin引脚通道防止漏电,初始化互斥锁
+ * @brief Initialize all D flip-flop clock pins and 8 data pins, close the 24/40-pin channels to prevent leakage, initialize the mutex
  */
 void bsp_all_d_trigger_init()
 {
@@ -150,20 +139,20 @@ void bsp_all_d_trigger_init()
     bsp_d_trigger_lock_init();
 }
 /**
- * @brief 初始化一路 D 触发器的时钟脚与 8 路数据脚
- * @param cfg 触发器配置（可传 d_1 ~ d_8）
+ * @brief Initialize one D flip-flop's clock pin and 8 data pins
+ * @param cfg Flip-flop configuration (pass d_1 ~ d_8)
  */
 void bsp_d_trigger_init(d_trigger_t cfg)
 {
 
-    // 时钟引脚初始化
+    // Clock pin initialization
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = cfg.d_clk_pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(cfg.d_clk_group, &GPIO_InitStruct);
-    // 数据引脚初始化
+    // Data pin initialization
     for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)
     {
         GPIO_InitStruct.Pin = cfg.d_pin[i];
@@ -171,9 +160,9 @@ void bsp_d_trigger_init(d_trigger_t cfg)
     }
 }
 /**
- * @brief 总使能控制（OE）
- * @param state 1=使能输出，0=关闭输出
- * @note  硬件为低有效 OE，函数内部使用 !state 反相写引脚
+ * @brief Master enable control (OE)
+ * @param state 1=enable output, 0=disable output
+ * @note  The hardware OE is active-low; the function writes the pin inverted with !state
  */
 void bsp_d_trigger_set(uint8_t state)
 {
@@ -200,15 +189,15 @@ static int8_t bsp_d_trigger_get_index(const d_trigger_t *cfg)
     return -1;
 }
 /**
- * @brief 设置单个通道并锁存
- * @param cfg     触发器配置指针（&d_1 ~ &d_8）
- * @param channel 通道号 0~7
- * @param enable  电平状态 0/1
+ * @brief Set a single channel and latch it
+ * @param cfg     Flip-flop configuration pointer (&d_1 ~ &d_8)
+ * @param channel Channel number 0~7
+ * @param enable  Level state 0/1
  *
- * 示例：
+ * Example:
  *    bsp_d_trigger_init(d_2);
  *    bsp_d_trigger_set(1);
- *    bsp_d_trigger_set_channel(&d_2, 5, 1); // d_2 CH5 输出高
+ *    bsp_d_trigger_set_channel(&d_2, 5, 1); // Set d_2 CH5 output high
  */
 void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, const uint8_t enable)
 {
@@ -221,7 +210,7 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         return;
     }
 
-    /* 1) 先更新软件缓存 */
+    /* 1) Update the software cache first */
     int8_t idx = bsp_d_trigger_get_index(cfg);
     if (idx >= 0)
     {
@@ -230,8 +219,7 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         else
             s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
     }
-    // printf("set s_d_trigger_shadow[%d]:%x\r\n", idx, s_d_trigger_shadow[idx]);
-    /* 2) 按缓存回放全部8路数据脚，避免只改1路导致其余路状态丢失 */
+    /* 2) Replay all 8 data pins from the cache, so changing one channel does not lose the state of the others */
     uint8_t shadow = s_d_trigger_shadow[idx];
     for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)
     {
@@ -267,7 +255,6 @@ uint8_t bsp_d_trigger_get_channel_state(const d_trigger_t *cfg, const uint8_t ch
     {
         ret = (s_d_trigger_shadow[idx] >> channel) & 0x01U;
     }
-    // printf("get s_d_trigger_shadow[%d]:%x\r\n", idx, s_d_trigger_shadow[idx]);
     osMutexRelease(s_d_trigger_mutex);
 
     return ret;
@@ -276,10 +263,10 @@ uint8_t bsp_d_trigger_get_channel_state(const d_trigger_t *cfg, const uint8_t ch
 void test_d_trigger()
 {
     /**
-     * 示例测试流程：
-     * 1. 初始化一路触发器
-     * 2. 打开总使能
-     * 3. 逐通道置高再置低
+     * Example test flow:
+     * 1. Initialize one flip-flop
+     * 2. Enable the master output
+     * 3. Set each channel high then low
      */
     bsp_d_trigger_init(d_1);
     bsp_d_trigger_init(d_2);

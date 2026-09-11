@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-26.
+// Created by xuebin on 24-8-26.
 //
 
 #ifndef WIDGET_MAIN_H

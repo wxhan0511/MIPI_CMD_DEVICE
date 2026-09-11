@@ -27,7 +27,7 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 
-/* 用户自定义变量声明 */
+/* User-defined variable declarations */
 extern osThreadId_t thread_id_gtb;
 extern const osThreadAttr_t server_gtb_attr;
 extern uint8_t get_data_fs[64];

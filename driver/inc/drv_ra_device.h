@@ -21,35 +21,23 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 
-    #define RA_SGM3804_add           0x7c  //VSP,VSN
-    #define RA_LP3907_add_1          0xc0  //SSD2828供电MVDD,VDDIO
-    #define RA_LP3907_add_2          0xc2  //VCI,IOVCC
-    #define RA_INA3221_add           0x80  //正压电流检测
-    #define RA_INA3221_resistor      (0.2 / 10)   //VCI，IOVCC，VSP采样电阻值，单位Ω
-    #define RA_PCA9554_add           0x70<<1  //小板上电时序控制芯片
-    #define RA_ADC121C027_ADDR       0xa2   //VSN电流采样ADC
-    #define RA_ADC121_resistor       0.04   //VSN采样电阻值，单位Ω
-
-    // 新增宏定义（后续补充）
-    #define RA_SGM3804_ADDRESS       0x7c
+    #define RA_SGM3804_ADDRESS       0x7c  // VSP/VSN DAC
     #define RA_SGM3804_VSP_CMD       0x00
     #define RA_SGM3804_VSN_CMD       0x01
-    #define RA_LP3907_1_ADDRESS      0xC2
+    #define RA_LP3907_1_ADDRESS      0xC2  // VCI, IOVCC regulator
     #define RA_LP3907_1_VCI_CMD      0x3A
     #define RA_LP3907_1_IOVCC_CMD    0x39
-    #define RA_LP3907_2_ADDRESS      0xC0
+    #define RA_LP3907_2_ADDRESS      0xC0  // MVDD, VDDIO regulator (SSD2828 supply)
     #define RA_LP3907_2_MVDD_CMD     0x39
     #define RA_LP3907_2_VDDIO_CMD    0x3A
     #define RA_LP3907_BKLDOEN_CMD    0x10
-    #define RA_INA3221_ADDRESS       0x80
-    #define RA_ADC121C027_ADDRESS    0xa2
-    #define RA_TCA9554_POWER_OFF     0x70
-    #define RA_XB_ADDRESS            0x80
+    #define RA_INA3221_ADDRESS       0x80  // positive-rail current sensor
+    #define RA_INA3221_resistor      (0.2 / 10)  // VCI/IOVCC/VSP sense resistor value in ohms
+    #define RA_ADC121C027_ADDRESS    0xa2  // VSN current-sampling ADC
+    #define RA_ADC121_resistor       0.04  // VSN sense resistor value in ohms
+    #define RA_TCA9554_POWER_OFF     0x70  // sub-board power sequencing controller
 
-    #define MAX_CHANNEL_NUM          7
-    #define SUB_BOARD_MAX_NUM        8
-
-    //------------------ 枚举类型定义 ------------------
+    //------------------ Enum type definitions ------------------
 typedef enum {
     RA_POWER_ELVSS,
     RA_POWER_VCC,
@@ -123,7 +111,7 @@ typedef struct {
     drv_ra_ops_t *ops;
 } drv_ra_t;
 
-//------------------ 外部变量声明 ------------------
+//------------------ External variable declarations ------------------
 extern drv_ra_ops_t ra_sub_ops;
 extern drv_ra_dev_t ra_sub_dev;
 extern drv_ra_t ra_dev_main_0;

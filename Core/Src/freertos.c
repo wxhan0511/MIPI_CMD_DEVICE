@@ -1,4 +1,4 @@
-/* ==================== 1. 头文件包含 ==================== */
+/* ==================== 1. Includes ==================== */
 #include "main.h"
 
 #include "i2c_task.h"
@@ -13,19 +13,19 @@
 #include "task_com.h"
 #include "lcd.h"
 
-/* ==================== 2. 宏定义 ==================== */
-/* 无 */
+/* ==================== 2. Macros ==================== */
+/* None */
 
-/* ==================== 3. 类型定义（结构体、枚举、别名） ==================== */
-/* 无 */
+/* ==================== 3. Type definitions (structs, enums, aliases) ==================== */
+/* None */
 
-/* ==================== 4. 外部全局变量 ==================== */
-/* 无 */
+/* ==================== 4. External global variables ==================== */
+/* None */
 
-/* ==================== 5. 静态私有变量 ==================== */
-/* 无 */
+/* ==================== 5. Static private variables ==================== */
+/* None */
 
-/* ==================== 6. 静态函数声明 ==================== */
+/* ==================== 6. Static function declarations ==================== */
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 void StartDefaultTask(void *argument);
@@ -48,7 +48,7 @@ osTimerId_t led_timerHandle;
 const osTimerAttr_t led_timer_attributes = {
     .name = "led_timer"};
 
-/* ==================== 7. 外部可调用函数实现 ==================== */
+/* ==================== 7. Public function implementations ==================== */
 /**
  * @brief  FreeRTOS initialization
  * @param  None
@@ -59,9 +59,9 @@ void MX_FREERTOS_Init(void)
   show_mutexHandle = osMutexNew(&show_mutex_attributes);
   led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
 
-  // defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  // widget_main_task_init(); // LVGL UI task
+  widget_main_task_init(); // LVGL UI task
   // power_task_init();
   task_sample_init();
   task_com_init();
@@ -97,11 +97,11 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     osDelay(10);
-    lv_tick_inc(10); // 同步推进 LVGL 的内部时钟 10ms
+    lv_tick_inc(10); // Advance the LVGL internal timebase by 10 ms
 #if 1
     if (!HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin))
     {
-      // 临界区外获取信号量是安全的
+      // Safe to acquire the mutex outside the critical section
       if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
       {
         if (current_page == PAGE_0)
@@ -124,15 +124,15 @@ void StartDefaultTask(void *argument)
         lv_display_t *disp = lv_display_get_default();
         if (disp)
         {
-          lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 依需求
-          lcd_write_cmd_8bit(0x36);                             // 发送指令
-          lcd_write_data_8bit(0x28);                            // 保持竖屏逻辑 BGR顺序
+          lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 as needed
+          lcd_write_cmd_8bit(0x36);                             // Send command
+          lcd_write_data_8bit(0x28);                            // Keep portrait logic, BGR color order
           if (current_page == PAGE_0)
-            lv_obj_set_size(page1, 320, 240); // 更新页面尺寸以适应新的显示方向
+            lv_obj_set_size(page1, 320, 240); // Update the page size to match the new orientation
           if (current_page == PAGE_1)
-            lv_obj_set_size(page3, 320, 240); // 更新页面尺寸以适应新的显示方向
+            lv_obj_set_size(page3, 320, 240); // Update the page size to match the new orientation
           if (current_page == PAGE_2)
-            lv_obj_set_size(page2, 320, 240); // 更新页面尺寸以适应新的显示方向
+            lv_obj_set_size(page2, 320, 240); // Update the page size to match the new orientation
           lv_obj_invalidate(lv_screen_active());
           lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
         }
@@ -149,7 +149,7 @@ void StartDefaultTask(void *argument)
     }
     if (!HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin))
     {
-#ifdef calcbration_board_mode
+#ifdef calibration_board_mode
       HAL_GPIO_WritePin(TSPI_CS_GPIO_Port, TSPI_CS_Pin, 0);
       osDelay(1);
       HAL_GPIO_WritePin(TSPI_CS_GPIO_Port, TSPI_CS_Pin, 1);
@@ -177,21 +177,21 @@ void StartDefaultTask(void *argument)
           lv_screen_load_anim(rotate_page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
         }
         printf("wait acquire show_mutex\r\n");
-        // 临界区外获取信号量是安全的
+        // Safe to acquire the mutex outside the critical section
 
         lv_display_t *disp = lv_display_get_default();
         if (disp)
         {
           if (disp)
-            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // 90 / 270 依需求
-          lcd_write_cmd_8bit(0x36);                                // 发送指令
-          lcd_write_data_8bit(0x48);                               // 0x48 = 0x40 + 0x08 → MX=1，BGR=1，MV=0，MY=0。启用 X 轴镜像（左右翻转）并把颜色顺序设为 BG
+            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // 90 / 270 as needed
+          lcd_write_cmd_8bit(0x36);                                // Send command
+          lcd_write_data_8bit(0x48);                               // 0x48 = 0x40 + 0x08 -> MX=1, BGR=1, MV=0, MY=0: enable X mirroring (horizontal flip) and set the color order to BGR
           if (current_page == PAGE_0)
-            lv_obj_set_size(rotate_page1, 240, 320); // 更新页面尺寸以适应新的显示方向
+            lv_obj_set_size(rotate_page1, 240, 320); // Update the page size to match the new orientation
           if (current_page == PAGE_1)
-            lv_obj_set_size(rotate_page3, 240, 320); // 更新页面尺寸以适应新的显示方向
+            lv_obj_set_size(rotate_page3, 240, 320); // Update the page size to match the new orientation
           if (current_page == PAGE_2)
-            lv_obj_set_size(rotate_page2, 240, 320); // 更新页面尺寸以适应新的显示方向
+            lv_obj_set_size(rotate_page2, 240, 320); // Update the page size to match the new orientation
           lv_obj_invalidate(lv_screen_active());
           lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
         }
@@ -210,19 +210,11 @@ void StartDefaultTask(void *argument)
       key_flag_1 = 0;
     }
 #endif
-    // else if(HAL_GPIO_ReadPin(KEY_2_GPIO_Port,KEY_2_Pin) == 1)
-    // {
-    //   widget_change(1);
-    //   //printf("key 2 changed\r\n");
-    // }else
-    // {
-    //   printf("key status %d\r\n",HAL_GPIO_ReadPin(KEY_2_GPIO_Port,KEY_2_Pin));
-    // }
   }
   /* USER CODE END StartDefaultTask */
 }
 
-/* ==================== 8. 静态私有函数实现 ==================== */
-/* 无 */
+/* ==================== 8. Static private function implementations ==================== */
+/* None */
 
 /* USER CODE END Application */

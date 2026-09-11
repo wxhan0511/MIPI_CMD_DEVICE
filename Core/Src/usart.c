@@ -157,7 +157,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-// 串口发送函数示例
+// Example UART transmit function
 void uart_send(const char* str)
 {
     if (osMutexAcquire(uart_mutex, osWaitForever) == osOK)

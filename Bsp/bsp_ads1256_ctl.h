@@ -22,17 +22,17 @@ extern "C"
 
     /* Exported types ------------------------------------------------------------*/
 
-    // ADC通道枚举定义
+    // ADC channel enum definition
     typedef enum
     {
-        ADC_CH_VBAT = 0,    // ADC0: AD_V_VBAT -  VABT电压
-        ADC_CH_ELVDD = 1,   // ADC1: AD_V_ELVDD - ELVDD电压
-        ADC_CH_ELVSS = 2,   // ADC2: AD_V_ELVSS - ELVSS电压
-        ADC_CH_VBAT_I = 3,  // ADC3: AD_VBAT_I -  VBAT电流
-        ADC_CH_ELVDD_I = 4, // ADC4: AD_I_ELVDD - ELVDD电流
-        ADC_CH_VREF = 5,    // ADC5: 基准电压
-        ADC_CH_ELVSS_I = 6, // ADC6: AD_I_ELVSS - ELVSS电流
-        ADC_CH_MAX = 7      // 最大通道数
+        ADC_CH_VBAT = 0,    // ADC0: AD_V_VBAT - VBAT voltage
+        ADC_CH_ELVDD = 1,   // ADC1: AD_V_ELVDD - ELVDD voltage
+        ADC_CH_ELVSS = 2,   // ADC2: AD_V_ELVSS - ELVSS voltage
+        ADC_CH_VBAT_I = 3,  // ADC3: AD_VBAT_I - VBAT current
+        ADC_CH_ELVDD_I = 4, // ADC4: AD_I_ELVDD - ELVDD current
+        ADC_CH_VREF = 5,    // ADC5: Reference voltage
+        ADC_CH_ELVSS_I = 6, // ADC6: AD_I_ELVSS - ELVSS current
+        ADC_CH_MAX = 7      // Maximum number of channels
     } adc_channel_t;
 
     typedef enum
@@ -90,7 +90,6 @@ extern "C"
 #define SINGLE_VOL_CHANGE_GEAR 0
     /* Exported functions prototypes ---------------------------------------------*/
     void raw_data_queue_push(float value, uint8_t index);
-    uint16_t raw_data_queue_get_count(void);
     float raw_data_queue_get_data(uint16_t index);
     uint8_t raw_data_queue_get_index(uint16_t index);
     void sample_data_cali();

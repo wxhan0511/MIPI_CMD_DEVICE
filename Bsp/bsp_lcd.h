@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-16.
+// Created by xuebin on 24-8-16.
 //
 
 #ifndef BSP_LCD_H
@@ -20,7 +20,9 @@ typedef struct
 }lcd_dev_t;
 
 #define LCD_BASE        (uint32_t)((0x60000000 + (0x4000000 * (LCD_FSMC_NEX - 1))) | (((1 << LCD_FSMC_AX) * 2) -2))
-#define LCD             ((lcd_dev_t *) LCD_BASE)
+/* FSMC register/data window for the bsp_lcd driver (named LCD_FSMC to avoid
+   clashing with the "LCD" macro defined in lcd.h with a different layout) */
+#define LCD_FSMC        ((lcd_dev_t *) LCD_BASE)
 
 extern lcd_dev_t lcd;
 

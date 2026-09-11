@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-19.
+// Created by Xue Bin on 24-8-19.
 //
 
 #include "retarget.h"
@@ -7,7 +7,7 @@
 /*
  * retarget.c
  *
- *  Created on: 2023年6月9日
+ *  Created on: 2023-06-09
  *      Author: Bobby
  */
 

@@ -77,10 +77,9 @@ void test_gtb_task(void)
     bsp_gtb_init(3);
     gtb_global_var_init(&tp_config_hid);
     ex_ti_initial(&tp_config_hid, DISABLE); //Please note that the TP-INT interrupt is turned off here
-    __IO uint8_t com_mode = GTB_HID;
     for (;;)
     {
-        //打印时间戳
+        // Print the timestamp
         TIME_DEBUG("Tick1: %lu \r\n", dwt_get_ms());
         if(hUsbDevice.dev_state == USBD_STATE_CONFIGURED)
         {
@@ -115,12 +114,10 @@ void server_gtb(void *argument)
     bsp_gtb_init(3);
     gtb_global_var_init(&tp_config_hid);
     ex_ti_initial(&tp_config_hid, DISABLE);
-    __IO uint8_t com_mode = GTB_HID;
     for (;;)
     {
 
         gtb_fw_mode_com(&tp_config_hid, send_data_fs, get_data_fs, GTB_HID);
-        //TIME_DEBUG("ssssstart: %lu ms\r\n", dwt_get_ms());
         if (hid_state_fs)
         {
             if (0x40 == send_data_fs[0])

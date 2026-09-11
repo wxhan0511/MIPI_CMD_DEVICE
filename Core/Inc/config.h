@@ -32,7 +32,7 @@
 #define DATA_SIZE             256
 #define I2C_TIMEOUT           100
 
-// #define I2C1_MASTER            //屏幕显示和DAC控制(master),levelshift输出(slave)
+// #define I2C1_MASTER            // Screen display and DAC control (master), level-shift output (slave)
 // #ifndef I2C1_MASTER
 //   #define I2C1_SLAVE
 // #endif

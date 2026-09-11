@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-19.
+// Created by xuebin on 24-8-19.
 //
 
 #ifndef BSP_D_TRIGGER_H

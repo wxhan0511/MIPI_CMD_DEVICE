@@ -2,9 +2,9 @@
 #include "main.h"
 #include "task_manage.h"
 #include "tim.h"
-static uint32_t pulse_start_tick = 0; // 记录开始高电平时间
-static uint8_t pulse_valid_flag = 0;  // 防止1秒内重复加
-uint8_t test_pulse = 10;              // 你的变量
+static uint32_t pulse_start_tick = 0; // Tick at which the high level started
+static uint8_t pulse_valid_flag = 0;  // Prevents repeated increments within 1 second
+static uint8_t test_pulse = 10;       // User variable
 
 void pwm_ctrl_task_init(void)
 {
@@ -28,22 +28,22 @@ void pwm_ctrl_task(void *argument)
 
 // void pulse_check_task(void)
 // {
-//     // 读取IO电平
+//     // Read the IO level
 //     if (HAL_GPIO_ReadPin(PULSE_A_GPIO_Port, PULSE_A_Pin) == GPIO_PIN_SET)
 //     {
 //         printf("Pulse A detected high\r\n");
-//         // 第一次检测到高电平，记录时间
+//         // First detection of the high level, record the time
 //         if (pulse_valid_flag == 0)
 //         {
 //             pulse_start_tick = HAL_GetTick();
 //             pulse_valid_flag = 1;
 //         }
 
-//         // 判断持续高电平 ≥1秒 (1000ms)
+//         // Check whether the high level persists for >= 1 second (1000 ms)
 //         if (HAL_GetTick() - pulse_start_tick >= 1000)
 //         {
 //             printf("Pulse A valid for >1s\r\n");
-//             // 满足1秒，执行一次 +10
+//             // Held for 1 second, execute a single +10 step
 //             disableTim1PWMOutput();
 //             disableTim2PWMOutput();
 //             bsp_led_pwm_init(test_pulse);
@@ -51,7 +51,7 @@ void pwm_ctrl_task(void *argument)
 //             enableTim1PWMOutput();
 //             enableTim2PWMOutput();
 
-//             test_pulse += 10; // 真正满足1秒才+10
+//             test_pulse += 10; // Increment by 10 only after a full 1 second
 //             // printf("Pulse detected >1s, Duty Cycle set to: %d %%\n", test_pulse / 1050);
 //             if (test_pulse > 100)
 //             {
@@ -62,12 +62,12 @@ void pwm_ctrl_task(void *argument)
 //                 printf("Before disableTim2PWMOutput: htim2.Instance=0x%08lX\n", (unsigned long)htim2.Instance);
 //                 printf("Duty Cycle reset to 0%%\n");
 //             }
-//             pulse_valid_flag = 0; // 重置，准备下一次
+//             pulse_valid_flag = 0; // Reset, ready for the next cycle
 //         }
 //     }
 //     else
 //     {
-//         // 一旦松开，立即清零，不触发
+//         // Cleared immediately on release, no trigger
 //         pulse_valid_flag = 0;
 //     }
 // }

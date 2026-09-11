@@ -25,7 +25,7 @@ CRC_HandleTypeDef hcrc = {0};
 
 /* Exported functions --------------------------------------------------------*/
 /**
- * @brief CRC外设初始化
+ * @brief CRC peripheral initialization
  * @retval HAL_StatusTypeDef
  */
 HAL_StatusTypeDef MX_CRC_Init(void)

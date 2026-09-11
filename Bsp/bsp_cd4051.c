@@ -1,9 +1,9 @@
 #include "bsp_cd4051.h"
 
-/* 锁存器 U1 (Latch 3) 的数据映像 */
-extern uint8_t s_latch3_data; // 默认使 INH=1 (禁止)
+/* Data image of latch U1 (Latch 3) */
+extern uint8_t s_latch3_data; // INH=1 (disabled) by default
 
-/* 定义位偏移 */
+/* Bit offsets */
 #define BIT_INH      0
 #define BIT_A        1
 #define BIT_B        2
@@ -13,14 +13,14 @@ extern uint8_t s_latch3_data; // 默认使 INH=1 (禁止)
 #define BIT_ELVDD_EN 6
 #define BIT_VDD_EN   7
 
-#define LATCH_ID_MUX 2 // 假设这是锁存器 3 的 ID
+#define LATCH_ID_MUX 2 // Assume this is the ID of latch 3
 
 // void bsp_mux_select_channel(bsp_mux_channel_t channel) {
 //     if (channel == MUX_CH_DISABLE) {
-//         s_latch3_data |= (1 << BIT_INH); // INH 置 1，断开
+//         s_latch3_data |= (1 << BIT_INH); // Set INH to 1, disconnect
 //     } else {
-//         s_latch3_data &= ~(1 << BIT_INH); // INH 清 0，选通
-//         /* 清除 A,B,C 位并设置新地址 */
+//         s_latch3_data &= ~(1 << BIT_INH); // Clear INH to 0, select
+//         /* Clear the A,B,C bits and set the new address */
 //         s_latch3_data &= ~(0x07 << BIT_A);
 //         s_latch3_data |= ((channel & 0x07) << BIT_A);
 //     }

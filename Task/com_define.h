@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-19.
+// Created by Xue Bin on 2024-08-19.
 //
 
 #ifndef COMMAND_DEFINE_H
@@ -31,7 +31,5 @@ typedef enum
 #define METER_DATA_LEN 1024
 
 #define METER_COM_DEBUG 0
-
-void command_wait_sync();
 
 #endif //COMMAND_DEFINE_H

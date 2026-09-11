@@ -70,7 +70,7 @@ void I2C1_Mutex_Init(void)
 {
   osMutexAttr_t attr = {
       .name = "I2C1_Mutex",
-      // 普通互斥 + 优先级继承；如需递归请改为：osMutexRecursive | osMutexPrioInherit
+      // Normal mutex with priority inheritance; for a recursive mutex use: osMutexRecursive | osMutexPrioInherit
       .attr_bits = osMutexPrioInherit};
   g_i2c1Mutex = osMutexNew(&attr);
 }
@@ -79,7 +79,7 @@ osStatus_t I2C1_Lock(uint32_t timeout)
 {
   if (g_i2c1Mutex == NULL)
   {
-    // 惰性创建（可选），避免忘记初始化
+    // Lazy creation (optional), guards against missed initialization
     I2C1_Mutex_Init();
   }
   return osMutexAcquire(g_i2c1Mutex, timeout);
@@ -95,7 +95,7 @@ void I2C2_Mutex_Init(void)
 {
   osMutexAttr_t attr = {
       .name = "I2C2_Mutex",
-      // 普通互斥 + 优先级继承；如需递归请改为：osMutexRecursive | osMutexPrioInherit
+      // Normal mutex with priority inheritance; for a recursive mutex use: osMutexRecursive | osMutexPrioInherit
       .attr_bits = osMutexPrioInherit};
   g_i2c2Mutex = osMutexNew(&attr);
 }
@@ -103,7 +103,7 @@ osStatus_t I2C2_Lock(uint32_t timeout)
 {
   if (g_i2c2Mutex == NULL)
   {
-    // 惰性创建（可选），避免忘记初始化
+    // Lazy creation (optional), guards against missed initialization
     I2C2_Mutex_Init();
   }
   return osMutexAcquire(g_i2c2Mutex, timeout);
@@ -163,7 +163,7 @@ void SlaveRxTask(void *argument)
     }
     
     memset(tx_buf, 0, sizeof(tx_buf));
-    // 打印收到的数据
+    // Print the received data
 
     for (uint32_t i = 0; i < sizeof(rx_buf); i++)
     {
@@ -174,16 +174,16 @@ void SlaveRxTask(void *argument)
       }
     }
 
-    // 解析收到的数据
+    // Parse the received data
     
     cmd_header = rx_buf[0];
     cmd = rx_buf[1];
 
-    // tx和rx头一样
+    // The TX and RX headers are identical
     tx_buf[0] = cmd_header;
     tx_buf[1] = cmd;
 
-    // 解析header
+    // Parse the header
     if (cmd_header != 0xA0)
     {
       I2C_ERROR("receive data header: %x\r\n", cmd_header);
@@ -211,10 +211,10 @@ void SlaveRxTask(void *argument)
         I2C_DEBUG("Setting ELVDD Voltage...\r\n");
         ELVDD_DISABLE();
         I2C_DEBUG("Target Vol:%f\r\n", set_power_frame.value.float_value[0]);
-        // 保存最新电压值vi
+        // Save the latest voltage value vi
         g_calibration_manager.data.elvdd_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
-        // 校准数据
+        // Calibration data
         set_power_frame.value.float_value[0] = (set_power_frame.value.float_value[0] - g_calibration_manager.data.da_data.elvdd_set_offset) / (g_calibration_manager.data.da_data.elvdd_set_gain);
         dac_dev.val[0] = float_to_uint16_round(set_power_frame.value.float_value[0]);
         I2C_DEBUG("Vi:%f\r\n", set_power_frame.value.float_value[0]);
@@ -232,10 +232,10 @@ void SlaveRxTask(void *argument)
         I2C_DEBUG("Setting ELVSS Voltage...\r\n");
         ELVSS_DISABLE();
         I2C_DEBUG("Target Vol:%f\r\n", set_power_frame.value.float_value[0]);
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.elvss_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
-        // 校准数据    g_calibration_manager.data.elvss_last_voltage = (-g_calibration_manager.data.elvss_last_voltage + da_calibration_data.elvss_set_offset) / (da_calibration_data.elvss_set_gain);
+        // Calibration data    g_calibration_manager.data.elvss_last_voltage = (-g_calibration_manager.data.elvss_last_voltage + da_calibration_data.elvss_set_offset) / (da_calibration_data.elvss_set_gain);
 
         set_power_frame.value.float_value[0] = (-set_power_frame.value.float_value[0] + g_calibration_manager.data.da_data.elvss_set_offset) / (g_calibration_manager.data.da_data.elvss_set_gain);
         dac_dev.val[1] = float_to_uint16_round(set_power_frame.value.float_value[0]);
@@ -255,10 +255,10 @@ void SlaveRxTask(void *argument)
         I2C_DEBUG("Setting VCC Voltage...\r\n");
         VCC_DISABLE();
         I2C_DEBUG("Target Vol:%f\r\n", set_power_frame.value.float_value[0]);
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.vcc_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
-        // 校准数据
+        // Calibration data
         set_power_frame.value.float_value[0] = (set_power_frame.value.float_value[0] - g_calibration_manager.data.da_data.vcc_set_offset) / (g_calibration_manager.data.da_data.vcc_set_gain);
         dac_dev.val[2] = float_to_uint16_round(set_power_frame.value.float_value[0]);
         status = bsp_dac_single_voltage_set(&dac_dev, 2, dac_dev.val[2], 0);
@@ -277,10 +277,10 @@ void SlaveRxTask(void *argument)
         IOVCC_DISABLE();
         I2C_DEBUG("Target Vol:%f\r\n", set_power_frame.value.float_value[0]);
 
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.iovcc_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
-        // 校准数据
+        // Calibration data
         set_power_frame.value.float_value[0] = (set_power_frame.value.float_value[0] - g_calibration_manager.data.da_data.iovcc_set_offset) / (g_calibration_manager.data.da_data.iovcc_set_gain);
         dac_dev.val[3] = float_to_uint16_round(set_power_frame.value.float_value[0]);
         status = bsp_dac_single_voltage_set(&dac_dev, 3, dac_dev.val[3], 0);
@@ -300,7 +300,7 @@ void SlaveRxTask(void *argument)
         I2C_DEBUG("Target Vol:%f\r\n", set_power_frame.value.float_value[0]);
         temp = float_to_uint8_round(set_power_frame.value.float_value[0] / 100);
         status = ra_dev_main_0.ops->set_power_vol(ra_dev_main_0.dev, RA_POWER_IOVCC, temp);
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.xb_iovcc_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
         if (status != BSP_OK)
@@ -320,7 +320,7 @@ void SlaveRxTask(void *argument)
         temp = float_to_uint8_round(set_power_frame.value.float_value[0] / 100);
         // osDelay(10);
         status = ra_dev_main_0.ops->set_power_vol(ra_dev_main_0.dev, RA_POWER_VCI, temp);
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.vci_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
         if (status != BSP_OK)
@@ -340,7 +340,7 @@ void SlaveRxTask(void *argument)
         temp = float_to_uint8_round(set_power_frame.value.float_value[0] / 100);
         // osDelay(10);
         status = ra_dev_main_0.ops->set_power_vol(ra_dev_main_0.dev, RA_POWER_VSP, temp);
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.vsp_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
         if (status != BSP_OK)
@@ -357,7 +357,7 @@ void SlaveRxTask(void *argument)
         temp = float_to_uint8_round(set_power_frame.value.float_value[0] / 100);
         // osDelay(10);
         status = ra_dev_main_0.ops->set_power_vol(ra_dev_main_0.dev, RA_POWER_VSN, temp);
-        // 保存最新电压值
+        // Save the latest voltage value
         g_calibration_manager.data.vsn_last_voltage = set_power_frame.value.float_value[0];
         calibration_save();
         if (status != BSP_OK)
@@ -520,7 +520,7 @@ void SlaveRxTask(void *argument)
       tx_buf[3] = state;
       break;
     case ALL_POWER_EN:
-      // 01使能，0不使能
+      // 0x01 = enable, 0x00 = disable
 
       if (rx_buf[2] == 0x01)
         ELVDD_ENABLE();
@@ -551,7 +551,7 @@ void SlaveRxTask(void *argument)
         HAL_I2C_Mem_Read(&hi2c1, RA_LP3907_1_ADDRESS, 0x10, I2C_MEMADD_SIZE_8BIT, &temp, 1, 100);
         I2C_DEBUG("temp:%x\r\n", temp);
         ra_dev_main_0.dev->lp3907->write(RA_LP3907_1_ADDRESS, 0x10, temp & (~(1 << 4)));
-        // 打印寄存器值
+        // Print the register value
         I2C_DEBUG("temp:%x\r\n", temp);
       }
       if (rx_buf[7] == 0x1) // VCI
@@ -853,7 +853,7 @@ void SlaveRxTask(void *argument)
       I2C_DEBUG("unknow command\r\n");
       break;
     }
-    // 打印发送的数据
+    // Print the data to send
 #ifdef I2C_DEBUG_ENABLE
     for (uint32_t i = 0; i < sizeof(tx_buf); i++)
     {
@@ -901,7 +901,7 @@ void MasterTxTask(void *argument)
     }
     HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
-    // 从latest_sample_index[i]获取通道号
+    // Get the channel number from latest_sample_index[i]
     for (uint8_t i = 0; i < 8; i++)
     {
       channel_num = latest_sample_index[i];
@@ -911,7 +911,7 @@ void MasterTxTask(void *argument)
         IV_data = latest_sample_raw_data[i] * 500;
         if (channel_num == AD_I_ELVSS)
         {
-          IV_data = -IV_data; // ELVSS电流为负值
+          IV_data = -IV_data; // ELVSS current is negative
         }
         IV_data = gain * IV_data + offset;
       }
@@ -921,11 +921,11 @@ void MasterTxTask(void *argument)
         IV_data = latest_sample_raw_data[i] * 1e3;
         if (channel_num == AD_V_ELVSS)
         {
-          IV_data = -IV_data; // ELVSS电压为负值
+          IV_data = -IV_data; // ELVSS voltage is negative
         }
         if (channel_num == AD_V_ELVDD)
         {
-          IV_data = IV_data * 2.5; // ELVDD电压为2.5倍
+          IV_data = IV_data * 2.5; // ELVDD voltage is 2.5x
         }
         // IV_data = gain*IV_data + offset;
       }
@@ -937,7 +937,7 @@ void MasterTxTask(void *argument)
       AD_DATA_DEBUG("-----Channel %d: %f\r\n", latest_sample_index[i], latest_sample_data[i]);
     }
 
-    // Moster mode and listening are mutually exclusive
+    // Master mode and listening are mutually exclusive
     HAL_I2C_DisableListen_IT(&hi2c1);
 
     OLED_ShowString(0, 0, "ELVSS", 12, 0);
@@ -972,7 +972,7 @@ void MasterTxTask(void *argument)
     OLED_Showdecimal(32, 14, latest_sample_data[AD_I_VCC], 3, 3, 12, 0);
     OLED_Showdecimal(78, 14, latest_sample_data[AD_V_VCC], 4, 2, 12, 0);
     // OLED_Showdecimal(0,6,num2,2,3,12, 0);
-    // OLED_HorizontalShift(0x26);//全屏水平向右滚动播放
+    // OLED_HorizontalShift(0x26);// Scroll the full screen horizontally to the right
     HAL_I2C_EnableListen_IT(&hi2c1);
 #endif
     osDelay(100);

@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-26.
+// Created by xuebin on 24-8-26.
 //
 
 #include "widget_main.h"
@@ -84,10 +84,10 @@ void widget_flush_timer_cb(const lv_timer_t *timer)
 			// {
 			// 	printf("show_buf voltage[%d]: %f\r\n", i, show_buf->voltage[i]);
 			// }
-			// 刷新协议
+			// Refresh protocol
 			ui_refresh_protocol(&lcd_protocol_group, show_buf);
 
-			// 刷新采样数据````````
+			// Refresh sampled data
 			ui_refresh_sample_data(&sample_data_group, show_buf);
 			ui_refresh_sample_data(&sample_data_group_roate, show_buf);
 		}
@@ -99,9 +99,9 @@ void widget_flush_timer_cb(const lv_timer_t *timer)
 			// {
 			// 	printf("show_buf voltage[%d]: %f\r\n", i, show_buf->voltage[i]);
 			// }
-			// 刷新协议
+			// Refresh protocol
 			ui_refresh_protocol(&lcd_protocol_group_page3, show_buf);
-			// 刷新采样数据````````
+			// Refresh sampled data
 			ui_refresh_sample_data_page3(&sample_data_group_page3, show_buf);
 			ui_refresh_sample_data_page3(&sample_data_group_page3_roate, show_buf);
 		}
@@ -131,14 +131,14 @@ void lvgl_timer_task_entry(void *params)
 	lv_init();
 	lv_port_disp_init();
 	printf("lvgl_timer_task_entry running\r\n");
-	// 创建开机画面转跳定时器
+	// Create the boot-screen jump timer
 
 	open_machine_task = lv_timer_create((lv_timer_cb_t)open_machine_widget_jump, 3000, &lcd_show);
 	lv_timer_enable(true);
 	// lv_timer_ready(open_machine_task);
 	// lv_timer_delete(update_data_task);
 
-	// 创建页面刷新定时器
+	// Create the page refresh timer
 	update_data_task = lv_timer_create((lv_timer_cb_t)widget_flush_timer_cb, 100, &lcd_show);
 	lv_timer_enable(true);
 	lv_timer_ready(update_data_task);

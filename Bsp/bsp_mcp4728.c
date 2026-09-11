@@ -27,14 +27,14 @@ typedef enum
 
 /* User-defined function implementation -------------------------------------- */
 /**
- * @brief 设置DAC单路输出电压
- * @param dev DAC设备结构体指针
- * @param channel 通道号（0-3）
- * @param voltage 输出电压（单位mV）
- * @param en 0: 立即生效，1: 重启生效
- * @retval BSP_OK 成功，BSP_ERROR 失败
- * @note 通过I2C发送3字节命令设置指定通道电压
- * dev->gain[channel] 如果为 1，输出范围翻倍（4.096V），如果为 0，最大 2.048V
+ * @brief Set the output voltage of a single DAC channel
+ * @param dev Pointer to the DAC device struct
+ * @param channel Channel number (0-3)
+ * @param voltage Output voltage (in mV)
+ * @param en 0: take effect immediately, 1: take effect after restart
+ * @retval BSP_OK on success, BSP_ERROR on failure
+ * @note Sends a 3-byte command over I2C to set the voltage of the given channel
+ * If dev->gain[channel] is 1, the output range is doubled (4.096V); if 0, max is 2.048V
  */
 BSP_STATUS bsp_dac_single_voltage_set(dac_dev_t *dev, const uint8_t channel, const uint16_t voltage, const uint8_t en)
 {
@@ -51,15 +51,15 @@ BSP_STATUS bsp_dac_single_voltage_set(dac_dev_t *dev, const uint8_t channel, con
         ADS1256_DEBUG("I2C transmit failed %d \r\n", status);
         return BSP_ERROR;
     }
-    // 等待 EEPROM 写入周期完成 (RDY/BSY 判断)
+    // Wait for the EEPROM write cycle to complete (RDY/BSY check)
     return bsp_mcp4728_wait_ready(dev, 100);
 }
 
 /**
- * @brief 一次性设置DAC全部4路输出电压
- * @param dev DAC设备结构体指针
- * @retval BSP_OK 成功，BSP_ERROR 失败
- * @note 依次填充4路通道的命令和数据，通过I2C一次性发送
+ * @brief Set all 4 DAC output voltages at once
+ * @param dev Pointer to the DAC device struct
+ * @retval BSP_OK on success, BSP_ERROR on failure
+ * @note Fills the command and data for all 4 channels, then sends them over I2C in one transaction
  */
 BSP_STATUS bsp_dac_multi_voltage_set(const dac_dev_t *dev)
 {
@@ -80,7 +80,7 @@ BSP_STATUS bsp_dac_multi_voltage_set(const dac_dev_t *dev)
         ADS1256_DEBUG("I2C transmit failed %d \r\n", status);
         return BSP_ERROR;
     }
-    // Multi Write 通常不写 EEPROM，响应较快，但为了安全也可以增加 ready 判断
+    // Multi Write usually does not write to EEPROM, so the response is fast, but a ready check is added for safety
     return bsp_mcp4728_wait_ready(dev, 10);
 }
 
@@ -91,7 +91,7 @@ uint8_t bsp_mcp4728_read_address(dev_mcp4728_t *dev){
     HAL_GPIO_WritePin(dev->ldac_port,dev->ldac_pin,GPIO_PIN_SET);   //LDAC_ON
 
     i2c_Start();
-    i2c_SendByte(0x00);//������ַ
+    i2c_SendByte(0x00);// Send command address
     rt = i2c_WaitAck();
     i2c_SendByte(0x0C);
 
@@ -103,12 +103,12 @@ uint8_t bsp_mcp4728_read_address(dev_mcp4728_t *dev){
     rt = i2c_WaitAck();
     address = i2c_ReadByte();
     i2c_Stop();
-    address = ((address >> 4) & 0x0E) | 0xC0; //�õ���ַ��Ϣ
+    address = ((address >> 4) & 0x0E) | 0xC0; // Extract the address bits
     return address;
 }
 
 // ANCHOR - MCP4728 Address Change
-// 由于 MCP4728 的地址写入命令（01100 + A2 A1 A0）具有极其特殊的硬件时序要求：必须在发送命令字节的第 8 个 SCL 时钟周期为高电平期间，将 LDAC 引脚从高拉低。
+// The MCP4728 address write command (01100 + A2 A1 A0) has extremely special hardware timing requirements: LDAC must be pulled from high to low while SCL is high during the 8th clock cycle of the command byte.
 void bsp_mcp4728_change_address(dev_mcp4728_t *dev, uint8_t dev_address)
 {
     uint8_t current_address_bits = (dev->i2c_dev_address >> 1) & 0x07;
@@ -159,15 +159,15 @@ void bsp_mcp4728_change_address(dev_mcp4728_t *dev, uint8_t dev_address)
 }
 
 /**
- * @brief 检查 MCP4728 是否就绪（EEPROM 写入完成）
- * @param dev DAC设备结构体指针
- * @return bool true: 就绪, false: 繁忙
+ * @brief Check whether the MCP4728 is ready (EEPROM write completed)
+ * @param dev Pointer to the DAC device struct
+ * @return bool true: ready, false: busy
  */
 bool bsp_mcp4728_is_ready(const dac_dev_t *dev)
 {
     uint8_t status_byte;
-    // 使用 I2C 读操作获取状态。MCP4728 读回的第一字节最高位即 RDY/BSY
-    // 1 = Ready (Not Busy), 0 = Busy (Writing EEPROM)
+    // Use an I2C read to get the status. The MSB of the first byte read back from MCP4728 is RDY/BSY
+    // 1 = Ready (not busy), 0 = Busy (writing EEPROM)
     if (HAL_I2C_Master_Receive((I2C_HandleTypeDef *)dev->i2c_bus->handle,
                                dev->i2c_bus->dev_addr[dev->chip_index] | 0x01,
                                &status_byte, 1, 10) == HAL_OK)
@@ -178,10 +178,10 @@ bool bsp_mcp4728_is_ready(const dac_dev_t *dev)
 }
 
 /**
- * @brief 等待 MCP4728 就绪
- * @param dev DAC设备结构体指针
- * @param timeout_ms 超时时间
- * @retval BSP_OK 成功, BSP_ERROR 超时或失败
+ * @brief Wait until the MCP4728 is ready
+ * @param dev Pointer to the DAC device struct
+ * @param timeout_ms Timeout in milliseconds
+ * @retval BSP_OK on success, BSP_ERROR on timeout or failure
  */
 BSP_STATUS bsp_mcp4728_wait_ready(const dac_dev_t *dev, uint32_t timeout_ms)
 {
@@ -192,15 +192,15 @@ BSP_STATUS bsp_mcp4728_wait_ready(const dac_dev_t *dev, uint32_t timeout_ms)
         {
             return BSP_ERROR;
         }
-        bsp_delay_ms(1); // 避免死循环占用过多 CPU
+        bsp_delay_ms(1); // Avoid a busy loop hogging too much CPU
     }
     return BSP_OK;
 }
 
 /*
 *********************************************************************************************************
-*	函 数 名: I2C_CTRL_init
-*	功能说明: 板载芯片I2C通讯初始化
+*	Function  : I2C_CTRL_init
+*	Description: Initialize I2C communication for the on-board chips
 *********************************************************************************************************
 */
 void I2C_CTRL_init(void)
@@ -213,17 +213,14 @@ void I2C_CTRL_init(void)
 
 /*
 *********************************************************************************************************
-*	函 数 名: DAC_gpio_init
-*	功能说明: 配置DAC芯片控制管脚
-*	形    参:  无
-*	返 回 值: 无
+*	Function  : DAC_gpio_init
+*	Description: Configure the DAC chip control pins
+*	Parameter  : none
+*	Return     : none
 *********************************************************************************************************
 */
 static void DAC_gpio_init(void)
 {
-    uint8_t Power_flash_read[6];
-    uint16_t Power_vsn,Power_vsp,Power_vdd;
-
     GPIO_InitTypeDef gpio_init;
 
     __HAL_RCC_GPIOA_CLK_ENABLE(); 
@@ -231,9 +228,9 @@ static void DAC_gpio_init(void)
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOD_CLK_ENABLE();
 
-    gpio_init.Mode = GPIO_MODE_OUTPUT_PP;	         /* 设置推挽输出 */
-    gpio_init.Pull = GPIO_NOPULL;			             /* 上下拉电阻不使能 */
-    gpio_init.Speed = GPIO_SPEED_FREQ_LOW;	       /* GPIO速度等级 */
+    gpio_init.Mode = GPIO_MODE_OUTPUT_PP;	         /* Push-pull output */
+    gpio_init.Pull = GPIO_NOPULL;			             /* No pull-up/pull-down */
+    gpio_init.Speed = GPIO_SPEED_FREQ_LOW;	       /* GPIO speed level */
 
     gpio_init.Pin = DAC_LDAC1_Pin;	             //OutControl_DAC_LDAC_1
     HAL_GPIO_Init(DAC_LDAC1_GPIO_Port, &gpio_init);
@@ -259,10 +256,10 @@ static void DAC_gpio_init(void)
     gpio_init.Pin = DAC_BSY5_Pin;                 
     HAL_GPIO_Init(DAC_BSY5_GPIO_Port, &gpio_init);
 
-    DAC_LDAC_1_H();                          //拉高DAC_LDAC_1
-    DAC_LDAC_2_H();                          //拉高DAC_LDAC_2
-    DAC_LDAC_3_H();                          //拉高DAC_LDAC_3
-    DAC_LDAC_4_H();                          //拉高DAC_LDAC_4
-    DAC_LDAC_5_H();                          //拉高DAC_LDAC_5
+    DAC_LDAC_1_H();                          // Set DAC_LDAC_1 high
+    DAC_LDAC_2_H();                          // Set DAC_LDAC_2 high
+    DAC_LDAC_3_H();                          // Set DAC_LDAC_3 high
+    DAC_LDAC_4_H();                          // Set DAC_LDAC_4 high
+    DAC_LDAC_5_H();                          // Set DAC_LDAC_5 high
 
 }

@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-26.
+// Created by xuebin on 24-8-26.
 //
 
 #ifndef WIDGET_FUNC_H
@@ -55,8 +55,8 @@ typedef struct
     lv_obj_t *label_main_bl_version;
     lv_obj_t *label_meter_hw_num;
     lv_obj_t *label_main_hw_num;
-    lv_obj_t *label_lubancat_ip; // 新增 lubancat IP 标签
-    lv_obj_t *label_gc5_ip;      // 新增 GC5.0 IP 标签
+    lv_obj_t *label_lubancat_ip; // lubancat IP label
+    lv_obj_t *label_gc5_ip;      // GC5.0 IP label
 } fw_version_label_group_t;
 
 typedef struct

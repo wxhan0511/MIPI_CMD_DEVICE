@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-/* CD4051 选通通道定义 (对应 INOUT 0-7) */
+/* CD4051 channel selection definitions (corresponding to INOUT 0-7) */
 typedef enum {
     MUX_CH_BIAS_I = 0, // AD_V_BIAS_I
     MUX_CH_BIAS_V = 1, // AD_V_BIAS_V
@@ -13,18 +13,18 @@ typedef enum {
     MUX_CH_ELVDD  = 5, // AD_V_ELVDD
     MUX_CH_ELVSS  = 6, // AD_V_ELVSS
     MUX_CH_LS     = 7, // AD_V_LS
-    MUX_CH_DISABLE = 0xFF // 禁止所有通道
+    MUX_CH_DISABLE = 0xFF // Disable all channels
 } bsp_mux_channel_t;
 
 /**
- * @brief 选择模拟切换通道
- * @param channel 目标通道 (0-7) 或 MUX_CH_DISABLE
+ * @brief Select the analog multiplexer channel
+ * @param channel Target channel (0-7) or MUX_CH_DISABLE
  */
 void bsp_mux_select_channel(bsp_mux_channel_t channel);
 
 /**
- * @brief 控制锁存器 U1 上的电源使能位 (Bit 4-7)
- * @param vdd_en, elvdd_en, vbat_en, elvss_en 为 true 时打开
+ * @brief Control the power enable bits (Bit 4-7) on latch U1
+ * @param vdd_en, elvdd_en, vbat_en, elvss_en Turned on when true
  */
 void bsp_mux_power_ctrl(uint8_t vdd_en, uint8_t elvdd_en, uint8_t vbat_en, uint8_t elvss_en);
 

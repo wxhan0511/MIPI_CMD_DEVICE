@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-26.
+// Created by xuebin on 24-8-26.
 //
 
 #include "widget_func.h"
@@ -137,7 +137,7 @@ void ui_label_set_text(lv_obj_t *label, const char *text)
 
 void ui_main_protocol_group_init(lv_obj_t *page, lcd_protocol_label_group_t *label_group)
 {
-    // 0~70 高度内紧凑布局：4 行，每行 16px 高
+    // Compact layout within 0~70 px height: 4 rows of 16 px each
     const int h = 16;
     const int y1 = 18;
     const int y2 = 34;
@@ -200,50 +200,50 @@ void ui_main_protocol_group_init(lv_obj_t *page, lcd_protocol_label_group_t *lab
 
 void ui_main_protocol_group_rotate_init(lv_obj_t *page, lcd_protocol_label_group_t *label_group)
 {
-    // 恢复为竖屏布局 (宽 240, 高 320)
-    // 布局逻辑参考自 ui_main_protocol_group_init
+    // Restored portrait layout (240 wide, 320 high)
+    // Layout logic mirrors ui_main_protocol_group_init
 
-    // 协议标签创建
+    // Protocol label
     lv_obj_t *label_protocol = lv_label_create(page);
     ui_label_init(label_protocol, x_line_0, y_line_0, 80, label_height, "	- Protocol");
 
-    // 协议名称标签创建
+    // Protocol name label
     label_group->label_protocol = lv_label_create(page);
     ui_label_init(label_group->label_protocol, x_line_0 + data_step, y_line_0, 150, label_height, protocol_name[19]);
 
-    // 速度标签创建
+    // Speed label
     lv_obj_t *label_speed = lv_label_create(page);
     ui_label_init(label_speed, x_line_1, y_line_1, 80, label_height, "	- Speed");
 
-    // Pixel Clock 标签创建
+    // Pixel Clock label
     lv_obj_t *label_pclk = lv_label_create(page);
     ui_label_init(label_pclk, x_line_1 + data_step, y_line_1, 60, label_height, "PCLK");
 
-    // Pixel Clock 数据标签创建
+    // Pixel Clock data label
     label_group->label_speed_pclk = lv_label_create(page);
     ui_label_init(label_group->label_speed_pclk, x_line_1 + data_step + 50, y_line_1, 80, label_height, "NULL");
 
-    // MIPI HS 标签创建
+    // MIPI HS label
     lv_obj_t *label_hs = lv_label_create(page);
     ui_label_init(label_hs, x_line_2, y_line_2, 80, label_height, "	- HS");
 
-    // MIPI HS 数据标签创建
+    // MIPI HS data label
     label_group->label_speed_hs = lv_label_create(page);
     ui_label_init(label_group->label_speed_hs, x_line_2 + 50, y_line_2, 80, label_height, "NULL");
 
-    // MIPI LP 标签创建
+    // MIPI LP label
     lv_obj_t *label_lp = lv_label_create(page);
     ui_label_init(label_lp, x_line_2 + 130, y_line_2, 80, label_height, "LP");
 
-    // MIPI LP 数据标签创建
+    // MIPI LP data label
     label_group->label_speed_lp = lv_label_create(page);
     ui_label_init(label_group->label_speed_lp, x_line_2 + 160, y_line_2, 80, label_height, "NULL");
 
-    // 点屏状态标签创建
+    // Display state label
     lv_obj_t *label_state = lv_label_create(page);
     ui_label_init(label_state, x_line_3, y_line_3, 80, label_height, "	- State");
 
-    // 点屏状态数据标签创建
+    // Display state data label
     label_group->label_state = lv_label_create(page);
     ui_label_init(label_group->label_state, x_line_3 + data_step, y_line_3, 150, label_height, "Power off");
 }
@@ -257,19 +257,19 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     static lv_obj_t *line_h[7];
     for (int i = 0; i < 7; i++)
     {
-        // 分割横线
+        // Horizontal separator line
         line_v[i] = lv_line_create(lv_screen_active());
         lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
         lv_obj_set_size(line_v[i], 300, 4);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
-        // 电压名称标签
+        // Voltage name label
         label_power_name[i] = lv_label_create(lv_screen_active());
         ui_label_init(label_power_name[i], 5, 92 + 20 * i, 80, label_height, power_name[i]);
     }
 
-    // 名称标签
+    // Column header labels
     lv_obj_t *vol_name_label = lv_label_create(lv_screen_active());
     ui_label_init(vol_name_label, 5 + 89, 92, 80, label_height, "    Vol");
 
@@ -279,7 +279,7 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     lv_obj_t *threshold_name_label = lv_label_create(lv_screen_active());
     ui_label_init(threshold_name_label, 5 + 80 * 3, 92, 80, label_height, "Threshold");
 
-    // 分割竖线
+    // Vertical separator lines
     for (int i = 0; i < 3; i++)
     {
         line_h[i] = lv_line_create(lv_screen_active());
@@ -289,7 +289,7 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
         lv_obj_set_style_line_color(line_h[i], lv_color_hex(0x000000), LV_PART_MAIN);
     }
 
-    // 采样数据标签
+    // Sampled data labels
     for (int i = 0; i < 6; i++)
     {
         label_group->label_power_vol[i] = lv_label_create(lv_screen_active());
@@ -301,13 +301,13 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     static lv_obj_t *line_v[8];
     static lv_obj_t *line_h[3];
 
-    // 列分隔：Name | Vol | Cur | Lim
+    // Column layout: Name | Vol | Cur | Lim
     const int x_name = 5;
     const int x_col1 = 80;
     const int x_col2 = 165;
     const int x_col3 = 250;
 
-    // 行：标题 + 6路数据（总7行），再补一条底线
+    // Rows: header + 6 data rows (7 total), plus a bottom line
     for (int i = 0; i < 7; i++)
     {
         line_v[i] = lv_line_create(page);
@@ -325,7 +325,7 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     lv_obj_set_size(line_v[7], 310, 4);
     lv_obj_set_style_line_color(line_v[7], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 标题
+    // Header labels
     lv_obj_t *vol_name_label = lv_label_create(page);
     ui_label_init(vol_name_label, x_col1 + 10, 92, 70, label_height, " Vol");
 
@@ -335,7 +335,7 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     lv_obj_t *lim_name_label = lv_label_create(page);
     ui_label_init(lim_name_label, x_col3 + 5, 92, 70, label_height, " Lim");
 
-    // 竖线
+    // Vertical separator lines
     line_h[0] = lv_line_create(page);
     lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
     lv_obj_set_pos(line_h[0], x_col1, 90);
@@ -354,7 +354,7 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     lv_obj_set_size(line_h[2], 4, 160);
     lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 6路数据
+    // 6 data rows
     for (int i = 0; i < 6; i++)
     {
         label_group->label_power_vol[i] = lv_label_create(page);
@@ -374,7 +374,7 @@ void ui_main_sample_data_group_rotate_init(lv_obj_t *page, sample_data_label_gro
     static lv_obj_t *line_v[8];
     static lv_obj_t *line_h[3];
 
-    // 竖屏 240 宽压缩版：Name | Vol | Cur | Lim
+    // Portrait 240-wide compact layout: Name | Vol | Cur | Lim
     const int x_name = 5;
     const int x_col1 = 70;
     const int x_col2 = 130;
@@ -441,13 +441,13 @@ void ui_page3_sample_data_group_init(lv_obj_t *page, sample_data_page3_label_gro
     static lv_obj_t *line_v[4];
     static lv_obj_t *line_h[3];
 
-    // 横屏布局：Name | Vol | Cur | Lim
+    // Landscape layout: Name | Vol | Cur | Lim
     const int x_name = 5;
     const int x_col1 = 80;
     const int x_col2 = 165;
     const int x_col3 = 250;
 
-    // 标题 + 2行数据 + 底线
+    // Header + 2 data rows + bottom line
     for (int i = 0; i < 3; i++)
     {
         line_v[i] = lv_line_create(page);
@@ -515,13 +515,13 @@ void ui_page3_sample_data_group_rotate_init(lv_obj_t *page, sample_data_page3_la
     static lv_obj_t *line_v[4];
     static lv_obj_t *line_h[3];
 
-    // 竖屏 240：Name | Vol | Cur | Lim
+    // Portrait 240: Name | Vol | Cur | Lim
     const int x_name = 5;
     const int x_col1 = 70;
     const int x_col2 = 130;
     const int x_col3 = 185;
 
-    // 标题 + 2行 + 底线
+    // Header + 2 data rows + bottom line
     for (int i = 0; i < 3; i++)
     {
         line_v[i] = lv_line_create(page);
@@ -627,7 +627,7 @@ void ui_main_protocol_init(lcd_show_t *lcd_protocol)
     lcd_protocol->state = "Power off";
     lcd_protocol->ipv4 = "0.0.0.0";
 }
-// ANCHOR - 刷新采样数据
+// ANCHOR - Refresh sampled data
 void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const lcd_show_t *lcd_protocol)
 {
     static char temp_str[100];
@@ -804,16 +804,16 @@ void ui_open_machine(open_machine_group_t *label_group)
 
     lv_screen_load_anim(page0, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 }
-// ANCHOR - 界面初始化
+// ANCHOR - UI initialization
 void ui_main_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p_group, sample_data_label_group_t *s_group)
 {
-    // 背景主题
+    // Background theme
     page1 = lv_obj_create(NULL);
     lv_obj_set_size(page1, LV_HOR_RES, LV_VER_RES);
     lv_obj_set_style_bg_color(page1, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     lv_obj_set_style_text_color(page1, lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // main界面组建初始化
+    // Main page widget initialization
 
     ui_main_protocol_init(lcd_protocol);
     ui_main_protocol_group_init(page1, p_group);
@@ -822,13 +822,13 @@ void ui_main_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p_group,
 
 void ui_main_rotate_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p_group, sample_data_label_group_t *s_group)
 {
-    // 背景主题
+    // Background theme
     rotate_page1 = lv_obj_create(NULL);
-    lv_obj_set_size(rotate_page1, LV_HOR_RES, LV_VER_RES); // 给 LVGL 的逻辑空间是 240x320
+    lv_obj_set_size(rotate_page1, LV_HOR_RES, LV_VER_RES); // LVGL logical space is 240x320
     lv_obj_set_style_bg_color(rotate_page1, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     lv_obj_set_style_text_color(rotate_page1, lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // main界面组建初始化
+    // Main page widget initialization
     ui_main_protocol_init(lcd_protocol);
     ui_main_protocol_group_rotate_init(rotate_page1, p_group);
     ui_main_sample_data_group_rotate_init(rotate_page1, s_group);
@@ -836,29 +836,29 @@ void ui_main_rotate_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p
 
 void ui_page3_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p_group, sample_data_page3_label_group_t *s_group)
 {
-    // 背景主题
+    // Background theme
     page3 = lv_obj_create(NULL);
-    lv_obj_set_size(page3, LV_HOR_RES, LV_VER_RES); // 给 LVGL 的逻辑空间是 320x240
+    lv_obj_set_size(page3, LV_HOR_RES, LV_VER_RES); // LVGL logical space is 320x240
     lv_obj_set_style_bg_color(page3, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     lv_obj_set_style_text_color(page3, lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // main界面组建初始化
+    // Main page widget initialization
 
     ui_main_protocol_init(lcd_protocol);
     ui_main_protocol_group_init(page3, p_group);
     ui_page3_sample_data_group_init(page3, s_group);
 }
-// 旋转
+// Rotate
 void ui_page3_rotate_init(lcd_show_t *lcd_protocol, lcd_protocol_label_group_t *p_group, sample_data_page3_label_group_t *s_group)
 {
-    // 背景主题
+    // Background theme
     rotate_page3 = lv_obj_create(NULL);
 
-    lv_obj_set_size(rotate_page3, LV_HOR_RES, LV_VER_RES); // 给 LVGL 的逻辑空间是 240x320
+    lv_obj_set_size(rotate_page3, LV_HOR_RES, LV_VER_RES); // LVGL logical space is 240x320
     lv_obj_set_style_bg_color(rotate_page3, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     lv_obj_set_style_text_color(rotate_page3, lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // 调用专门设计的旋转布局函数
+    // Use the dedicated rotated layout functions
     ui_main_protocol_init(lcd_protocol);
     ui_main_protocol_group_rotate_init(rotate_page3, p_group);
     ui_page3_sample_data_group_rotate_init(rotate_page3, s_group);
@@ -877,7 +877,7 @@ void ui_sub_init(fw_version_label_group_t *version_group)
 
     // lv_screen_load_anim(page2, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 
-    // 协议标签创建
+    // Firmware version labels
     lv_obj_t *label_0 = lv_label_create(page2);
     ui_label_init(label_0, x_line_0, y_line_0, 160, label_height, "	- Meter BL Version");
     lv_obj_t *label_1 = lv_label_create(page2);
@@ -890,10 +890,10 @@ void ui_sub_init(fw_version_label_group_t *version_group)
     ui_label_init(label_4, x_line_0, y_line_4, 160, label_height, "	- Meter Hardware Num");
     lv_obj_t *label_5 = lv_label_create(page2);
     ui_label_init(label_5, x_line_0, y_line_5, 160, label_height, "	- Main Hardware Num");
-    // 新增：lubancat IP 标题
+    // lubancat IP header
     lv_obj_t *label_6 = lv_label_create(page2);
     ui_label_init(label_6, x_line_0, y_line_5 + label_height, 160, label_height, "	- lubancat IP");
-    // 新增：GC5.0 IP 标题
+    // GC5.0 IP header
     lv_obj_t *label_7 = lv_label_create(page2);
     ui_label_init(label_7, x_line_0, y_line_5 + label_height * 2, 160, label_height, "	- GC5.0 IP");
 
@@ -909,27 +909,24 @@ void ui_sub_init(fw_version_label_group_t *version_group)
     ui_label_init(version_group->label_meter_hw_num, x_line_4 + 160, y_line_4, 160, label_height, "-.-.-.-");
     version_group->label_main_hw_num = lv_label_create(page2);
     ui_label_init(version_group->label_main_hw_num, x_line_5 + 160, y_line_5, 160, label_height, "-.-.-.-");
-    // 新增：lubancat IP 数据展示
+    // lubancat IP data label
     version_group->label_lubancat_ip = lv_label_create(page2);
     ui_label_init(version_group->label_lubancat_ip, x_line_5 + 160, y_line_5 + label_height, 160, label_height, "0.0.0.0");
 
-    // 新增：GC5.0 IP 数据展示
+    // GC5.0 IP data label
     version_group->label_gc5_ip = lv_label_create(page2);
     ui_label_init(version_group->label_gc5_ip, x_line_5 + 160, y_line_5 + label_height * 2, 160, label_height, "0.0.0.0");
 }
-// 旋转显示
+// Rotate display
 
-// ANCHOR - 页面切换函数，调用lvgl的动画接口实现页面切换
+// ANCHOR - Page switch function, uses the LVGL animation API to switch pages
 void widget_change()
 {
 
     extern __IO uint8_t current_page;
     current_page = (current_page + 1) % MAX_PAGE;
-    uint8_t temp_page = current_page;
 
-    // lcd_init();          // 完整初始化（驱动内有 MADCTL/ID/init sequence）
-    // osDelay(120);        // 等待面板稳定
-    // 2. 在临界区外执行耗时和阻塞操作
+    // Long-running/blocking work runs outside the critical section
     if (current_page == PAGE_0)
     {
         lv_screen_load_anim(page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
@@ -942,80 +939,6 @@ void widget_change()
     {
         lv_screen_load_anim(page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
     }
-    // 临界区外获取信号量是安全的
-    // if(osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
-    // {
-    //     lv_display_t * disp1 = lv_display_get_default();
-    //     if(disp1) {
-    //         if(disp1) lv_display_set_rotation(disp1, LV_DISPLAY_ROTATION_90);
-    //         lcd_write_cmd_8bit(0x36);     // 发送指令
-    //         lcd_write_data_8bit(0x48);
-
-    //         printf("Display rotated to portrait mode.\r\n");
-    //         if (current_page == PAGE_0) {
-    //             printf("Current page is PAGE_0, updating page1 size.\r\n");
-    //             lv_obj_set_size(page1, 320, 240);// 更新页面尺寸以适应新的显示方向
-    //         }
-    //         if (current_page == PAGE_1) {
-    //             printf("Current page is PAGE_1, updating page3 size.\r\n");
-    //             lv_obj_set_size(page3, 320, 240); // 更新页面尺寸以适应新的显示方向
-    //         }
-    //         if (current_page == PAGE_2) {
-    //             printf("Current page is PAGE_2, updating page2 size.\r\n");
-    //             lv_obj_set_size(page2, 320, 240); // 更新页面尺寸以适应新的显示方向
-    //         }
-
-    //         lv_obj_invalidate(lv_screen_active());
-    //         lv_display_send_event(disp1, LV_EVENT_REFR_REQUEST, NULL);
-    //         printf("set_display_portrait: lcd id=%u dir=%u w=%u h=%u\r\n",
-    //        (unsigned)lcddev.id, (unsigned)lcddev.dir, (unsigned)lcddev.width, (unsigned)lcddev.height);
-    //     }
-    //     osMutexRelease(show_mutexHandle);
-    //     printf("Display rotation complete.\r\n");
-    // }
-}
-/*
- * 将显示恢复到竖屏（安全函数，包含互斥保护）
- */
-static void set_display_portrait(uint8_t page)
-{
-    if (osMutexAcquire(show_mutexHandle, osWaitForever) != osOK)
-        return;
-    lv_display_t *disp = lv_display_get_default();
-
-    /* 使用驱动接口切回竖屏，驱动会更新 lcddev 状态 */
-    lcd_display_dir(0);         /* 0 = 竖屏 */
-    lcd_scan_dir(DFT_SCAN_DIR); /* 默认扫描方向 */
-
-    /* 同步 LVGL 方向 */
-    if (disp)
-        lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0);
-
-    /* 更新各页面逻辑尺寸为竖屏 */
-    if (page == PAGE_0 && page1)
-        lv_obj_set_size(page1, 240, 320);
-    if (page == PAGE_1 && page3)
-        lv_obj_set_size(page3, 240, 320);
-    if (page == PAGE_2 && page2)
-        lv_obj_set_size(page2, 240, 320);
-
-    /* 如果存在为旋转创建的页面，也同步它们尺寸 */
-    if (rotate_page1)
-        lv_obj_set_size(rotate_page1, 240, 320);
-    if (rotate_page2)
-        lv_obj_set_size(rotate_page2, 240, 320);
-    if (rotate_page3)
-        lv_obj_set_size(rotate_page3, 240, 320);
-
-    lv_obj_invalidate(lv_screen_active());
-    if (disp)
-        lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
-
-    /* 打印驱动状态以便调试 */
-    printf("set_display_portrait: lcd id=%u dir=%u w=%u h=%u\r\n",
-           (unsigned)lcddev.id, (unsigned)lcddev.dir, (unsigned)lcddev.width, (unsigned)lcddev.height);
-
-    osMutexRelease(show_mutexHandle);
 }
 void ui_load_page_1()
 {

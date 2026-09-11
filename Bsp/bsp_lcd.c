@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-16.
+// Created by xuebin on 24-8-16.
 //
 
 #include "bsp_lcd.h"
@@ -18,7 +18,7 @@ static void bsp_lcd_opt_delay(uint32_t i)
 void bsp_lcd_init(lcd_dev_t *dev)
 {
 
-	// 背光
+	// Backlight
 	//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	//
 	//  //reset
@@ -216,7 +216,7 @@ void bsp_lcd_init(lcd_dev_t *dev)
 	/* memory access control set */
 	bsp_lcd_opt_delay(1);
 	bsp_lcd_write_cmd(dev, 0x36);
-	bsp_lcd_write_data(dev, 0xC8); /*����  ���Ͻǵ� (���)�����½� (�յ�)ɨ�跽ʽ*/
+	bsp_lcd_write_data(dev, 0xC8); /* Scan direction: from top-right (start) to bottom-left (end) */
 	bsp_lcd_opt_delay(1);
 
 	/* column address control set */
@@ -279,18 +279,18 @@ void bsl_lcd_backlight(lcd_dev_t *dev, uint8_t en)
 
 ///
 /// @param dev lcd
-/// @param cmd 寄存器地址
+/// @param cmd Register address
 void bsp_lcd_write_cmd(lcd_dev_t *dev, uint16_t cmd)
 {
 	if (dev == NULL)
 		return;
 	cmd = cmd;
-	LCD->reg = cmd;
+	LCD_FSMC->reg = cmd;
 }
 
 ///
 /// @param dev
-/// @param data 寄存器值
+/// @param data Register value
 void bsp_lcd_write_data(lcd_dev_t *dev, uint16_t data)
 {
 	if (dev == NULL)
@@ -306,11 +306,11 @@ uint16_t bsp_lcd_read_data(lcd_dev_t *dev)
 {
 	__IO uint16_t data;
 	bsp_lcd_opt_delay(2);
-	data = LCD->ram;
+	data = LCD_FSMC->ram;
 	return data;
 }
 
-/// 小窗口模式
+/// Small window mode
 /// @param dev
 /// @param x_start
 /// @param x_end

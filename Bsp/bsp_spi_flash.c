@@ -3,17 +3,17 @@
 #include "spi.h"
 
 // static SPI_HandleTypeDef hspi_flash = {0};
-// SPI Flash 句柄和缓冲区
+// SPI Flash handle and buffers
 static uint8_t s_spiBuf[4 * 1024];
 static uint8_t g_spiTxBuf[SPI_BUFFER_SIZE];
 static uint8_t g_spiRxBuf[SPI_BUFFER_SIZE];
 
 /**
- * @brief 通过SPI发送和接收数据
- * @param g_spiTxBuf 发送缓冲区
- * @param g_spiRxBuf 接收缓冲区
- * @param g_spiLen   发送/接收长度
- * @retval 1 成功，0 失败
+ * @brief Send and receive data over SPI
+ * @param g_spiTxBuf Transmit buffer
+ * @param g_spiRxBuf Receive buffer
+ * @param g_spiLen   Transfer length
+ * @retval 1 Success, 0 Failure
  */
 uint8_t bsp_spiTransfer(uint8_t *g_spiTxBuf, uint8_t *g_spiRxBuf, uint16_t g_spiLen)
 {
@@ -33,8 +33,8 @@ uint8_t bsp_spiTransfer(uint8_t *g_spiTxBuf, uint8_t *g_spiRxBuf, uint16_t g_spi
     return 1;
 }
 /**
- * @brief 读取SPI Flash的JEDEC ID
- * @retval 24位ID
+ * @brief Read the JEDEC ID of the SPI Flash
+ * @retval 24-bit ID
  */
 uint32_t bsp_flash_read_id(void)
 {
@@ -42,15 +42,15 @@ uint32_t bsp_flash_read_id(void)
     uint8_t id1, id2, id3;
     // uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
 
-    SF_CS_L();                  /* ʹ��Ƭѡ */
-    g_spiTxBuf[0] = (CMD_RDID); /* ���Ͷ�ID���� */
+    SF_CS_L();                  /* Enable chip select */
+    g_spiTxBuf[0] = (CMD_RDID); /* Send the read-ID command */
 
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 4);
 
-    id1 = g_spiRxBuf[1]; /* ��ID�ĵ�1���ֽ� */
-    id2 = g_spiRxBuf[2]; /* ��ID�ĵ�2���ֽ� */
-    id3 = g_spiRxBuf[3]; /* ��ID�ĵ�3���ֽ� */
-    SF_CS_H();           /* ����Ƭѡ */
+    id1 = g_spiRxBuf[1]; /* Byte 1 of the ID */
+    id2 = g_spiRxBuf[2]; /* Byte 2 of the ID */
+    id3 = g_spiRxBuf[3]; /* Byte 3 of the ID */
+    SF_CS_H();           /* Release chip select */
 
     uiID = ((uint32_t)id1 << 16) | ((uint32_t)id2 << 8) | id3;
     // printf("[spi flash] read id %x\r\n",uiID);
@@ -58,20 +58,20 @@ uint32_t bsp_flash_read_id(void)
 }
 
 /**
- * @brief 使能SPI Flash写操作
+ * @brief Enable SPI Flash write operations
  */
 static void sf_WriteEnable(void)
 {
     // uint8_t g_spiTxBuf[4],g_spiRxBuf[4];
     uint8_t status;
-    SF_CS_L();                  /* ʹ��Ƭѡ */
-    g_spiTxBuf[0] = (CMD_WREN); /* �������� */
+    SF_CS_L();                  /* Enable chip select */
+    g_spiTxBuf[0] = (CMD_WREN); /* Send the write-enable command */
     status = bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 1);
-    SF_CS_H(); /* ����Ƭѡ */
+    SF_CS_H(); /* Release chip select */
     // printf("[spi flash] write enable %d \r\n",status);
 }
 /**
- * @brief 等待SPI Flash写入/擦除操作完成
+ * @brief Wait for the SPI Flash write/erase operation to finish
  */
 static void sf_WaitForWriteEnd(void)
 {
@@ -79,23 +79,23 @@ static void sf_WaitForWriteEnd(void)
     uint8_t status;
     while (1)
     {
-        SF_CS_L();                  /* ʹ��Ƭѡ */
-        g_spiTxBuf[0] = (CMD_RDSR); /* ������� ��״̬�Ĵ��� */
-        g_spiTxBuf[1] = 0;          /* �޹����� */
+        SF_CS_L();                  /* Enable chip select */
+        g_spiTxBuf[0] = (CMD_RDSR); /* Send command: read the status register */
+        g_spiTxBuf[1] = 0;          /* Don't care */
         status = bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, 2);
-        SF_CS_H(); /* ����Ƭѡ */
+        SF_CS_H(); /* Release chip select */
 
-        // q:status,g_spiRxBuf[1]分别为1,3,解释为什么
-        // a:status为1表示传输成功，g_spiRxBuf[1]为3表示写入进行中
-        if ((g_spiRxBuf[1] & WIP_FLAG) != SET) /* �ж�״̬�Ĵ�����æ��־λ */
+        // Q: status and g_spiRxBuf[1] equal 1 and 3 respectively -- what does that mean?
+        // A: status == 1 means the transfer succeeded; g_spiRxBuf[1] holds the status register value
+        if ((g_spiRxBuf[1] & WIP_FLAG) != SET) /* Check the busy flag in the status register */
         {
             break;
         }
     }
 }
 /**
- * @brief 擦除指定地址所在的扇区
- * @param addr 扇区起始地址
+ * @brief Erase the sector containing the given address
+ * @param addr Sector start address
  */
 void bsp_flash_erase_sector(uint32_t addr)
 {
@@ -104,7 +104,7 @@ void bsp_flash_erase_sector(uint32_t addr)
     uint8_t status;
     sf_WriteEnable();
 
-    /* ������������ */
+    /* Send the sector erase command */
     SF_CS_L();
     g_spiLen = 0;
     g_spiTxBuf[g_spiLen++] = CMD_SE;
@@ -118,7 +118,7 @@ void bsp_flash_erase_sector(uint32_t addr)
     sf_WaitForWriteEnd();
 }
 /**
- * @brief 整片擦除SPI Flash
+ * @brief Erase the entire SPI Flash chip
  */
 void bsp_flash_erase_chip(void)
 {
@@ -126,22 +126,22 @@ void bsp_flash_erase_chip(void)
     uint8_t g_spiLen;
 
     sf_WriteEnable();
-    // 选中SPI Flash
+    // Select the SPI Flash
     SF_CS_L();
     g_spiLen = 0;
     g_spiTxBuf[g_spiLen++] = CMD_BE;
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, g_spiLen);
     printf("[spi flash] chip erase %d\r\n", g_spiRxBuf[0]);
-    // g_spiRxBuf[0]为255表示擦除命令发送成功，等待擦除完成
-    // 等待擦除完成
+    // g_spiRxBuf[0] == 255 means the erase command was sent; wait for the erase to finish
+    // Wait for the erase to complete
     SF_CS_H();
     sf_WaitForWriteEnd();
 }
 /**
- * @brief 页写入（最多256字节），支持多页连续写
- * @param _pBuf      写入数据指针
- * @param _uiWriteAddr 写入起始地址
- * @param _usSize    写入字节数（必须为256的倍数）
+ * @brief Page write (up to 256 bytes per page), supports continuous multi-page writes
+ * @param _pBuf        Pointer to the data to write
+ * @param _uiWriteAddr Start address for the write
+ * @param _usSize      Number of bytes to write (must be a multiple of 256)
  */
 void sf_PageWrite(uint8_t *_pBuf, uint32_t _uiWriteAddr, uint16_t _usSize)
 {
@@ -182,7 +182,7 @@ void sf_PageWrite(uint8_t *_pBuf, uint32_t _uiWriteAddr, uint16_t _usSize)
     // printf("[spi flash] write protect %d\r\n",status);
     sf_WaitForWriteEnd();
 }
-// 读取SPI Flash的状态寄存器
+// Read the SPI Flash status register
 uint8_t bsp_flash_read_status(void)
 {
     uint8_t status;
@@ -205,10 +205,10 @@ void QSPI_FLASH_Wait_Busy(void)
     }
 }
 /**
- * @brief 从SPI Flash读取数据
- * @param p_buf     读取数据缓冲区
- * @param read_addr 读取起始地址
- * @param read_size 读取字节数
+ * @brief Read data from the SPI Flash
+ * @param p_buf     Buffer for the read data
+ * @param read_addr Start address for the read
+ * @param read_size Number of bytes to read
  */
 void bsp_flash_read(uint8_t *p_buf, uint32_t read_addr, uint32_t read_size)
 {
@@ -233,7 +233,7 @@ void bsp_flash_read(uint8_t *p_buf, uint32_t read_addr, uint32_t read_size)
     g_spiTxBuf[g_spiLen++] = (read_addr & 0xFF);
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, g_spiLen);
 
-    /* ��ʼ�����ݣ��ְ��� */
+    /* Start reading data, in chunks */
     for (i = 0; i < read_size / SPI_BUFFER_SIZE; i++)
     {
         g_spiLen = SPI_BUFFER_SIZE;
@@ -254,11 +254,11 @@ void bsp_flash_read(uint8_t *p_buf, uint32_t read_addr, uint32_t read_size)
     SF_CS_H();
 }
 /**
- * @brief 比较SPI Flash指定地址的数据与目标数据是否一致
- * @param _uiSrcAddr Flash起始地址
- * @param _ucpTar    目标数据指针
- * @param _uiSize    比较字节数
- * @retval 0 相等，1 不相等
+ * @brief Compare the data at the given Flash address with the target data
+ * @param _uiSrcAddr Flash start address
+ * @param _ucpTar    Pointer to the target data
+ * @param _uiSize    Number of bytes to compare
+ * @retval 0 Equal, 1 Not equal
  */
 static uint8_t sf_CmpData(uint32_t _uiSrcAddr, uint8_t *_ucpTar, uint32_t _uiSize)
 {
@@ -289,7 +289,7 @@ static uint8_t sf_CmpData(uint32_t _uiSrcAddr, uint8_t *_ucpTar, uint32_t _uiSiz
     g_spiTxBuf[g_spiLen++] = (_uiSrcAddr & 0xFF);
     bsp_spiTransfer(g_spiTxBuf, g_spiRxBuf, g_spiLen);
 
-    /* ��ʼ�����ݣ��ְ��� */
+    /* Start reading data, in chunks */
     for (i = 0; i < _uiSize / SPI_BUFFER_SIZE; i++)
     {
         g_spiLen = SPI_BUFFER_SIZE;
@@ -326,11 +326,12 @@ NOTEQ:
     return 1;
 }
 /**
- * @brief 判断新旧数据是否需要擦除（有0变1则需要擦除）
- * @param _ucpOldBuf 旧数据
- * @param _ucpNewBuf 新数据
- * @param _usLen     长度
- * @retval 1 需要擦除，0 不需要
+ * @brief Check whether the old and new data require an erase (erase is needed
+ *        when new data would require programming 0 bits back to 1)
+ * @param _ucpOldBuf Old data
+ * @param _ucpNewBuf New data
+ * @param _usLen     Length
+ * @retval 1 Erase needed, 0 Not needed
  */
 static uint8_t sf_NeedErase(uint8_t *_ucpOldBuf, uint8_t *_ucpNewBuf, uint16_t _usLen)
 {
@@ -348,18 +349,18 @@ static uint8_t sf_NeedErase(uint8_t *_ucpOldBuf, uint8_t *_ucpNewBuf, uint16_t _
     return 0;
 }
 /**
- * @brief 自动写入一页数据（必要时自动擦除），并校验写入正确性
- * @param _ucpSrc   源数据
- * @param _uiWrAddr 写入地址
- * @param _usWrLen  写入长度
- * @retval 1 成功，0 失败
+ * @brief Write one page of data automatically (erase first if needed) and verify the write
+ * @param _ucpSrc   Source data
+ * @param _uiWrAddr Write address
+ * @param _usWrLen  Write length
+ * @retval 1 Success, 0 Failure
  */
 static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _usWrLen)
 {
     uint16_t i;
-    uint16_t j;           /* ������ʱ */
-    uint32_t uiFirstAddr; /* ������ַ */
-    uint8_t ucNeedErase;  /* 1��ʾ��Ҫ���� */
+    uint16_t j;           /* Loop counter */
+    uint32_t uiFirstAddr; /* Sector start address */
+    uint8_t ucNeedErase;  /* 1 means erase is needed */
     uint8_t cRet;
 
     if (_usWrLen == 0)
@@ -413,7 +414,7 @@ static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _
     {
         if (ucNeedErase == 1)
         {
-            bsp_flash_erase_sector(uiFirstAddr); /* ����1������ */
+            bsp_flash_erase_sector(uiFirstAddr); /* Erase one sector */
         }
 
         sf_PageWrite(s_spiBuf, uiFirstAddr, Flash_SectorSize);
@@ -423,28 +424,20 @@ static uint8_t sf_AutoWritePage(uint8_t *_ucpSrc, uint32_t _uiWrAddr, uint16_t _
             cRet = 1;
             break;
         }
-        else
-        {
-            if (sf_CmpData(_uiWrAddr, _ucpSrc, _usWrLen) == 0)
-            {
-                cRet = 1;
-                break;
-            }
 
-            /* ʧ�ܺ��ӳ�һ��ʱ�������� */
-            for (j = 0; j < 10000; j++)
-                ;
-        }
+        /* Delay a while after failure, then retry */
+        for (j = 0; j < 10000; j++)
+            ;
     }
 
     return cRet;
 }
 /**
- * @brief 向SPI Flash写入数据（自动跨页、自动擦除、自动校验）
- * @param p_buf      写入数据指针
- * @param write_addr 写入起始地址
- * @param write_size 写入字节数
- * @retval 1 成功，0 失败
+ * @brief Write data to the SPI Flash (automatic page crossing, automatic erase, automatic verify)
+ * @param p_buf      Pointer to the data to write
+ * @param write_addr Start address for the write
+ * @param write_size Number of bytes to write
+ * @retval 1 Success, 0 Failure
  */
 
 uint8_t bsp_flash_write(uint8_t *p_buf, uint32_t write_addr, uint16_t write_size)

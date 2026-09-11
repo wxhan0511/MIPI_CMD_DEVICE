@@ -43,7 +43,7 @@
 #define LV_USE_STDLIB_STRING    LV_STDLIB_BUILTIN
 #define LV_USE_STDLIB_SPRINTF   LV_STDLIB_BUILTIN
 
-//ANCHOR - LVGL 对象管理内存 (LVGL Heap)
+//ANCHOR - LVGL object memory management (LVGL Heap)
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /*Size of the memory available for `lv_malloc()` in bytes (>= 2kB)*/
     #define LV_MEM_SIZE (48 * 1024U)          /*[bytes]*/

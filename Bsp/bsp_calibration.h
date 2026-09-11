@@ -1,6 +1,6 @@
 /************************************************************
  * @file       bsp_calibration.h
- * @brief      校准数据管理模块头文件
+ * @brief      Calibration data management module header
  * @author     wxhan
  * @version    1.0.0
  * @date       2025-08-06
@@ -8,32 +8,32 @@
  * @license    MIT License
  ************************************************************/
 
-/*==================== 1. 头文件保护 ====================*/
+/*==================== 1. Include guard ====================*/
 #ifndef BSP_CALIBRATION_H
 #define BSP_CALIBRATION_H
 
-/*==================== 2. 头文件包含 ====================*/
+/*==================== 2. Includes ====================*/
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include "bsp_spi_flash.h"
 #include "bsp_mcp4728.h"
 
-/*==================== 3. 宏定义 ====================*/
-// 校准数据魔数和版本
+/*==================== 3. Macro definitions ====================*/
+// Calibration data magic number and version
 #define CALIBRATION_MAGIC 0x505745FF // "PWEC" - Power Enhancement Calibration
 #define CALIBRATION_VERSION 1
 #define CALIBRATION_MAX_VERSION 10
 
-// 存储地址配置
+// Storage address configuration
 #define W25Q256_CALIBRATION_START 0x00300000
 #define CALIBRATION_MAIN_ADDR (W25Q256_CALIBRATION_START + 0x0000)
 #define CALIBRATION_BACKUP1_ADDR (W25Q256_CALIBRATION_START + 0x1000)
 
-// 扇区大小定义
+// Sector size definition
 #define CALIBRATION_SECTOR_SIZE 4096
 
-// 错误代码定义
+// Error code definitions
 #define CAL_ERROR_NONE 0x00
 #define CAL_ERROR_MAGIC 0x01
 #define CAL_ERROR_VERSION 0x02
@@ -43,8 +43,8 @@
 #define CAL_ERROR_FLASH_ERASE 0x06
 #define CAL_ERROR_BACKUP_FAILED 0x07
 
-/*==================== 4. 类型定义 ====================*/
-// DA校准参数结构体
+/*==================== 4. Type definitions ====================*/
+// DA calibration parameter struct
 typedef struct
 {
     float vcc_set_offset;
@@ -89,7 +89,7 @@ typedef struct
     float vadj_n_gain;
 } da_calibration_data_t;
 
-// AD校准参数结构体
+// AD calibration parameter struct
 typedef struct
 {
     float ch0_offset[8];
@@ -148,7 +148,7 @@ typedef struct
 
 } ad_calibration_data_t;
 
-// 校准数据结构体
+// Calibration data struct
 typedef struct
 {
     uint32_t magic;
@@ -180,7 +180,7 @@ typedef struct
     uint32_t crc32;
 } calibration_data_t;
 
-// 校准数据管理器结构体
+// Calibration data manager struct
 typedef struct
 {
     calibration_data_t data;
@@ -193,11 +193,11 @@ typedef struct
     uint32_t flash_id;
 } calibration_manager_t;
 
-/*==================== 5. 外部全局变量声明 ====================*/
+/*==================== 5. Global variable declarations ====================*/
 extern calibration_manager_t g_calibration_manager;
 extern CRC_HandleTypeDef hcrc;
 
-/*==================== 6. 外部函数声明 ====================*/
+/*==================== 6. Function declarations ====================*/
 HAL_StatusTypeDef calibration_init(void);
 HAL_StatusTypeDef calibration_load(void);
 HAL_StatusTypeDef calibration_save(void);
@@ -216,9 +216,8 @@ bool calibration_is_valid(void);
 
 HAL_StatusTypeDef calibration_flash_init(void);
 
-void calibration_print_info(void);
 void calibration_test_crc(void);
 void calibration_dump_data(uint32_t addr, uint32_t size);
 
-/*==================== 7. 结束头文件保护 ====================*/
+/*==================== 7. End of include guard ====================*/
 #endif /* BSP_CALIBRATION_H */

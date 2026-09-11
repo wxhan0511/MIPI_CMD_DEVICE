@@ -10,7 +10,6 @@
 #include "tim.h"
 #include "bsp_lcd.h"
 #include "dac.h"
-#include "tim.h"
 /* drivers */
 #include "retarget.h"
 #include "delay.h"
@@ -36,7 +35,6 @@
 static void bsp_print_version_info(void);
 static HAL_StatusTypeDef bsp_init_adc_system(void);
 static void bsp_test_spi_flash(void);
-static void bsp_test_latch(void);
 void test_pwm(void);
 void test_ccp(void);
 
@@ -118,28 +116,27 @@ void bsp_led_pwm_init(uint8_t pulse)
 {
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
-    uint16_t arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    uint16_t psc = 15;   // 分频
-    // uint16_t pulse =10;//比较值 推荐占空比1%,50%特别亮
+    uint16_t arr = 1050; // Period; duty cycle resolution: 1 / 1050 = 0.0952% (better than 0.1%)
+    uint16_t psc = 15;   // Prescaler
+    // Recommended duty cycle: 1% (50% is especially bright)
     uint16_t pulses_num = 11000;
     printf("pulse value: %d\r\n", pulse);
-    TIM1_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM1_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arr+1)*(psc+1)    Max usable 28MHz: TIM1_PWM_Init(2,3), compare value set to 1, __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM1 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
-    // TIM1_Generate_N_Pulses(pulses_num);//非使能
+    // TIM1_Generate_N_Pulses(pulses_num); // Not enabled
     printf("generate %d pulses\r\n", pulses_num);
-    // 推荐10KHz，占空比分辨率0.1%
+    // Recommended 10 kHz, duty cycle resolution 0.1%
 }
 void bsp_blasi_pwm_init(uint8_t pulse)
 {
     HAL_TIM_IC_DeInit(&htim2);
     HAL_TIM_PWM_DeInit(&htim2);
-    uint16_t arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    uint16_t psc = 15;   // 分频
-    // uint16_t pulse = 10; // 比较值
+    uint16_t arr = 1050; // Period; duty cycle resolution: 1 / 1050 = 0.0952% (better than 0.1%)
+    uint16_t psc = 15;   // Prescaler
     uint16_t pulses_num = 11000;
-    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arr+1)*(psc+1)    Max usable 28MHz: TIM1_PWM_Init(2,3), compare value set to 1, __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
-    // 推荐10KHz，占空比分辨率0.1%
+    // Recommended 10 kHz, duty cycle resolution 0.1%
 }
 void bsp_CCP_Init(void)
 {
@@ -207,8 +204,8 @@ static void bsp_test_spi_flash(void)
     MIPI_CMD_INFO("=== SPI Flash Stress Test Start ===\r\n");
     MIPI_CMD_INFO("Target: 32MB Flash, 4KB Sector-based Reliability Test\r\n");
 
-    uint32_t test_cycles = 20;  // 测试循环次数
-    uint32_t sector_count = 10; // 每轮随机选择的扇区数
+    uint32_t test_cycles = 20;  // Number of test cycles
+    uint32_t sector_count = 10; // Number of randomly selected sectors per cycle
     static uint8_t write_buf[Flash_SectorSize];
     static uint8_t read_buf[Flash_SectorSize];
     uint32_t total_errors = 0;
@@ -220,29 +217,29 @@ static void bsp_test_spi_flash(void)
 
         for (uint32_t s = 0; s < sector_count; s++)
         {
-            // 随机选择一个扇区地址 (必须是 4KB 对齐)
-            // 使用 HAL_GetTick() 作为简单的随机源
+            // Randomly pick a sector address (must be 4KB aligned)
+            // Use HAL_GetTick() as a simple random source
             uint32_t random_val = (HAL_GetTick() * (s + 1) * cycle);
             uint32_t sector_addr = (random_val % (Flash_TotalSize / Flash_SectorSize)) * Flash_SectorSize;
 
-            // 1. 擦除扇区
+            // 1. Erase the sector
             bsp_flash_erase_sector(sector_addr);
 
-            // 2. 准备随机/变化的数据模式
+            // 2. Prepare a random/varying data pattern
             for (uint32_t i = 0; i < Flash_SectorSize; i++)
             {
                 write_buf[i] = (uint8_t)(cycle + s + i);
             }
 
-            // 3. 写入数据
-            // 注意：bsp_flash_write 的第三个参数是 uint16_t, Flash_SectorSize 是 4096 (OK)
+            // 3. Write the data
+            // Note: the third parameter of bsp_flash_write is uint16_t; Flash_SectorSize is 4096 (OK)
             bsp_flash_write(write_buf, sector_addr, Flash_SectorSize);
 
-            // 4. 读取校验
+            // 4. Read back and verify
             memset(read_buf, 0, Flash_SectorSize);
             bsp_flash_read(read_buf, sector_addr, Flash_SectorSize);
 
-            // 5. 比对数据
+            // 5. Compare the data
             uint32_t sector_errors = 0;
             for (uint32_t i = 0; i < Flash_SectorSize; i++)
             {
@@ -284,43 +281,43 @@ void test_pwm(void)
     app_delay(5000);
     disableTim1PWMOutput();
     disableTim2PWMOutput();
-    // 百1占空比5s
+    // 1% duty cycle for 5 s
 
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
     HAL_TIM_IC_DeInit(&htim2);
     HAL_TIM_PWM_DeInit(&htim2);
-    uint16_t arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    uint16_t psc = 15;   // 分频
-    uint16_t pulse = 30; // 比较值
+    uint16_t arr = 1050; // Period; duty cycle resolution: 1 / 1050 = 0.0952% (better than 0.1%)
+    uint16_t psc = 15;   // Prescaler
+    uint16_t pulse = 30; // Compare value
     uint16_t pulses_num = 11000;
     TIM1_PWM_Init(arr, psc, pulse);
-    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arr+1)*(psc+1)    Max usable 28MHz: TIM1_PWM_Init(2,3), compare value set to 1, __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
     enableTim1PWMOutput(); // step2
     enableTim2PWMOutput();
     app_delay(5000);
     disableTim1PWMOutput();
     disableTim2PWMOutput();
-    // 百3占空比5s
+    // 3% duty cycle for 5 s
 
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
     HAL_TIM_IC_DeInit(&htim2);
     HAL_TIM_PWM_DeInit(&htim2);
-    arr = 1050; // 周期 占空比分辨率：1 / 1050 = 0.0952%（优于 0.1%）
-    psc = 15;   // 分频
-    pulse = 50; // 比较值
+    arr = 1050; // Period; duty cycle resolution: 1 / 1050 = 0.0952% (better than 0.1%)
+    psc = 15;   // Prescaler
+    pulse = 50; // Compare value
     pulses_num = 11000;
     TIM1_PWM_Init(arr, psc, pulse);
-    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arry+1)*(psc+1)    最大可用28MHZ TIM1_PWM_Init(2,3),比较值设置为1,__HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
+    TIM2_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arr+1)*(psc+1)    Max usable 28MHz: TIM1_PWM_Init(2,3), compare value set to 1, __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
     printf("TIM2 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
     enableTim1PWMOutput(); // step2
     enableTim2PWMOutput();
     app_delay(5000);
     disableTim1PWMOutput();
     disableTim2PWMOutput();
-    // 百5占空比5s
+    // 5% duty cycle for 5 s
 }
 // ANCHOR - DEMO CCP TEST FUNCTIONS
 void test_ccp(void)
@@ -350,30 +347,30 @@ void cali_zero(void)
         bsp_rly_gear_set_all(gear);
         for (uint8_t usr_idx = 0; usr_idx < 8; usr_idx++)
         {
-            if (data_type == 0) // 电压
+            if (data_type == 0) // Voltage
             {
                 ads1256_ch_index = sample_vol_map[usr_idx][0];
                 d_trigger_ch_index = sample_vol_map[usr_idx][1];
             }
-            else if (data_type == 1) // 电流
+            else if (data_type == 1) // Current
             {
                 ads1256_ch_index = sample_cur_map[usr_idx][0];
                 d_trigger_ch_index = sample_cur_map[usr_idx][1];
             }
-            HAL_NVIC_DisableIRQ(EXTI2_IRQn); // 切采样通道时临时屏蔽采样中断
+            HAL_NVIC_DisableIRQ(EXTI2_IRQn); // Temporarily disable the sampling IRQ while switching the sample channel
             if (ads1256_ch_index == 0 && d_trigger_ch_index != 0xff)
                 bsp_ads1256_ch0_select(d_trigger_ch_index);
             else if (ads1256_ch_index == 1 && d_trigger_ch_index != 0xff)
                 bsp_ads1256_ch1_select(d_trigger_ch_index);
             else if (ads1256_ch_index == 2 && d_trigger_ch_index != 0xff)
                 bsp_ads1256_ch2_select(d_trigger_ch_index);
-            HAL_NVIC_EnableIRQ(EXTI2_IRQn); // 切完采样通道时打开采样中断
+            HAL_NVIC_EnableIRQ(EXTI2_IRQn); // Re-enable the sampling IRQ after switching the sample channel
             if (ads1256_ch_index < 3 && d_trigger_ch_index != 0xff)
             {
                 uint32_t t0 = HAL_GetTick();
                 while (latest_sample_ch_sel[ads1256_ch_index] != d_trigger_ch_index)
                 {
-                    if ((HAL_GetTick() - t0) >= 2000U) // 最多等待2s
+                    if ((HAL_GetTick() - t0) >= 2000U) // Wait at most 2 s
                     {
                         M_SPI_INFO("SINGLE_VOL_GET timeout\r\n");
                         break;
@@ -382,12 +379,12 @@ void cali_zero(void)
                 }
             }
             for (uint8_t i = 0; i < 8; i++)
-                wait_adc_one_round(200);     // 一轮采样140ms
-            HAL_NVIC_DisableIRQ(EXTI2_IRQn); // 修改校准值时关闭采样中断
+                wait_adc_one_round(200);     // One sampling round takes about 140 ms
+            HAL_NVIC_DisableIRQ(EXTI2_IRQn); // Disable the sampling IRQ while updating calibration values
             sel_cali_param(ads1256_ch_index, d_trigger_ch_index, &offset, &gain);
             offset = -latest_sample_raw_data[ads1256_ch_index] * gain;
             set_cali_param(ads1256_ch_index, d_trigger_ch_index, offset, gain);
-            HAL_NVIC_EnableIRQ(EXTI2_IRQn); // 修改校准值完打开采样中断
+            HAL_NVIC_EnableIRQ(EXTI2_IRQn); // Re-enable the sampling IRQ after updating calibration values
         }
     }
     bsp_rly_gear_set_all(GEAR_mA);

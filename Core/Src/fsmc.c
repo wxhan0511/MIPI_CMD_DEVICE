@@ -75,21 +75,21 @@ void MX_FSMC_Init(void)
   // }
 
   /* USER CODE BEGIN FSMC_Init 2 */
-  /* FSMC读时序控制寄存器 */
-  Timing.AddressSetupTime = 0x0F;           /* 地址建立时间(ADDSET)为15个fsmc_ker_ck(1/168=6)即6*15=90ns */
-  Timing.AddressHoldTime = 0x00;            /* 地址保持时间(ADDHLD) 模式A是没有用到 */
-  Timing.DataSetupTime = 60;                /* 数据保存时间(DATAST)为60个fsmc_ker_ck=6*60=360ns */
-  /* 因为液晶驱动IC的读数据的时候,速度不能太快,尤其是个别奇葩芯片 */
-  Timing.AccessMode = FSMC_ACCESS_MODE_A;   /* 模式A */
-  /* FSMC写时序控制寄存器 */
-  // 调整时序参数
-  Timing2.AddressSetupTime = 10;        // 增大地址建立时间
-  Timing.AddressHoldTime = 2;          // 增大地址保持时间
-  Timing.DataSetupTime = 15;           // 增大数据建立时间
-  Timing.BusTurnAroundDuration = 2;    // 增大总线转换时间
+  /* FSMC read timing control registers */
+  Timing.AddressSetupTime = 0x0F;           /* Address setup time (ADDSET): 15 fsmc_ker_ck cycles (HCLK/168 ~ 6ns) => ~90ns */
+  Timing.AddressHoldTime = 0x00;            /* Address hold time (ADDHLD): unused in mode A */
+  Timing.DataSetupTime = 60;                /* Data setup time (DATAST): 60 fsmc_ker_ck cycles => ~360ns */
+  /* LCD driver ICs cannot read too fast, especially some quirky chips */
+  Timing.AccessMode = FSMC_ACCESS_MODE_A;   /* Mode A */
+  /* FSMC write timing control registers */
+  // Adjusted timing parameters
+  Timing2.AddressSetupTime = 10;        /* Increased address setup time */
+  Timing.AddressHoldTime = 2;          /* Increased address hold time */
+  Timing.DataSetupTime = 15;           /* Increased data setup time */
+  Timing.BusTurnAroundDuration = 2;    /* Increased bus turn-around time */
   Timing.CLKDivision = 2;
   Timing.DataLatency = 2;
-  Timing.AccessMode = FSMC_ACCESS_MODE_A;  // 使用AccessMode A
+  Timing.AccessMode = FSMC_ACCESS_MODE_A;  /* Use access mode A */
   if (HAL_SRAM_Init(&hsram1, &Timing, &Timing2) != HAL_OK)
   {
     Error_Handler(__FILE__, __LINE__);
@@ -264,20 +264,20 @@ void fsmc_write_burst_en(uint8_t enable)
   // }
 
   /* USER CODE BEGIN FSMC_Init 2 */
-  /* FSMC读时序控制寄存器 */
-  Timing.AddressSetupTime = 0x11;           /* 地址建立时间(ADDSET)为15个fsmc_ker_ck(1/168=6)即6*15=90ns */
-  Timing.AddressHoldTime = 0x00;            /* 地址保持时间(ADDHLD) 模式A是没有用到 */
-  Timing.DataSetupTime = 0x55;                /* 数据保存时间(DATAST)为60个fsmc_ker_ck=6*60=360ns */
-  /* 因为液晶驱动IC的读数据的时候,速度不能太快,尤其是个别奇葩芯片 */
-  Timing.AccessMode = FSMC_ACCESS_MODE_B;   /* 模式A */
-  /* FSMC写时序控制寄存器 */
-  Timing2.AddressSetupTime = 10;        // 地址建立时间
-  Timing2.AddressHoldTime = 10;         // 地址保持时间
-  Timing2.DataSetupTime = 9;           // 数据建立时间
+  /* FSMC read timing control registers */
+  Timing.AddressSetupTime = 0x11;           /* Address setup time (ADDSET): 17 fsmc_ker_ck cycles */
+  Timing.AddressHoldTime = 0x00;            /* Address hold time (ADDHLD): unused in mode A/B */
+  Timing.DataSetupTime = 0x55;              /* Data setup time (DATAST): 85 fsmc_ker_ck cycles */
+  /* LCD driver ICs cannot read too fast, especially some quirky chips */
+  Timing.AccessMode = FSMC_ACCESS_MODE_B;   /* Access mode B */
+  /* FSMC write timing control registers */
+  Timing2.AddressSetupTime = 10;        /* Address setup time */
+  Timing2.AddressHoldTime = 10;         /* Address hold time */
+  Timing2.DataSetupTime = 9;           /* Data setup time */
   Timing2.BusTurnAroundDuration = 1;
   Timing2.CLKDivision = 2;
   Timing2.DataLatency = 2;
-  Timing2.AccessMode = FSMC_ACCESS_MODE_A;  // 使用AccessMode A
+  Timing2.AccessMode = FSMC_ACCESS_MODE_A;  /* Use access mode A */
   if (HAL_SRAM_Init(&hsram1, &Timing, &Timing2) != HAL_OK)
   {
     Error_Handler(__FILE__, __LINE__);

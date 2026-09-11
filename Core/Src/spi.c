@@ -428,7 +428,7 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef *spiHandle)
     /* USER CODE END SPI3_MspDeInit 1 */
   }
 }
-// 系统启动时调用一次，进入“等待主机发送”状态
+// Called once at system startup; enters the "wait for host" state
 void SPI2_Slave_StartRx_IT(void)
 {
   meter_com_flag = 0;
@@ -437,7 +437,7 @@ void SPI2_Slave_StartRx_IT(void)
   memset(meter_tx_buf, 0, sizeof(meter_tx_buf));
   HAL_SPI_Receive_IT(&hspi2, meter_rx_buf, SPI2_SLAVE_RX_LEN);
 }
-// 发送 64 字节（不足补 0）
+// Send 64 bytes (zero-padded if shorter)
 HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len)
 {
   if (len > SPI2_SLAVE_TX_LEN)
@@ -451,7 +451,7 @@ HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len)
 
   return HAL_SPI_Transmit_IT(&hspi2, meter_tx_buf, SPI2_SLAVE_TX_LEN);
 }
-// 中断回调转发入口
+// Interrupt callback forwarding entry
 
 void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi)
 {
@@ -469,25 +469,25 @@ void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi)
   // }
   // M_SPI_DEBUG("\r\n");
 
-  /* 收完->处理->发送 */
+  /* Receive done -> process -> send */
 }
-// 中断回调转发入口
+// Interrupt callback forwarding entry
 void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi)
 {
   if (hspi->Instance != SPI2)
     return;
 
-  /* 发送完成后，重新进入接收等待下一帧 */
+  /* After transmission completes, re-enter receive to wait for the next frame */
   HAL_SPI_Receive_IT(&hspi2, meter_rx_buf, SPI2_SLAVE_RX_LEN);
   M_INT_HIGH();
 }
-// 中断回调转发入口
+// Interrupt callback forwarding entry
 void SPI2_Slave_OnError_IT(SPI_HandleTypeDef *hspi)
 {
   if (hspi->Instance != SPI2)
     return;
-  __HAL_SPI_CLEAR_OVRFLAG(hspi); // 清 OVR
-  HAL_SPI_Abort(hspi);           // 终止当前事务（同步版更直接）
+  __HAL_SPI_CLEAR_OVRFLAG(hspi); // Clear OVR flag
+  HAL_SPI_Abort(hspi);           // Abort the current transfer (synchronous version is more direct)
 }
 
 void M_INT_HIGH()

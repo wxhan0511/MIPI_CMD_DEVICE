@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-/* ==================== 1. 头文件包含 ==================== */
+/* ==================== 1. Header includes ==================== */
 #include "main.h"
 #include "cmsis_os.h"
 #include <stdio.h>
@@ -24,35 +24,35 @@
 
 #include "bsp.h"
 
-/* ==================== 2. 宏定义 ==================== */
-/* 无 */
+/* ==================== 2. Macro definitions ==================== */
+/* None */
 
-/* ==================== 3. 类型定义（结构体、枚举、别名） ==================== */
-/* 无 */
+/* ==================== 3. Type definitions (structs, enums, aliases) ==================== */
+/* None */
 
-/* ==================== 4. 外部全局变量 ==================== */
-/* 无 */
+/* ==================== 4. External global variables ==================== */
+/* None */
 
-/* ==================== 5. 静态私有变量 ==================== */
-/* 无 */
+/* ==================== 5. Static private variables ==================== */
+/* None */
 
-/* ==================== 6. 静态函数声明 ==================== */
-/* 无 */
+/* ==================== 6. Static function declarations ==================== */
+/* None */
 
-/* ==================== 外部函数声明 ==================== */
+/* ==================== External function declarations ==================== */
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 
-/* ==================== 7. 外部可调用函数实现 ==================== */
+/* ==================== 7. Public function implementations ==================== */
 int main(void)
 {
-  /* HAL基础初始化 */
+  /* HAL base initialization */
   HAL_Init();
 
-  /* 系统时钟配置 */
+  /* System clock configuration */
   SystemClock_Config();
 
-  /* 外设初始化 */
+  /* Peripheral initialization */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2C1_Init(); /* PB6 PB7 */
@@ -61,37 +61,37 @@ int main(void)
   MX_FSMC_Init();
   MX_DAC_Init();
   MX_SPI1_Init(); /* ADS1256 */
-  // MX_SPI2_Init(); /* M SPI */
+  // MX_SPI2_Init();
   MX_SPI3_Init(); /* FLASH */
   MX_USART3_UART_Init();
 
-  /* 板级初始化 */
+  /* Board-level initialization */
   bsp_init();
 
-  /* RTOS初始化与启动 */
+  /* RTOS initialization and start */
   osKernelInitialize();
   MX_FREERTOS_Init();
   osKernelStart();
 
-  /* 正常不会到达此处 */
+  /* Normally never reached */
   while (1)
   {
   }
 }
 
 /**
- * @brief  系统时钟配置：sysclk=168MHz, pclk1=42MHz, pclk2=84MHz
+ * @brief  System clock configuration: sysclk=168MHz, pclk1=42MHz, pclk2=84MHz
  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /* 使能电源时钟并配置电压缩放 */
+  /* Enable PWR clock and configure voltage scaling */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /* 配置时钟源和PLL */
+  /* Configure clock sources and PLL */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON; /* 8MHz */
   RCC_OscInitStruct.HSIState = RCC_HSI_ON; /* 16MHz */
@@ -108,7 +108,7 @@ void SystemClock_Config(void)
     Error_Handler(__FILE__, __LINE__);
   }
 
-  /* 配置AHB/APB总线时钟 */
+  /* Configure AHB/APB bus clocks */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK |
                                 RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -121,7 +121,7 @@ void SystemClock_Config(void)
     Error_Handler(__FILE__, __LINE__);
   }
 
-  /* 输出时钟到MCO1用于调试观察 */
+  /* Output clock on MCO1 for debug observation */
   HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSI, RCC_MCODIV_1);
 }
 
@@ -135,15 +135,15 @@ void Error_Handler(const char *FileName, int LineNumber)
 
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  参数断言失败回调
+ * @brief  Parameter assertion failure callback
  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-  /* 可按需添加日志打印 */
+  /* Add log output here if needed */
   (void)file;
   (void)line;
 }
 #endif /* USE_FULL_ASSERT */
 
-/* ==================== 8. 静态私有函数实现 ==================== */
-/* 无 */
+/* ==================== 8. Static private function implementations ==================== */
+/* None */

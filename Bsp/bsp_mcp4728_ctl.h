@@ -34,17 +34,17 @@ extern "C"
     /* Exported types ------------------------------------------------------------*/
     typedef struct
     {
-        float *last_voltage;   // 存放在 calibration_manager 中的上次电压
-        float *offset;         // 对应校准偏移
-        float *gain;           // 对应校准增益
-        dac_chip_index_t chip; // 使用哪颗芯片 (DAC_CHIP_1 到 5)
-        const char *name;      // 调试名称
-        uint8_t channel;       // 芯片的哪个通道 (0-3)
-        uint8_t inverse;       // 是否需要取反（如 ELVSS 是负电压，校准逻辑可能不同）
+        float *last_voltage;   // Last voltage stored in calibration_manager
+        float *offset;         // Corresponding calibration offset
+        float *gain;           // Corresponding calibration gain
+        dac_chip_index_t chip; // Which chip is used (DAC_CHIP_1 to 5)
+        const char *name;      // Debug name
+        uint8_t channel;       // Which channel of the chip (0-3)
+        uint8_t inverse;       // Whether inversion is needed (e.g. ELVSS is a negative voltage, so its calibration logic may differ)
         uint8_t id;
-        uint8_t reserve;                  // 保留字段
-        void (*enable_func)(uint8_t id);  // 使能函数指针
-        void (*disable_func)(uint8_t id); // 禁能函数指针
+        uint8_t reserve;                  // Reserved field
+        void (*enable_func)(uint8_t id);  // Enable function pointer
+        void (*disable_func)(uint8_t id); // Disable function pointer
         const char *name1;
 
     } dac_config_table_t;

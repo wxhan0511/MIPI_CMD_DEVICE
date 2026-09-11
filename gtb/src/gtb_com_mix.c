@@ -451,7 +451,7 @@ void gtb_generic_com(tp_config_t *tp_config,uint8_t *arg, uint8_t *output, uint8
                                     send_error_code(tp_config->interface_mode, output, tp_config->transfer_status, com_mode);
                                     break;
                                 }
-                                else if (tp_config->transfer_feedback_enable == true)//前一次收到主机发的40，fc，02,01后才会进入这里
+                                else if (tp_config->transfer_feedback_enable == true)// Only entered after the host has previously sent 40 fc 02 01
                                     send_usb_trans_status(tp_config->interface_mode, output, CMD_USB_TRANSFER_OK, com_mode);
                                 if (arg[2] == CMD_FLASH_OPERATION_LONG_PACKET)
                                 {

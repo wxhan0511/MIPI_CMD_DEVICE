@@ -94,9 +94,9 @@ typedef enum
 } RLY_INDEX;
 typedef struct
 {
-    TEST_CUR_GEAR gear[RLY_INDEX_MAX]; // 存储当前的挡位
+    TEST_CUR_GEAR gear[RLY_INDEX_MAX]; // Stores the current gear
 } rly_gear_state_t;
-// ADS1256选通宏
+// ADS1256 mux selection macros
 typedef enum
 {
     VCC_V = 0,
@@ -136,7 +136,7 @@ extern volatile uint8_t ch2_flag;
 
 /* Exported macro ------------------------------------------------------------*/
 
-// ANCHOR - 电源控制宏
+// ANCHOR - Power control macros
 #define VSN_ENABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 1, 0);
 #define VSN_DISABLE_POWEREN_N_1() bsp_d_trigger_set_channel(&d_3, 1, 1);
 #define ELVSS_ENABLE_POWEREN_N_2() bsp_d_trigger_set_channel(&d_3, 0, 0);
@@ -164,25 +164,18 @@ extern volatile uint8_t ch2_flag;
 #define VCC_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 7)
 #define LEVEL_SHIFT_STATUS bsp_d_trigger_get_channel_state(&d_8, 4)
 
-// ANCHOR - level shifter控制宏
+// ANCHOR - Level shifter control macros
 #define LEVEL_SHIFT_ENABLE() bsp_d_trigger_set_channel(&d_8, 4, 1);
 #define LEVEL_SHIFT_DISABLE() bsp_d_trigger_set_channel(&d_8, 4, 0);
 
 /* Exported functions prototypes ---------------------------------------------*/
 
 void bsp_channel_sel_init(void);
-// 电阻二极管
+// Resistor/diode
 void bsp_rd_select_mode(const R_D_MODE mode);
 void bsp_rd_select_r_level(const TEST_R_D_RES_LEVEL r_level);
 void bsp_close_rd_select_channel();
 void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n, uint8_t en);
-// 电压
-static void bsp_vol_select_pin_8_to_1(const uint16_t pin_group);
-void bsp_vol_select_pin_64_to_1(const uint16_t pin, const uint8_t en);
-void bsp_bias_p_select_pin(const uint8_t group, const uint16_t pin);
-void bsp_bias_n_select_pin(const uint8_t group, const uint16_t pin);
-// 测试模式选择
-void bsp_test_select_mode(const TEST_MODE mode);
 void bsp_limit_current_reset();
 void bsp_lim_rst_set(uint8_t state);
 void bsp_rly_gear_set(TEST_CUR_GEAR gear, RLY_INDEX rly_index);
