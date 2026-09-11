@@ -59,9 +59,9 @@ void MX_FREERTOS_Init(void)
   show_mutexHandle = osMutexNew(&show_mutex_attributes);
   led_timerHandle = osTimerNew(led_timer_callback, osTimerPeriodic, NULL, &led_timer_attributes);
 
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  // defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  widget_main_task_init(); // LVGL UI task
+  // widget_main_task_init(); // LVGL UI task
   // power_task_init();
   task_sample_init();
   task_com_init();

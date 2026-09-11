@@ -50,6 +50,7 @@ typedef enum
     READ_AD_DATA = 0x23,
     WRITE_CALI_DATA = 0x24,
     enable_lim = 0x25,
+    self_test = 0x26,
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 

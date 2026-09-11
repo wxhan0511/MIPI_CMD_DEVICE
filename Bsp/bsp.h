@@ -59,5 +59,5 @@ void bsp_init();
 void bsp_CCP_Init(void);
 void bsp_led_pwm_init(uint8_t pulse);
 void bsp_blasi_pwm_init(uint8_t pulse);
-void self_test(void);
+void cali_zero(void);
 #endif // BSP_H

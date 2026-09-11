@@ -689,6 +689,11 @@ void task_sample_run(void *argument)
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        case self_test:
+            cali_zero();
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
         case WRITE_CALI_DATA:
         {
             M_SPI_DEBUG("WRITE_CALI_DATA\r\n");
@@ -858,7 +863,6 @@ void task_sample_run(void *argument)
                 M_SPI_DEBUG("\r\n========== 2. AD 采集电压最终校准值 (物理通道0~7) ==========\r\n");
                 for (uint8_t i = 0; i < 8; i++)
                 {
-                    // 打印物理通道 i 的名字，以及对应的 gain 和 offset (注意 offset 已经乘了 0.001)
                     M_SPI_DEBUG("PHY_CH%d: gain=%.6f, offset=%.6f\r\n", i, cal->ad_data.ch0_gain[i], cal->ad_data.ch0_offset[i]);
                 }
                 M_SPI_DEBUG("\r\n========== 3. AD 采集 mA 电流最终校准值 ==========\r\n");
@@ -889,12 +893,7 @@ void task_sample_run(void *argument)
                 M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[6], cal->ad_data.ch1_gain_ua1[2], cal->ad_data.ch1_offset_ua1[2]);
                 M_SPI_DEBUG("%s: gain=%.6f, offset=%.6f\r\n", cur_names[7], cal->ad_data.ch1_gain_ua1[3], cal->ad_data.ch1_offset_ua1[3]); // 已取反
 
-                // =========================================================
                 M_SPI_DEBUG("Calibration data applied successfully!\r\n");
-                calibration_save();
-
-                M_SPI_DEBUG("Calibration data applied successfully!\r\n");
-
                 calibration_save();
             }
             task_com_resume();

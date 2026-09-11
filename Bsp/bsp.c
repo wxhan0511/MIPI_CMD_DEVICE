@@ -39,6 +39,7 @@ static void bsp_test_spi_flash(void);
 static void bsp_test_latch(void);
 void test_pwm(void);
 void test_ccp(void);
+
 extern SPI_HandleTypeDef hspi2;
 uint8_t id = 0x01;
 
@@ -104,18 +105,7 @@ void bsp_init()
     enableTim1PWMOutput();  // step2
     enableTim2PWMOutput();  // step2
 
-    bsp_lim_rst_set(0);
-
-    //  自检开始提示
-    printf("\r\n==================================================\r\n");
-    printf(" Start self-test (Zero Calibration)...\r\n");
-    printf(" Please wait...\r\n");
-    printf("==================================================\r\n");
-    self_test();
-    // 自检结束提示
-    printf("\r\n==================================================\r\n");
-    printf(" Self-test finished. System ready.\r\n");
-    printf("==================================================\r\n\r\n");
+    bsp_lim_rst_set(1);
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();
@@ -341,8 +331,13 @@ void test_ccp(void)
     disableTim1CaptureCompareInterrupt(); // step3
 }
 
-void self_test(void)
+void cali_zero(void)
 {
+    printf("\r\n==================================================\r\n");
+    printf(" Start self-test (Zero Calibration)...\r\n");
+    printf(" Please wait...\r\n");
+    printf("==================================================\r\n");
+
     uint8_t ads1256_ch_index;
     uint8_t d_trigger_ch_index;
     extern const uint8_t sample_vol_map[15][2];
@@ -396,4 +391,7 @@ void self_test(void)
         }
     }
     bsp_rly_gear_set_all(GEAR_mA);
+    printf("\r\n==================================================\r\n");
+    printf(" Self-test finished. System ready.\r\n");
+    printf("==================================================\r\n\r\n");
 }
