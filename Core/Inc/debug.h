@@ -94,7 +94,7 @@ extern "C"
 
 #define I2C_INFO(fmt, ...) printf("[I2C INFO] " fmt, ##__VA_ARGS__)
 #define I2C_ERROR(fmt, ...) printf("[I2C ERROR] " fmt, ##__VA_ARGS__)
-#define I2C_DEBUG_ENABLE
+// #define I2C_DEBUG_ENABLE
 #ifdef I2C_DEBUG_ENABLE
 #define I2C_DEBUG(fmt, ...) printf(fmt, ##__VA_ARGS__)
 

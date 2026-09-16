@@ -24,6 +24,10 @@
 
 uint8_t meter_rx_buf[SPI2_SLAVE_RX_LEN];
 uint8_t meter_tx_buf[SPI2_SLAVE_TX_LEN];
+volatile uint8_t spi2_tx_complete_flag = 0;
+volatile uint8_t spi2_enter_boot_pending = 0;
+
+volatile uint32_t g_spi2_err_code = 0xFFFFFFFFU; /* Last SPI2 HAL error code (diagnostics) */
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
@@ -433,11 +437,12 @@ void SPI2_Slave_StartRx_IT(void)
 {
   meter_com_flag = 0;
   spi_tx_flag = 0;
+  spi2_tx_complete_flag = 0;
+  spi2_enter_boot_pending = 0;
   memset(meter_rx_buf, 0, sizeof(meter_rx_buf));
   memset(meter_tx_buf, 0, sizeof(meter_tx_buf));
   HAL_SPI_Receive_IT(&hspi2, meter_rx_buf, SPI2_SLAVE_RX_LEN);
-}
-// Send 64 bytes (zero-padded if shorter)
+} // Send 64 bytes (zero-padded if shorter)
 HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len)
 {
   if (len > SPI2_SLAVE_TX_LEN)
@@ -449,6 +454,7 @@ HAL_StatusTypeDef SPI2_Slave_Send_IT(const uint8_t *data, uint16_t len)
     memset(&meter_tx_buf[len], 0, SPI2_SLAVE_TX_LEN - len);
   }
 
+  spi2_tx_complete_flag = 0;
   return HAL_SPI_Transmit_IT(&hspi2, meter_tx_buf, SPI2_SLAVE_TX_LEN);
 }
 // Interrupt callback forwarding entry
@@ -475,6 +481,11 @@ void SPI2_Slave_OnRxCplt_IT(SPI_HandleTypeDef *hspi)
 void SPI2_Slave_OnTxCplt_IT(SPI_HandleTypeDef *hspi)
 {
   if (hspi->Instance != SPI2)
+    return;
+
+  spi2_tx_complete_flag = 1;
+
+  if (spi2_enter_boot_pending)
     return;
 
   /* After transmission completes, re-enter receive to wait for the next frame */

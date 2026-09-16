@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 
 void bsp_retarget_init(UART_HandleTypeDef *huart);
+void bsp_retarget_rtos_init(void);
 int _isatty(int fd);
 int _write(int fd, char* ptr, int len);
 int _close(int fd);

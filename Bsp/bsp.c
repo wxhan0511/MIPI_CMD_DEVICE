@@ -77,6 +77,7 @@ void bsp_init()
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     // TIME_DEBUG("test100: %lu ms\r\n", dwt_get_ms());
     bsp_all_d_trigger_init();
+    printf("------------------------------------------------------------------------------------05\r\n");
     printf("\r\n==================================================\r\n");
     printf(" all rly set ma.\r\n");
     printf("==================================================\r\n\r\n");
@@ -153,10 +154,13 @@ static void bsp_print_version_info(void)
     MIPI_CMD_INFO("================================================\r\n");
     MIPI_CMD_INFO("MIPI CMD DEVICE Board System Information\r\n");
     MIPI_CMD_INFO("================================================\r\n");
-    MIPI_CMD_INFO("Firmware Name: %s\r\n", fw_name);
+    /* Bounded %.*s: if the version sector is missing/erased on the chip, an
+       unbounded %s would scan 0xFF bytes to the end of flash and bus-fault
+       at 0x08100000. The precision caps the scan at the array size. */
+    MIPI_CMD_INFO("Firmware Name: %.*s\r\n", (int)sizeof(fw_name), fw_name);
     MIPI_CMD_INFO("Software Version: %d.%d.%d.%d\r\n",
                   sw_version[0], sw_version[1], sw_version[2], sw_version[3]);
-    MIPI_CMD_INFO("Hardware Name: %s\r\n", hw_name);
+    MIPI_CMD_INFO("Hardware Name: %.*s\r\n", (int)sizeof(hw_name), hw_name);
     MIPI_CMD_INFO("Hardware Version: %d.%d.%d.%d\r\n",
                   hw_version[0], hw_version[1], hw_version[2], hw_version[3]);
 }

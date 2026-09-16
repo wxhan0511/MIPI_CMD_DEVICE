@@ -22,6 +22,8 @@
 #include "retarget.h"
 #include <stdint.h>
 #include <stdio.h>
+#include "cmsis_os.h"
+#include "FreeRTOS.h"
 
 #if !defined(OS_USE_SEMIHOSTING)
 
@@ -30,12 +32,56 @@
 #define STDERR_FILENO 2
 
 UART_HandleTypeDef *gHuart;
+static osMutexId_t retarget_mutex;
+static StaticSemaphore_t retarget_mutex_control_block;
+static const osMutexAttr_t retarget_mutex_attributes = {
+    .name = "retarget_mutex",
+    .attr_bits = osMutexRecursive | osMutexPrioInherit,
+    .cb_mem = &retarget_mutex_control_block,
+    .cb_size = sizeof(retarget_mutex_control_block),
+};
+
+static int retarget_can_lock(void)
+{
+    return retarget_mutex != NULL &&
+           osKernelGetState() == osKernelRunning &&
+           __get_IPSR() == 0U;
+}
+
+static void retarget_lock(void)
+{
+    if (retarget_can_lock())
+        (void)osMutexAcquire(retarget_mutex, osWaitForever);
+}
+
+static void retarget_unlock(void)
+{
+    if (retarget_can_lock())
+        (void)osMutexRelease(retarget_mutex);
+}
 
 // This function initializes the retargeting of the standard I/O streams
 // to the specified UART handle. It disables I/O buffering for the STDOUT stream
 void bsp_retarget_init(UART_HandleTypeDef *huart) {
     gHuart = huart;
     setvbuf(stdout, NULL, _IONBF, 0);
+}
+
+void bsp_retarget_rtos_init(void)
+{
+    retarget_mutex = osMutexNew(&retarget_mutex_attributes);
+}
+
+void __wrap___retarget_lock_acquire_recursive(_LOCK_RECURSIVE_T lock)
+{
+    (void)lock;
+    retarget_lock();
+}
+
+void __wrap___retarget_lock_release_recursive(_LOCK_RECURSIVE_T lock)
+{
+    (void)lock;
+    retarget_unlock();
 }
 
 int _isatty(int fd) {
@@ -54,11 +100,14 @@ int _write(int fd, char* ptr, int len) {
             errno = ENODEV;
             return -1;
         }
+        retarget_lock();
         hstatus = HAL_UART_Transmit(gHuart, (uint8_t *) ptr, len, HAL_MAX_DELAY);
-        if (hstatus == HAL_OK)
+        retarget_unlock();
+        if (hstatus == HAL_OK) {
             return len;
-        else
-            return EIO;
+        }
+        errno = EIO;
+        return -1;
     }
     errno = EBADF;
     return -1;

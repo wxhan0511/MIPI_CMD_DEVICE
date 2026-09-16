@@ -314,9 +314,10 @@ void bsp_power_single_disable(uint8_t power_id)
         break;
     case 16:
         LEVEL_SHIFT_DISABLE();
+        printf("LEVEL_SHIFT_DISABLE\r\n");
         break;
     default:
-        MIPI_CMD_DEBUG("other power_id: %d\r\n no need to handle", power_id);
+        MIPI_CMD_DEBUG("other power_id: %d\r\n no need to handle\r\n", power_id);
         break;
     }
 }

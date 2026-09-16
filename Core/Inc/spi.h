@@ -46,6 +46,8 @@ extern "C"
 
   extern volatile uint8_t meter_com_flag;
   extern volatile uint8_t spi_tx_flag;
+  extern volatile uint8_t spi2_tx_complete_flag;
+  extern volatile uint8_t spi2_enter_boot_pending;
   extern uint8_t meter_rx_buf[SPI2_SLAVE_RX_LEN];
   extern uint8_t meter_tx_buf[SPI2_SLAVE_TX_LEN];
 

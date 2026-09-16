@@ -51,6 +51,7 @@ typedef enum
     WRITE_CALI_DATA = 0x24,
     enable_lim = 0x25,
     self_test = 0x26,
+    CMD_ENTER_BOOT = 0x27, /* Hand control to the bootloader for firmware upgrade */
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 
@@ -90,7 +91,7 @@ typedef union
 typedef struct
 {
     uint8_t frame_header;
-    uint8_t cmd_type;
+    volatile uint8_t cmd_type;
     uint8_t reserved[2];
 
     GetPowerDataFrame_S get_power_data_frame;
@@ -127,6 +128,7 @@ void task_sample_run(void *argument);
 void task_sample_suspend(void);
 void task_sample_resume(void);
 void task_sample_task_mutex_acquire(void);
+osStatus_t task_sample_task_mutex_try_acquire(void);
 void task_sample_task_mutex_release(void);
 void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type);
 

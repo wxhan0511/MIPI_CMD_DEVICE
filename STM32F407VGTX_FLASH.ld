@@ -42,13 +42,24 @@ _estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
 _Min_Heap_Size = 0x200; /* required amount of heap */
 _Min_Stack_Size = 0x2000; /* required amount of stack */
 
-/* Memories definition */
+/* Memories definition
+ *
+ * Flash partitioning for the IAP layout (STM32F407VGT6, 1 MB):
+ *   0x08000000 .. 0x0800FFFF : Bootloader (Sector 0..3,    64 KB, separate project)
+ *   0x08010000 .. 0x080DFFFF : Application (Sector 4..10, 832 KB, this image)
+ *   0x080E0000 .. 0x080E2FFF : Version data (Sector 11,    12 KB)
+ *
+ * NOTE: The version region was moved from 0x0807D000 (inside Sector 7) to
+ * Sector 11 so the bootloader can erase the whole application area
+ * (Sectors 4..10) without destroying the firmware/hardware version data.
+ * The application slot is 832 KB because the LVGL-enabled build needs ~490 KB.
+ */
 MEMORY
 {
   CCMRAM    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 1024K
-  FLASH_VERSION (rx)  : ORIGIN = 0x807d000, LENGTH = 12K
+  FLASH    (rx)    : ORIGIN = 0x8010000,   LENGTH = 0xD0000
+  FLASH_VERSION (rx)  : ORIGIN = 0x80e0000, LENGTH = 12K
 }
 
 /* Sections */
@@ -207,7 +218,7 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
-  .const_section 0x807d000 :{
+  .const_section 0x80e0000 :{
     . = ALIGN(4);
     KEEP(*(.fw_version))
 

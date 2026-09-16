@@ -2,8 +2,8 @@
 #ifndef _BSP_I2C_GPIO_H
 #define _BSP_I2C_GPIO_H
 
-#define I2C_WR	0		/* Ð´¿ØÖÆbit */
-#define I2C_RD	1		/* ¶Á¿ØÖÆbit */
+#define I2C_WR	0		/* Write control bit */
+#define I2C_RD	1		/* Read control bit */
 
 void bsp_InitI2C(void);
 void i2c_Start(void);

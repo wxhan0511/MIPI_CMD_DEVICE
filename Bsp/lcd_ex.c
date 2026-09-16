@@ -1,5 +1,5 @@
 //
-// Created by 薛斌 on 24-8-22.
+// Created by xuebin on 24-8-22.
 //
 
 #include "lcd_ex.h"
@@ -7,28 +7,29 @@
 /**
  ****************************************************************************************************
  * @file        lcd_ex.c
- * @author      正点原子团队(ALIENTEK)
+ * @author      ALIENTEK team (Zhengdian Yuanzi)
  * @version     V1.1
  * @date        2023-05-29
- * @brief       lcd_ex.c存放各个LCD驱动IC的寄存器初始化部分代码,以简化lcd.c,该.c文件
- *              不直接加入到工程里面,只有lcd.c会用到,所以通过include的形式添加.(不要在
- *              其他文件再包含该.c文件!!否则会报错!)
+ * @brief       lcd_ex.c holds the register initialization code for the various LCD
+ *              driver ICs, to keep lcd.c simpler. This .c file is not added to the
+ *              project directly; only lcd.c uses it, via #include. (Do not include
+ *              this .c file in any other file!! Otherwise errors will occur!)
  *
- * @license     Copyright (c) 2020-2032, 广州市星翼电子科技有限公司
+ * @license     Copyright (c) 2020-2032, Guangzhou Xingyi Electronic Technology Co., Ltd.
  ****************************************************************************************************
  * @attention
  *
- * 实验平台：正点原子 F407电机开发板
- * 在线视频：www.yuanzige.com
- * 技术论坛：http://www.openedv.com/forum.php
- * 公司网址：www.alientek.com
- * 购买地址：zhengdianyuanzi.tmall.com
+ * Hardware platform: ALIENTEK F407 motor development board
+ * Online video: www.yuanzige.com
+ * Technical forum: http://www.openedv.com/forum.php
+ * Company website: www.alientek.com
+ * Purchase: zhengdianyuanzi.tmall.com
  *
- * 修改说明
+ * Revision history
  * V1.0 20211016
- * 第一次发布
+ * First release
  * V1.1 20230529
- * 1，新增对ST7796和ILI9806 IC支持
+ * 1. Added support for ST7796 and ILI9806 ICs
  ****************************************************************************************************
  */
 
@@ -37,9 +38,9 @@
 #include "lcd_ex.h"
 
 /**
- * @brief       ST7789 寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       ST7789 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_st7789_reginit(void)
 {
@@ -135,9 +136,9 @@ void lcd_ex_st7789_reginit(void)
 }
 
 /**
- * @brief       ILI9341寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       ILI9341 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_ili9341_reginit(void)
 {
@@ -237,9 +238,9 @@ void lcd_ex_ili9341_reginit(void)
 
 
 /**
- * @brief       NT35310寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       NT35310 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_nt35310_reginit(void)
 {
@@ -923,9 +924,9 @@ void lcd_ex_nt35310_reginit(void)
 }
 
 /**
- * @brief       ST7796寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       ST7796 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_st7796_reginit(void)
 {
@@ -1027,9 +1028,9 @@ void lcd_ex_st7796_reginit(void)
 }
 
 /**
- * @brief       NT35510寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       NT35510 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_nt35510_reginit(void)
 {
@@ -1447,9 +1448,9 @@ void lcd_ex_nt35510_reginit(void)
 }
 
 /**
- * @brief       ILI9806寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       ILI9806 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_ili9806_reginit(void)
 {
@@ -1615,16 +1616,16 @@ void lcd_ex_ili9806_reginit(void)
 }
 
 /**
- * @brief       SSD1963寄存器初始化代码
- * @param       无
- * @retval      无
+ * @brief       SSD1963 register initialization code
+ * @param       None
+ * @retval      None
  */
 void lcd_ex_ssd1963_reginit(void)
 {
     lcd_wr_regno(0xE2); /* Set PLL with OSC = 10MHz (hardware),	Multiplier N = 35, 250MHz < VCO < 800MHz = OSC*(N+1), VCO = 300MHz */
-    lcd_wr_data(0x1D);  /* 参数1 */
-    lcd_wr_data(0x02);  /* 参数2 Divider M = 2, PLL = 300/(M+1) = 100MHz */
-    lcd_wr_data(0x04);  /* 参数3 Validate M and N values */
+    lcd_wr_data(0x1D);  /* Parameter 1 */
+    lcd_wr_data(0x02);  /* Parameter 2: Divider M = 2, PLL = 300/(M+1) = 100MHz */
+    lcd_wr_data(0x04);  /* Parameter 3: Validate M and N values */
     //delay_us(100);
     HAL_Delay(1);
     lcd_wr_regno(0xE0); /*  Start PLL command */
@@ -1633,23 +1634,23 @@ void lcd_ex_ssd1963_reginit(void)
     lcd_wr_regno(0xE0); /*  Start PLL command again */
     lcd_wr_data(0x03);  /*  now, use PLL output as system clock */
     HAL_Delay(12);
-    lcd_wr_regno(0x01); /* 软复位 */
+    lcd_wr_regno(0x01); /* Soft reset */
     HAL_Delay(10);
 
-    lcd_wr_regno(0xE6); /* 设置像素频率,33Mhz */
+    lcd_wr_regno(0xE6); /* Set the pixel clock, 33MHz */
     lcd_wr_data(0x2F);
     lcd_wr_data(0xFF);
     lcd_wr_data(0xFF);
 
-    lcd_wr_regno(0xB0); /* 设置LCD模式 */
-    lcd_wr_data(0x20);  /* 24位模式 */
-    lcd_wr_data(0x00);  /* TFT 模式 */
+    lcd_wr_regno(0xB0); /* Set the LCD mode */
+    lcd_wr_data(0x20);  /* 24-bit mode */
+    lcd_wr_data(0x00);  /* TFT mode */
 
-    lcd_wr_data((SSD_HOR_RESOLUTION - 1) >> 8); /* 设置LCD水平像素 */
+    lcd_wr_data((SSD_HOR_RESOLUTION - 1) >> 8); /* Set the LCD horizontal pixels */
     lcd_wr_data(SSD_HOR_RESOLUTION - 1);
-    lcd_wr_data((SSD_VER_RESOLUTION - 1) >> 8); /* 设置LCD垂直像素 */
+    lcd_wr_data((SSD_VER_RESOLUTION - 1) >> 8); /* Set the LCD vertical pixels */
     lcd_wr_data(SSD_VER_RESOLUTION - 1);
-    lcd_wr_data(0x00);  /* RGB序列 */
+    lcd_wr_data(0x00);  /* RGB sequence */
 
     lcd_wr_regno(0xB4); /* Set horizontal period */
     lcd_wr_data((SSD_HT - 1) >> 8);
@@ -1669,27 +1670,27 @@ void lcd_ex_ssd1963_reginit(void)
     lcd_wr_data(0x00);
     lcd_wr_data(0x00);
 
-    lcd_wr_regno(0xF0); /* 设置SSD1963与CPU接口为16bit */
+    lcd_wr_regno(0xF0); /* Set the SSD1963 CPU interface to 16-bit */
     lcd_wr_data(0x03);  /* 16-bit(565 format) data for 16bpp */
 
-    lcd_wr_regno(0x29); /* 开启显示 */
-    /* 设置PWM输出  背光通过占空比可调 */
-    lcd_wr_regno(0xD0); /* 设置自动白平衡DBC */
+    lcd_wr_regno(0x29); /* Turn on display */
+    /* Set PWM output; backlight is adjustable via duty cycle */
+    lcd_wr_regno(0xD0); /* Set automatic white balance DBC */
     lcd_wr_data(0x00);  /* disable */
 
-    lcd_wr_regno(0xBE); /* 配置PWM输出 */
-    lcd_wr_data(0x05);  /* 1设置PWM频率 */
-    lcd_wr_data(0xFE);  /* 2设置PWM占空比 */
-    lcd_wr_data(0x01);  /* 3设置C */
-    lcd_wr_data(0x00);  /* 4设置D */
-    lcd_wr_data(0x00);  /* 5设置E */
-    lcd_wr_data(0x00);  /* 6设置F */
+    lcd_wr_regno(0xBE); /* Configure PWM output */
+    lcd_wr_data(0x05);  /* 1: set PWM frequency */
+    lcd_wr_data(0xFE);  /* 2: set PWM duty cycle */
+    lcd_wr_data(0x01);  /* 3: set C */
+    lcd_wr_data(0x00);  /* 4: set D */
+    lcd_wr_data(0x00);  /* 5: set E */
+    lcd_wr_data(0x00);  /* 6: set F */
 
-    lcd_wr_regno(0xB8); /* 设置GPIO配置 */
-    lcd_wr_data(0x03);  /* 2个IO口设置成输出 */
-    lcd_wr_data(0x01);  /* GPIO使用正常的IO功能 */
+    lcd_wr_regno(0xB8); /* Set GPIO configuration */
+    lcd_wr_data(0x03);  /* Set the two IOs as outputs */
+    lcd_wr_data(0x01);  /* GPIOs use their normal IO function */
     lcd_wr_regno(0xBA);
-    lcd_wr_data(0x01);  /* GPIO[1:0]=01,控制LCD方向 */
+    lcd_wr_data(0x01);  /* GPIO[1:0]=01, controls the LCD direction */
 }
 
 

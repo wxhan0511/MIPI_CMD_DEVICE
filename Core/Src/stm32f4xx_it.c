@@ -62,6 +62,37 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void fault_uart_write(const char *text)
+{
+  while (*text != '\0')
+  {
+    while ((USART3->SR & USART_SR_TXE) == 0U)
+    {
+    }
+    USART3->DR = (uint8_t)*text++;
+  }
+}
+
+static void fault_uart_write_hex(uint32_t value)
+{
+  static const char hex[] = "0123456789ABCDEF";
+
+  for (int32_t shift = 28; shift >= 0; shift -= 4)
+  {
+    while ((USART3->SR & USART_SR_TXE) == 0U)
+    {
+    }
+    USART3->DR = (uint8_t)hex[(value >> shift) & 0x0FU];
+  }
+}
+
+static void fault_uart_write_register(const char *name, uint32_t value)
+{
+  fault_uart_write(name);
+  fault_uart_write("0x");
+  fault_uart_write_hex(value);
+  fault_uart_write("\r\n");
+}
 
 /* USER CODE END 0 */
 
@@ -119,6 +150,39 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
+  __disable_irq();
+  uint32_t fault_exc_return;
+  __ASM volatile("mov %0, lr" : "=r"(fault_exc_return));
+  uint32_t *fault_stack = (fault_exc_return & 4U) != 0U
+                              ? (uint32_t *)__get_PSP()
+                              : (uint32_t *)__get_MSP();
+
+  fault_uart_write("\r\nHARDFAULT\r\n");
+  fault_uart_write_register("HFSR=", SCB->HFSR);
+  fault_uart_write_register("CFSR=", SCB->CFSR);
+  fault_uart_write_register("BFAR=", SCB->BFAR);
+  fault_uart_write_register("MMFAR=", SCB->MMFAR);
+  fault_uart_write_register("EXC_RETURN=", fault_exc_return);
+
+  uintptr_t fault_stack_address = (uintptr_t)fault_stack;
+  if (((fault_stack_address >= 0x20000000U) &&
+       (fault_stack_address <= 0x2001FFE0U)) ||
+      ((fault_stack_address >= 0x10000000U) &&
+       (fault_stack_address <= 0x1000FFE0U)))
+  {
+    fault_uart_write_register("LR=", fault_stack[5]);
+    fault_uart_write_register("PC=", fault_stack[6]);
+  }
+
+  while (1)
+  {
+  }
+
+#if 0
+  // EXC_RETURN value of this exception (tells which stack was in use)
+  uint32_t exc_return;
+  __ASM volatile("mov %0, lr" : "=r"(exc_return));
+
   // Fault status registers
   uint32_t hfsr = SCB->HFSR;   // HardFault status register
   uint32_t cfsr = SCB->CFSR;   // Configurable fault status register (Mem/Bus/Usage)
@@ -127,6 +191,7 @@ void HardFault_Handler(void)
 
   // Print HardFault banner
   MIPI_CMD_DEBUG("\r\n\r\n==================== HardFault ====================\r\n");
+  MIPI_CMD_ERROR("EXC_RETURN = 0x%08X\r\n", exc_return);
   MIPI_CMD_ERROR("HFSR = 0x%08X\r\n", hfsr);
   MIPI_CMD_ERROR("CFSR = 0x%08X\r\n", cfsr);
 
@@ -151,11 +216,11 @@ void HardFault_Handler(void)
       MIPI_CMD_ERROR("  MSTKERR: Stacking error\r\n");
     if (mmfsr & (1 << 4))
       MIPI_CMD_ERROR("  MLSPERR: Lazy state preservation error\r\n");
-    if (mmfsr & (1 << 6))
+    if (mmfsr & (1 << 7))
       MIPI_CMD_ERROR("  MMARVALID: MMFAR address valid\r\n");
 
     // If the fault address is valid, print it
-    if (mmfsr & (1 << 6))
+    if (mmfsr & (1 << 7))
     {
       MIPI_CMD_ERROR("  Fault Address MMFAR = 0x%08X\r\n", mmfar);
     }
@@ -179,11 +244,11 @@ void HardFault_Handler(void)
       MIPI_CMD_ERROR("  STKERR: Stacking error\r\n");
     if (bfsr & (1 << 5))
       MIPI_CMD_ERROR("  LSPERR: Lazy state preservation error\r\n");
-    if (bfsr & (1 << 6))
+    if (bfsr & (1 << 7))
       MIPI_CMD_ERROR("  BFARVALID: BFAR address valid\r\n");
 
     // If the fault address is valid, print it
-    if (bfsr & (1 << 6))
+    if (bfsr & (1 << 7))
     {
       MIPI_CMD_ERROR("  Fault Address BFAR = 0x%08X\r\n", bfar);
     }
@@ -224,15 +289,17 @@ void HardFault_Handler(void)
   // ==============================================
   uint32_t *sp;
   __ASM volatile(
-      "TST lr, #4 \n"     // Test LR bit4 to determine MSP or PSP
+      "TST lr, #4 \n" // Test LR bit4 to determine MSP or PSP
       "ITE EQ \n"
-      "MRSEQ %0, MSP \n"  // If equal, use MSP
-      "MRSNE %0, PSP \n"  // Otherwise use PSP
+      "MRSEQ %0, MSP \n" // If equal, use MSP
+      "MRSNE %0, PSP \n" // Otherwise use PSP
       : "=r"(sp));
 
   // Print the PC that triggered the HardFault (stack offset 6*4)
   MIPI_CMD_ERROR("\r\n>>>>>> Fault PC = 0x%08X <<<<<<\r\n", sp[6]);
+  MIPI_CMD_ERROR(">>>>>> Fault LR = 0x%08X <<<<<<\r\n", sp[5]);
   MIPI_CMD_ERROR("=====================================================\r\n");
+#endif
 
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
@@ -245,7 +312,9 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  __disable_irq();
+  fault_uart_write("\r\nMEMMANAGE FAULT\r\n");
+  fault_uart_write_register("CFSR=", SCB->CFSR);
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -260,7 +329,10 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  __disable_irq();
+  fault_uart_write("\r\nBUSFAULT\r\n");
+  fault_uart_write_register("CFSR=", SCB->CFSR);
+  fault_uart_write_register("BFAR=", SCB->BFAR);
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -275,7 +347,9 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-  printf("UsageFault_Handler\r\n");
+  __disable_irq();
+  fault_uart_write("\r\nUSAGEFAULT\r\n");
+  fault_uart_write_register("CFSR=", SCB->CFSR);
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
@@ -531,6 +605,8 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
   if (hspi->Instance == SPI2)
   {
+    extern volatile uint32_t g_spi2_err_code;
+    g_spi2_err_code = hspi->ErrorCode; // Captured for task-level diagnostics
     // Handle the error. HAL_SPI error codes for reference:
     // #define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */
     // #define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */
@@ -790,8 +866,7 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-
-  printf("Master received ...\r\n");
+  (void)hi2c;
 }
 
 void I2C1_ER_IRQHandler(void)
@@ -806,17 +881,26 @@ void I2C2_ER_IRQHandler(void)
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
-  // Add breakpoint, logging, or reboot handling here
-  printf("Stack overflow in task: %s\r\n", pcTaskName);
-  // Or toggle an LED, record a log, etc.
+  (void)xTask;
+  __disable_irq();
+  fault_uart_write("\r\nSTACK OVERFLOW: ");
+  if (pcTaskName != NULL)
+  {
+    for (uint32_t i = 0; i < configMAX_TASK_NAME_LEN && pcTaskName[i] != '\0'; i++)
+    {
+      char character[2] = {pcTaskName[i], '\0'};
+      fault_uart_write(character);
+    }
+  }
+  fault_uart_write("\r\n");
+  while (1)
+  {
+  }
 }
 
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)
 {
-  if (hspi == &hspi_tp)
-  {
-    GTB_INFO("[SPI ABORTED]\r\n");
-  }
+  (void)hspi;
 }
 /**
  * @brief This function handles USB On The Go HS End Point 1 Out global interrupt.
@@ -874,8 +958,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #if BSP_VOL_DEBUG
     if (cnt == 0)
     {
-      printf("-----%d----\r\n", channel);
-
       bsp_ads1256_set_single_channel(&dev_vol, channel);
       bsp_delay_us(5);
     }
@@ -906,8 +988,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #if BSP_CUR_DEBUG
     if (cnt == 0)
     {
-      printf("cur -----%d----\r\n", channel);
-
       bsp_ads1256_set_single_channel(&dev_cur, channel);
       bsp_delay_us(5);
     }
@@ -952,7 +1032,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       SSD_SEND_array(0X01, 2, (uint8_t *)&data);
       uint8_t ret = 0;
       ret = SSD_READ_ACK_Report_HS(0x01, 0x14, 1, &ret_data[0]);
-      printf("ret %d \r\n", ret);
       SSD_READ_ACK_Report_HS(0x01, 0x15, 1, &ret_data[0]);
       SSD_READ_ACK_Report_HS(0x01, 0x16, 1, &ret_data[2]);
       SSD_READ_ACK_Report_HS(0x01, 0x17, 1, &ret_data[4]);
@@ -960,9 +1039,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       SSD_READ_ACK_Report_HS(0x01, 0x19, 1, &ret_data[8]);
       SSD_READ_ACK_Report_HS(0x01, 0x1a, 1, &ret_data[10]);
       SSD_READ_ACK_Report_HS(0x01, 0x1b, 1, &ret_data[12]);
-      for (uint8_t i = 0; i < 8; i++)
-        printf("0x%x ", ret_data[2 * i + 1]);
-      printf("\r\n");
       set_lcd_clock_freq(89 * 2, 0);
       test_flag = 0;
     }

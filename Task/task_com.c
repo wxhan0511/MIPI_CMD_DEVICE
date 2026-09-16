@@ -11,7 +11,7 @@
 #include "spi.h"
 
 /* ==================== 2. Macros ==================== */
-/* None */
+#define TASK_COM_RESPONSE_READY_FLAG (1UL << 0)
 
 /* ==================== 3. Type definitions (structs, enums, aliases) ==================== */
 /* None */
@@ -25,7 +25,7 @@ volatile uint8_t meter_com_flag = 0;
 osThreadId_t task_com_handle;
 const osThreadAttr_t task_com_attributes = {
     .name = "task_com_task",
-    .stack_size = 4096,
+    .stack_size = 5120,
     .priority = (osPriority_t)osPriorityHigh,
 };
 
@@ -35,12 +35,13 @@ static void task_com_run(void *arg);
 /* ==================== 7. Public function implementations ==================== */
 void task_com_suspend(void)
 {
-    osThreadSuspend(task_com_handle);
+    osThreadFlagsWait(TASK_COM_RESPONSE_READY_FLAG, osFlagsWaitAny, osWaitForever);
 }
 
 void task_com_resume(void)
 {
-    osThreadResume(task_com_handle);
+    g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+    osThreadFlagsSet(task_com_handle, TASK_COM_RESPONSE_READY_FLAG);
 }
 
 void task_com_init(void)
@@ -64,6 +65,7 @@ static void task_com_run(void *arg)
     MX_SPI2_Init();
     SPI2_Slave_StartRx_IT(); // Start SPI2 slave 64-byte reception
     M_INT_HIGH();
+    printf("init status M_INT_HIGH\r\n");
     while (1)
     {
 

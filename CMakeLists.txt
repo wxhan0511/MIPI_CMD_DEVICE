@@ -58,7 +58,8 @@ include_directories(Composite)
 include_directories(Bsp Task utils gtb/inc driver/inc)
 include_directories(GUI/widget GUI/lvgl GUI/lvgl/porting GUI/lvgl/src)
 include_directories(${CMAKE_SOURCE_DIR}/inc ${CMAKE_SOURCE_DIR}/src)
-add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx)
+# Relocate the vector table to the application slot behind the 64 KB bootloader
+add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -DUSER_VECT_TAB_ADDRESS -DVECT_TAB_OFFSET=0x10000U)
 
 file(GLOB_RECURSE SOURCES "Core/*.*" "Composite/*.*" "Middlewares/*.*" "Drivers/*.*" "Bsp/*.*" "Task/*.*" "utils/*.*" "gtb/*.*" "driver/*.*" "GUI/*.*")
 
@@ -69,6 +70,7 @@ add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F407VGTX_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/build.map)
+add_link_options(-Wl,--wrap=__retarget_lock_acquire_recursive,--wrap=__retarget_lock_release_recursive)
 add_link_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})
 

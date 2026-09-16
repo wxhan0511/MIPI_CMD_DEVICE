@@ -15,6 +15,8 @@
 #include "widget_func.h"
 #include "task_com.h"
 #include "tim.h"
+#include "bsp_mcp4728_ctl.h"
+#include "boot_flag.h"
 #include "math.h"
 
 /* ==================== 2. Macros ==================== */
@@ -53,12 +55,15 @@ const osMutexAttr_t sample_mutex_attributes = {
     .cb_mem = &sample_mutex_control_block,
     .cb_size = sizeof(sample_mutex_control_block),
 };
+
 extern void task_com_resume(void);
 extern void disableTim1PWMOutput(void);
 extern void disableTim2PWMOutput(void);
 extern void enableTim1PWMOutput(void);
 extern int Measure_Frequency_Adaptive(void);
-SampleTask_S g_sample_task = {0};
+SampleTask_S g_sample_task = {
+    .cmd_type = NORMAL_LOOP_EVENT,
+};
 static uint8_t ads1256_ch_index = 0;
 static uint8_t d_trigger_ch_index = 0;
 
@@ -180,7 +185,15 @@ void task_sample_run(void *argument)
         switch (g_sample_task.cmd_type)
         {
         case NORMAL_LOOP_EVENT:
-            task_sample_task_mutex_acquire(); // The mutex cannot be acquired during communication; update the sample data on the display while idle
+            /* Non-blocking acquire: never queue on the mutex here. com_handle
+               suspends itself while holding it (waiting for the command case
+               to fill the response); queuing here would deadlock the whole
+               command path. Skip the display refresh if the mutex is busy. */
+            // if (task_sample_task_mutex_try_acquire() != osOK)
+            // {
+            //     osDelay(5);
+            //     break;
+            // }
             for (uint8_t i = 0; i < 8; i++)
             {
                 // M_SPI_DEBUG("chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
@@ -223,7 +236,7 @@ void task_sample_run(void *argument)
                     continue;
                 }
             }
-            task_sample_task_mutex_release();
+            // task_sample_task_mutex_release();
             osDelay(5);
             break;
         case GET_ID:
@@ -234,13 +247,13 @@ void task_sample_run(void *argument)
         case enable_lim:
             uint8_t lim_status = meter_rx_buf[2];
             bsp_lim_rst_set(lim_status);
-            task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            task_com_resume();
             break;
         case GET_SW_VERSION:
-            memcpy(&meter_tx_buf[3], sw_version, 4);
+            memcpy(&meter_tx_buf[3], sw_version, sizeof(sw_version));
+            meter_tx_buf[2] = g_sample_task.cmd_status;
             task_com_resume();
-            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         case VOL_SET:
         case LIM_SET:
@@ -318,6 +331,14 @@ void task_sample_run(void *argument)
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
         case SINGLE_POWER_EN:
+            if (meter_rx_buf[2] >= 20U) /* power_order has 20 entries */
+            {
+                M_SPI_DEBUG("SINGLE_POWER_EN: invalid index %d\r\n", meter_rx_buf[2]);
+                meter_tx_buf[2] = POWER_CMD_STATUS_FAILED;
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
             power_id = power_order[meter_rx_buf[2]];
             en = meter_rx_buf[3];
             if (en == 0x01)
@@ -325,7 +346,10 @@ void task_sample_run(void *argument)
             else
                 bsp_power_single_disable(power_id);
             M_SPI_DEBUG("power_id: %d, en: %d\r\n", power_id, en);
-            M_SPI_DEBUG("power_on: %d\r\n", (uint8_t)power_enable_status[power_id]());
+            /* power_enable_status only covers the 8 power rails; the
+               measurement channels (power_id >= 8) are always enabled */
+            M_SPI_DEBUG("power_on: %d\r\n",
+                        (uint8_t)((power_id < 8U) ? power_enable_status[power_id]() : 1));
 
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
@@ -334,6 +358,14 @@ void task_sample_run(void *argument)
             usr_idx = meter_rx_buf[2];
             M_SPI_DEBUG("usr_idx: %d\r\n", usr_idx);
 
+            if (usr_idx >= 15U) /* sample_vol_map has 15 rows */
+            {
+                M_SPI_DEBUG("SINGLE_VOL_GET: invalid index %d\r\n", usr_idx);
+                meter_tx_buf[2] = POWER_CMD_STATUS_FAILED;
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
             if (usr_idx < 8U)
             {
                 if (!power_enable_status[usr_idx]())
@@ -361,6 +393,14 @@ void task_sample_run(void *argument)
             break;
         case SINGLE_CUR_GET:
             usr_idx = meter_rx_buf[2];
+            if (usr_idx >= 11U) /* sample_cur_map has 11 rows */
+            {
+                M_SPI_DEBUG("SINGLE_CUR_GET: invalid index %d\r\n", usr_idx);
+                meter_tx_buf[2] = POWER_CMD_STATUS_FAILED;
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
             meter_wait_v_c_ready(usr_idx, 1);
 
             M_SPI_INFO("ads1256_ch_index: %d, d_trigger_ch_index: %d, latest_sample_ch_sel: %d\r\n", ads1256_ch_index, d_trigger_ch_index, latest_sample_ch_sel[ads1256_ch_index]);
@@ -618,6 +658,14 @@ void task_sample_run(void *argument)
             break;
         case READ_DA_DATA:
             usr_idx = meter_rx_buf[2];
+            if (usr_idx >= 20U) /* power_order has 20 entries */
+            {
+                M_SPI_DEBUG("READ_DA_DATA: invalid index %d\r\n", usr_idx);
+                meter_tx_buf[2] = POWER_CMD_STATUS_FAILED;
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
             uint8_t dac_channel_index = power_order[usr_idx];
             dac_config_table_t *cfg = &dac_config_table[dac_channel_index];
             float da_data = (float)dac_chips[cfg->chip].val[cfg->channel];
@@ -631,6 +679,16 @@ void task_sample_run(void *argument)
             uint8_t data_type = meter_rx_buf[3];
             uint8_t gear = meter_rx_buf[4];
             M_SPI_DEBUG("usr_idx: %d\r\n", usr_idx);
+            /* sample_vol_map has 15 rows (type 0), sample_cur_map 11 rows (type 1) */
+            if ((data_type > 1U) || (data_type == 0U && usr_idx >= 15U) ||
+                (data_type == 1U && usr_idx >= 11U))
+            {
+                M_SPI_DEBUG("READ_AD_DATA: invalid index %d/%d\r\n", usr_idx, data_type);
+                meter_tx_buf[2] = POWER_CMD_STATUS_FAILED;
+                task_com_resume();
+                g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+                break;
+            }
             if (usr_idx < 8U)
             {
                 if (!power_enable_status[usr_idx]())
@@ -660,6 +718,14 @@ void task_sample_run(void *argument)
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        case CMD_ENTER_BOOT:
+        {
+            M_SPI_DEBUG("ENTER BOOTLOADER REQUEST\r\n");
+            meter_tx_buf[2] = g_sample_task.cmd_status; /* ACK */
+            task_com_resume();                          /* Send the ACK frame to the host */
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        }
         case WRITE_CALI_DATA:
         {
             M_SPI_DEBUG("WRITE_CALI_DATA\r\n");
@@ -931,6 +997,16 @@ void task_sample_resume(void)
 void task_sample_task_mutex_acquire(void)
 {
     osMutexAcquire(sample_mutex, osWaitForever);
+}
+
+osStatus_t task_sample_task_mutex_try_acquire(void)
+{
+    /* Non-blocking variant: NORMAL_LOOP_EVENT must not queue on this mutex.
+       com_handle_spi suspends itself WHILE holding the mutex (waiting for the
+       command case to fill the response); if the display loop queued on the
+       mutex at that moment it would never wake and the com task would stay
+       suspended forever (M_INT stuck low, all host commands time out). */
+    return osMutexAcquire(sample_mutex, 0);
 }
 
 void task_sample_task_mutex_release(void)
