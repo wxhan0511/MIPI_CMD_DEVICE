@@ -108,7 +108,7 @@ bootloader/
 - **boot_jump.c**：`Boot_AppIsValid()` 校验（初始 MSP 在 SRAM 内且**允许 == RAM 顶**——App 的 `_estack = 0x20020000` 恰好等于 RAM 顶，这里曾是 `strictly less than` 导致永远判无效、无法跳转，已修复为 `<=`）；`Boot_JumpToApp()`：停 SysTick → 关中断清 pending → `SCB->VTOR = 0x08010000` → `__set_MSP` → `__enable_irq()`（CubeMX App 不会自己开中断）→ 跳转；
 - **boot_flash.c**：F407 扇区表（16K×4 / 64K / 128K×7）；`Boot_FlashEraseRange()` 按地址区间覆盖的整扇区擦除（只允许落在 App 区内）；`Boot_FlashWrite()` 字编程、尾部 0xFF 补齐；
 - **boot_spi.c**：SPI2 从机（PB12 NSS 硬件输入 / PB13 SCK / PC2 MISO / PC3 MOSI，模式 0，与 App 完全同接线），轮询收发、无 DMA；
-- **boot_protocol.c**：64 字节帧协议，命令 SYNC(0x27)/ERASE(0x28)/WRITE(0x29)/READ(0x2A)/JUMP_APP(0x30)/GET_INFO(0x31)；WRITE 负载 `[3..6]=偏移(4对齐) [7]=长度(≤56) [8..]=数据`；
+- **boot_protocol.c**：64 字节控制帧协议，支持 `SET_FRAME(0x32)` 协商 1024 字节升级帧；大帧 WRITE 使用 `[3..6]=偏移(4对齐) [7..8]=长度 [9..]=数据`；
 - **boot_log.c**：USART3@115200（PD8/PD9，与 App 同口）轮询日志：启动横幅、决策结果、每帧 `cmd -> status`、擦写详情、跳转提示——Bootloader 阶段全程可见。
 
 **体积**：Bootloader 33KB/64KB（vsnprintf 约 18KB；日志只许整数/字符串格式，禁 %f）；App 489KB/832KB，RAM 127.6KB/128KB。
@@ -123,7 +123,7 @@ ACK → 关 PWM → 关 20 路电源 → 等 ACK 发完 → BKP0R=0x5AA55AA5 →
    ▼
 Bootloader：读标志命中 → 清标志 → 升级模式（M_INT 拉高）
    ▼
-主机：SYNC → ERASE(固件长度) → WRITE 循环(56B/帧, 4对齐) → READ 回读比对 → JUMP_APP
+主机：SYNC → SET_FRAME(1024B) → ERASE(固件长度) → WRITE 循环(约 1KB/帧, 4对齐) → READ 回读比对 → JUMP_APP
    ▼
 校验 App 有效 → 跳转 → 新固件运行
 ```
@@ -134,7 +134,7 @@ Bootloader：读标志命中 → 清标志 → 升级模式（M_INT 拉高）
 
 | 文件 | 职责 |
 | ---- | ---- |
-| `core/power_board_update.py` | 升级核心：复用 `HalPowerControl` 单例的 SPI 总线与硬件锁（升级帧与正常电源命令永不交错）；实现 Bootloader 协议（SYNC/ERASE/WRITE/READ/JUMP_APP，56B 写块、61B 读块、全量回读校验）；正常运行态版本查询（0x11）；后台线程状态机（prepare→enter_boot→erase→write→verify→jump→version→done），进度/阶段/错误信息供前端轮询 |
+| `core/power_board_update.py` | 升级核心：复用 `HalPowerControl` 单例的 SPI 总线与硬件锁（升级帧与正常电源命令永不交错）；实现 Bootloader 协议（含 64B 兼容帧与 1024B 快速帧、全量回读校验）；正常运行态版本查询（0x11）；后台线程状态机（prepare→enter_boot→erase→write→verify→jump→version→done），进度/阶段/错误信息供前端轮询 |
 | `web/routes/power_board.py` | `/power_board/version`（点击查询运行版本）、`/power_board/upload`（.bin 上传，≤960KB）、`/power_board/start`（启动后台升级，要求 Lua 任务空闲）、`/power_board/status`（进度轮询）；上传/启动仅 admin |
 | `web/routes/__init__.py` | 注册 `power_board` 路由模块 |
 | `web/templates/update.html` | 系统更新页新增"电源板更新"卡片：当前运行版本（点击查询）+ .bin 上传区 + 升级进度条 + 完成后自动显示新版本号 |

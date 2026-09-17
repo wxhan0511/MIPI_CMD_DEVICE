@@ -46,20 +46,18 @@ _Min_Stack_Size = 0x2000; /* required amount of stack */
  *
  * Flash partitioning for the IAP layout (STM32F407VGT6, 1 MB):
  *   0x08000000 .. 0x0800FFFF : Bootloader (Sector 0..3,    64 KB, separate project)
- *   0x08010000 .. 0x080DFFFF : Application (Sector 4..10, 832 KB, this image)
- *   0x080E0000 .. 0x080E2FFF : Version data (Sector 11,    12 KB)
+ *   0x08010000 .. 0x0808FFEF : Application (Sector 4..8,  512 KB - 16 B, this image)
+ *   0x0808FFF0 .. 0x0808FFFF : Boot metadata (fw/hw version + CRC, 16 B)
  *
- * NOTE: The version region was moved from 0x0807D000 (inside Sector 7) to
- * Sector 11 so the bootloader can erase the whole application area
- * (Sectors 4..10) without destroying the firmware/hardware version data.
- * The application slot is 832 KB because the LVGL-enabled build needs ~490 KB.
+ * The 16-byte metadata block must stay in sync with the bootloader's
+ * boot_version.h (BOOT_META_ADDRESS and boot_meta_t layout).
  */
 MEMORY
 {
   CCMRAM    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  FLASH    (rx)    : ORIGIN = 0x8010000,   LENGTH = 0xD0000
-  FLASH_VERSION (rx)  : ORIGIN = 0x80e0000, LENGTH = 12K
+  FLASH    (rx)    : ORIGIN = 0x8010000,   LENGTH = 0x7FFF0
+  FLASH_META (rx)  : ORIGIN = 0x808FFF0,   LENGTH = 16
 }
 
 /* Sections */
@@ -218,20 +216,13 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
-  .const_section 0x80e0000 :{
-    . = ALIGN(4);
+  .boot_meta :
+  {
     KEEP(*(.fw_version))
-
-    . = ALIGN(4);
-    KEEP(*(.fw_name))
-
-    . = ALIGN(4);
     KEEP(*(.hw_version))
-
-    . = ALIGN(4);
-    KEEP(*(.hw_name))
-
-  } >FLASH_VERSION
+    KEEP(*(.boot_crc))
+    KEEP(*(.boot_reserved))
+  } >FLASH_META
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :

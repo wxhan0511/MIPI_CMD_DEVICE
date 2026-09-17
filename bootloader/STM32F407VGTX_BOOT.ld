@@ -6,8 +6,8 @@
 **
 **              Flash partitioning (IAP layout, 1 MB device):
 **                0x08000000 .. 0x0800FFFF : Bootloader (Sectors 0..3,  64 KB, this image)
-**                0x08010000 .. 0x080DFFFF : Application (Sectors 4..10, 832 KB)
-**                0x080E0000 .. 0x080E2FFF : Version data (Sector 11,    12 KB)
+**                0x08010000 .. 0x0808FFEF : Application (Sectors 4..8, 512 KB - 16 B)
+**                0x0808FFF0 .. 0x0808FFFF : Boot metadata (fw/hw version + CRC, 16 B)
 ******************************************************************************
 */
 

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>系统更新 - GCV5 控制系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .update-container { padding: 40px; max-width: 800px; margin: 0 auto; }
+        .update-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .version-info { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+        .version-tag { background: #e6f7ff; color: #1890ff; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 18px; }
+        .update-status { margin: 20px 0; padding: 15px; border-radius: 4px; border: 1px solid #d9d9d9; }
+        .status-up-to-date { background: #f6ffed; border-color: #b7eb8f; color: #52c41a; }
+        .status-has-update { background: #fff7e6; border-color: #ffd591; color: #faad14; }
+        .changelog { background: #f5f5f5; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 13px; margin: 15px 0; }
+        .action-group { display: flex; gap: 10px; margin-top: 20px; }
+        .upload-zone { border: 2px dashed #d9d9d9; padding: 30px; text-align: center; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin-top: 20px; }
+        .upload-zone:hover { border-color: #1890ff; background: #f0f7ff; }
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+    <div class="update-container">
+        <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h1 style="margin:0; font-size:24px;">系统更新管理</h1>
+            <a href="/" class="pill-button" style="text-decoration:none; background:#8c8c8c;">返回引导页</a>
+        </header>
+
+        <div class="update-card">
+            <div class="version-info">
+                <div style="font-size: 16px; color: #595959;">当前运行版本:</div>
+                <div class="version-tag" id="current-version">V{{ config.VERSION }}</div>
+            </div>
+
+            <div id="check-result">
+                <button class="pill-button" id="check-btn">🔍 检查在线更新</button>
+            </div>
+
+            <div id="update-details" style="display:none;">
+                <div class="update-status status-has-update">
+                    发现新版本：<strong id="remote-version">V1.2.0</strong>
+                </div>
+                <div style="font-weight:bold; margin-top:10px;">更新日志:</div>
+                <div class="changelog" id="changelog-text">加载中...</div>
+                <div class="action-group">
+                    <button class="pill-button" id="online-update-btn">🚀 立即在线更新</button>
+                    <button class="pill-button" style="background:#8c8c8c;" onclick="location.reload()">暂不更新</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="update-card">
+            <h3 style="margin-top:0;">本地包更新</h3>
+            <p style="font-size:12px; color:#8c8c8c;">适用于内网环境或手动获取更新包的情景。请上传 .zip 格式的更新包。</p>
+            
+            <div class="upload-zone" id="drop-zone">
+                <div style="font-size: 30px; margin-bottom: 10px;">📦</div>
+                <div style="font-size: 14px;">点击或将更新包拖拽到此处上传</div>
+                <div id="file-name-display" style="margin-top:10px; font-weight:bold; color:#1890ff;"></div>
+            </div>
+            <input type="file" id="file-input" accept=".zip">
+            
+            <div class="action-group" id="local-action-group" style="display:none;">
+                <button class="pill-button" id="local-update-btn">⬆️ 开始安装本地更新</button>
+                <button class="pill-button" style="background:#ff4d4f;" id="cancel-upload">取消</button>
+            </div>
+        </div>
+
+        <div class="update-card">
+            <h3 style="margin-top:0;">版本回滚与切换</h3>
+            <p style="font-size:12px; color:#8c8c8c;">以下是更新前自动生成的历史版本备份。点击“恢复”将系统切换至该版本并自动重启。</p>
+            
+            <div id="backup-list" style="margin-top:15px;">
+                <div style="text-align:center; padding:20px; color:#999;">正在加载备份列表...</div>
+            </div>
+        </div>
+
+        {% include "kernel_update_card.html" %}
+
+        <div class="update-card" style="border-top: 4px solid #1890ff;">
+            <h3 style="margin-top:0;">电源板更新</h3>
+            <p style="font-size:12px; color:#8c8c8c;">通过 SPI 在线升级电源板 (STM32) 固件。升级期间电源板会停止输出并进入 Bootloader，完成后自动重启并显示新版本号。请上传 .bin 格式的固件文件。</p>
+
+            <div class="version-info">
+                <div style="font-size: 16px; color: #595959;">当前运行版本:</div>
+                <div class="version-tag" id="pb-version">--</div>
+                <button class="pill-button small" id="pb-query-btn">🔍 点击查询</button>
+                <button class="pill-button small" style="background:#fa541c;" id="pb-restore-btn">↩️ 从备份区还原</button>
+            </div>
+
+            <div id="pb-damaged-box" style="display:none; margin-bottom:15px; background:#fff1f0; border:1px solid #ffa39e; border-radius:6px; padding:10px 14px;">
+                <div style="color:#cf1322; font-weight:bold; margin-bottom:6px;">⚠️ 电源板无应答，app 可能已损坏</div>
+                <div style="color:#595959; font-size:12px;">可从外部 flash 备份区还原到上一个可用固件（点击上方「从备份区还原」按钮）。</div>
+            </div>
+
+            <div class="upload-zone" id="pb-drop-zone">
+                <div style="font-size: 30px; margin-bottom: 10px;">🔌</div>
+                <div style="font-size: 14px;">点击或将电源板固件 (.bin) 拖拽到此处上传</div>
+                <div id="pb-file-name" style="margin-top:10px; font-weight:bold; color:#1890ff;"></div>
+                <div id="pb-crc" style="margin-top:6px; font-size:13px; font-weight:bold; color:#52c41a; display:none;"></div>
+            </div>
+            <input type="file" id="pb-file-input" accept=".bin" style="display:none;">
+
+            <div class="action-group" id="pb-action-group" style="display:none;">
+                <button class="pill-button" id="pb-start-btn">⬆️ 开始升级电源板</button>
+                <button class="pill-button" style="background:#8c8c8c;" id="pb-cancel">取消</button>
+            </div>
+
+            <div id="pb-progress-box" style="display:none; margin-top:15px;">
+                <div style="font-weight:bold; margin-bottom:6px;" id="pb-stage">准备中...</div>
+                <progress id="pb-bar" value="0" max="100" style="width:100%; height:18px;"></progress>
+                <div style="font-size:12px; color:#8c8c8c; margin-top:4px;" id="pb-msg"></div>
+            </div>
+        </div>
+
+        <div class="update-card" style="border-top: 4px solid #faad14;">
+            <h3 style="margin-top:0; color:#faad14;">系统维护</h3>
+            <p style="font-size:12px; color:#8c8c8c;">强制重启服务将中断当前所有正在执行的 Lua 脚本与硬件操作。</p>
+            <button class="pill-button" style="background:#ff4d4f;" id="restart-btn">⚠️ 强制重启服务</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('gcv5_token');
+        if (!token) window.location.href = '/login_page';
+
+        const user = JSON.parse(localStorage.getItem('gcv5_user') || '{}');
+        const isAdmin = user.role === 'admin';
+
+        // Disable admin-only actions for non-admin users
+        if (!isAdmin) {
+            const adminButtons = [
+                'online-update-btn',
+                'local-update-btn',
+                'restart-btn',
+                'pb-start-btn',
+                'pb-restore-btn'
+            ];
+            adminButtons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                    btn.title = '仅管理员可执行此操作';
+                }
+            });
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) {
+                dropZone.style.pointerEvents = 'none';
+                dropZone.style.opacity = '0.7';
+            }
+            const pbDropZone = document.getElementById('pb-drop-zone');
+            if (pbDropZone) {
+                pbDropZone.style.pointerEvents = 'none';
+                pbDropZone.style.opacity = '0.7';
+            }
+        }
+
+        const checkBtn = document.getElementById('check-btn');
+        const updateDetails = document.getElementById('update-details');
+        const changelogText = document.getElementById('changelog-text');
+        const remoteVersionEl = document.getElementById('remote-version');
+        const onlineUpdateBtn = document.getElementById('online-update-btn');
+
+        // Check Update
+        checkBtn.onclick = async () => {
+            checkBtn.disabled = true;
+            checkBtn.textContent = '正在连接服务器...';
+            try {
+                const res = await fetch('/update/check');
+                const data = await res.json();
+                
+                if (data.has_update) {
+                    remoteVersionEl.textContent = 'V' + data.remote_version;
+                    changelogText.textContent = data.changelog;
+                    updateDetails.style.display = 'block';
+                    checkBtn.style.display = 'none';
+                } else {
+                    alert('当前已是最新版本');
+                    checkBtn.disabled = false;
+                    checkBtn.textContent = '🔍 检查在线更新';
+                }
+            } catch (err) {
+                alert('连接更新服务器失败');
+                checkBtn.disabled = false;
+                checkBtn.textContent = '🔍 检查在线更新';
+            }
+        };
+
+        // Online Update
+        onlineUpdateBtn.onclick = async () => {
+            if (!confirm('确定要开始在线更新吗？系统将自动重启。')) return;
+            try {
+                const res = await fetch('/update/online', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                window.location.href = '/';
+            } catch (err) { alert('更新请求失败'); }
+        };
+
+        // Local Update
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const localActionGroup = document.getElementById('local-action-group');
+        const localUpdateBtn = document.getElementById('local-update-btn');
+        const cancelUpload = document.getElementById('cancel-upload');
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = '待上传: ' + file.name;
+                localActionGroup.style.display = 'flex';
+            }
+        };
+
+        localUpdateBtn.onclick = async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            localUpdateBtn.disabled = true;
+            localUpdateBtn.textContent = '正在上传并校验...';
+
+            try {
+                const res = await fetch('/update/local', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    window.location.href = '/';
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) { alert('上传失败'); }
+            localUpdateBtn.disabled = false;
+            localUpdateBtn.textContent = '⬆️ 开始安装本地更新';
+        };
+
+        cancelUpload.onclick = () => {
+            fileInput.value = '';
+            fileNameDisplay.textContent = '';
+            localActionGroup.style.display = 'none';
+        };
+
+        // Restart
+        document.getElementById('restart-btn').onclick = async () => {
+            if (!confirm('确定要重启服务吗？这会中断所有当前任务。')) return;
+            try {
+                const res = await fetch('/system/restart', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                setTimeout(() => window.location.href = '/', 2000);
+            } catch (err) { alert('重启请求失败'); }
+        };
+
+        // ==================== 电源板更新 (STM32 via SPI) ====================
+        const pbDropZone = document.getElementById('pb-drop-zone');
+        const pbFileInput = document.getElementById('pb-file-input');
+        const pbFileName = document.getElementById('pb-file-name');
+        const pbActionGroup = document.getElementById('pb-action-group');
+        const pbStartBtn = document.getElementById('pb-start-btn');
+        const pbCancel = document.getElementById('pb-cancel');
+        const pbQueryBtn = document.getElementById('pb-query-btn');
+        const pbVersionEl = document.getElementById('pb-version');
+        const pbProgressBox = document.getElementById('pb-progress-box');
+        const pbStage = document.getElementById('pb-stage');
+        const pbBar = document.getElementById('pb-bar');
+        const pbMsg = document.getElementById('pb-msg');
+        const pbDamagedBox = document.getElementById('pb-damaged-box');
+        const pbRestoreBtn = document.getElementById('pb-restore-btn');
+        const pbCrcEl = document.getElementById('pb-crc');
+
+        // CRC32 (ISO-HDLC, 与后端 zlib.crc32 一致)
+        const PB_CRC_TABLE = (() => {
+            const t = new Uint32Array(256);
+            for (let n = 0; n < 256; n++) {
+                let c = n;
+                for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                t[n] = c >>> 0;
+            }
+            return t;
+        })();
+        function pbCrc32(buf) {
+            let c = 0xFFFFFFFF;
+            for (let i = 0; i < buf.length; i++) c = PB_CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+            return (c ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        let pbBinPath = null;
+        let pbPollTimer = null;
+
+        // 点击查询当前运行版本
+        pbQueryBtn.onclick = async () => {
+            pbQueryBtn.disabled = true;
+            pbQueryBtn.textContent = '查询中...';
+            pbVersionEl.textContent = '...';
+            try {
+                const res = await fetch('/power_board/version');
+                const data = await res.json();
+                if (data.version) {
+                    pbVersionEl.textContent = 'v' + data.version;
+                    pbDamagedBox.style.display = 'none';
+                } else {
+                    pbVersionEl.textContent = '--';
+                    pbDamagedBox.style.display = 'block';
+                }
+            } catch (err) {
+                pbVersionEl.textContent = '--';
+                pbDamagedBox.style.display = 'block';
+            }
+            pbQueryBtn.disabled = false;
+            pbQueryBtn.textContent = '🔍 点击查询';
+        };
+
+        // 从备份区还原 (app 损坏时的回退)
+        pbRestoreBtn.onclick = async () => {
+            if (!confirm('确定从备份区还原吗？将恢复上一个可用固件，期间电源板会停止输出。')) return;
+            pbRestoreBtn.disabled = true;
+            pbRestoreBtn.textContent = '正在发起还原...';
+            try {
+                const res = await fetch('/power_board/restore', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error);
+                    pbRestoreBtn.disabled = false;
+                    pbRestoreBtn.textContent = '↩️ 从备份区还原';
+                    return;
+                }
+                pbDamagedBox.style.display = 'none';
+                pbProgressBox.style.display = 'block';
+                pbPollTimer = setInterval(pbPoll, 800);
+                pbPoll();
+            } catch (err) {
+                alert('还原请求失败');
+                pbRestoreBtn.disabled = false;
+                pbRestoreBtn.textContent = '↩️ 从备份区还原';
+            }
+        };
+
+        // 选择/拖拽固件
+        pbDropZone.onclick = () => pbFileInput.click();
+        pbFileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                pbFileName.textContent = '待上传: ' + file.name +
+                    ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                pbActionGroup.style.display = 'flex';
+                // 前端立即计算并显示 CRC (去尾部 16 字节元数据块)
+                try {
+                    const buf = new Uint8Array(await file.arrayBuffer());
+                    const crc = pbCrc32(buf.subarray(0, buf.length - 16));
+                    pbCrcEl.textContent = 'CRC32: 0x' + crc.toString(16).toUpperCase().padStart(8, '0');
+                    pbCrcEl.style.display = 'block';
+                } catch (err) {
+                    pbCrcEl.style.display = 'none';
+                }
+            }
+        };
+        pbCancel.onclick = () => {
+            pbFileInput.value = '';
+            pbFileName.textContent = '';
+            pbActionGroup.style.display = 'none';
+        };
+
+        // 上传并开始升级
+        pbStartBtn.onclick = async () => {
+            const file = pbFileInput.files[0];
+            if (!file) return;
+            if (!confirm('确定要升级电源板固件吗？升级期间电源板会停止输出。')) return;
+
+            pbStartBtn.disabled = true;
+            pbStartBtn.textContent = '正在上传固件...';
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const upRes = await fetch('/power_board/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const upData = await upRes.json();
+                if (!upRes.ok) { alert(upData.error); pbStartBtn.disabled = false; pbStartBtn.textContent = '⬆️ 开始升级电源板'; return; }
+                pbBinPath = upData.path;
+                if (upData.crc) {
+                    pbCrcEl.textContent = 'CRC32: 0x' + upData.crc;
+                    pbCrcEl.style.display = 'block';
+                }
+
+                const startRes = await fetch('/power_board/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ path: pbBinPath })
+                });
+                const startData = await startRes.json();
+                if (!startRes.ok) { alert(startData.error); pbStartBtn.disabled = false; pbStartBtn.textContent = '⬆️ 开始升级电源板'; return; }
+
+                pbActionGroup.style.display = 'none';
+                pbProgressBox.style.display = 'block';
+                pbPollTimer = setInterval(pbPoll, 800);
+                pbPoll();
+            } catch (err) {
+                alert('上传失败');
+                pbStartBtn.disabled = false;
+                pbStartBtn.textContent = '⬆️ 开始升级电源板';
+            }
+        };
+
+        // 轮询升级进度
+        async function pbPoll() {
+            try {
+                const res = await fetch('/power_board/status');
+                const st = await res.json();
+                pbStage.textContent = {
+                    prepare: '准备中...', enter_boot: '通知电源板进入 Bootloader...',
+                    erase: '擦除 Flash...', write: '写入固件...', verify: '校验 Flash CRC...',
+                    backup: '备份到外部 flash...', restore: '从备份区还原...', jump: '跳转新固件...',
+                    version: '等待电源板重启...', done: '完成',
+                    error: '失败'
+                }[st.stage] || st.stage;
+                pbBar.value = st.percent || 0;
+                pbMsg.textContent = st.message || '';
+                if (!st.running) {
+                    clearInterval(pbPollTimer);
+                    if (st.ok === true) {
+                        if (st.version) pbVersionEl.textContent = 'v' + st.version;
+                        alert(st.message);
+                    } else if (st.ok === false) {
+                        alert(st.message || '升级失败');
+                    }
+                    pbStartBtn.disabled = false;
+                    pbStartBtn.textContent = '⬆️ 开始升级电源板';
+                }
+            } catch (err) { /* 网络抖动, 下次轮询重试 */ }
+        }
+
+        // Backup & Rollback Logic
+        async function loadBackups() {
+            const container = document.getElementById('backup-list');
+            try {
+                const res = await fetch('/update/backups');
+                const data = await res.json();
+                
+                if (!data.backups || data.backups.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">暂无历史版本备份</div>';
+                    return;
+                }
+
+                let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+                html += '<tr style="background:#fafafa; border-bottom:1px solid #f0f0f0;"><th style="text-align:left; padding:10px;">备份名称</th><th style="text-align:left; padding:10px;">备份时间</th><th style="text-align:right; padding:10px;">操作</th></tr>';
+                
+                data.backups.forEach(b => {
+                    const sizeMB = (b.size / 1024 / 1024).toFixed(2);
+                    html += `<tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:10px;">
+                            <div style="font-weight:500;">${b.filename}</div>
+                            <div style="font-size:11px; color:#999;">大小: ${sizeMB} MB</div>
+                        </td>
+                        <td style="padding:10px; color:#595959;">${b.time}</td>
+                        <td style="padding:10px; text-align:right;">
+                            <button class="pill-button small rollback-btn" data-file="${b.filename}" ${!isAdmin ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>恢复</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</table>';
+                container.innerHTML = html;
+
+                // Bind events
+                document.querySelectorAll('.rollback-btn').forEach(btn => {
+                    btn.onclick = async () => {
+                        const filename = btn.getAttribute('data-file');
+                        if (!confirm(`确定要将系统回滚到版本 ${filename} 吗？系统将自动重启。`)) return;
+                        
+                        btn.disabled = true;
+                        btn.textContent = '恢复中...';
+                        
+                        try {
+                            const res = await fetch('/update/rollback', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ filename })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                                alert(data.message);
+                                window.location.href = '/';
+                            } else {
+                                alert(data.error);
+                                btn.disabled = false;
+                                btn.textContent = '恢复';
+                            }
+                        } catch (err) {
+                            alert('回滚请求失败');
+                            btn.disabled = false;
+                            btn.textContent = '恢复';
+                        }
+                    };
+                });
+            } catch (err) {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4d4f;">加载备份列表失败</div>';
+            }
+        }
+
+        // Initial load
+        loadBackups();
+    </script>
+</body>
+</html>

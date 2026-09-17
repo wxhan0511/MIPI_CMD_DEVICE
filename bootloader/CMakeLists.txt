@@ -38,6 +38,10 @@ set(BOOT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_spi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_protocol.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_log.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_crc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_version.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_extflash.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/boot_backup.c
     ${HAL_DIR}/Src/stm32f4xx_hal.c
     ${HAL_DIR}/Src/stm32f4xx_hal_rcc.c
     ${HAL_DIR}/Src/stm32f4xx_hal_rcc_ex.c

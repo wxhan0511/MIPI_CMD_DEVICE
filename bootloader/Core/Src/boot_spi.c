@@ -79,10 +79,14 @@ void Boot_Spi_DeInit(void)
   HAL_SPI_DeInit(&hspi2);
 }
 
-HAL_StatusTypeDef Boot_Spi_ReceiveFrame(uint8_t *frame, uint32_t timeout_ms)
+HAL_StatusTypeDef Boot_Spi_ReceiveFrame(uint8_t *frame, uint16_t frame_len,
+                                        uint32_t timeout_ms)
 {
+  if (frame_len == 0U || frame_len > BOOT_MAX_FRAME_LEN)
+    return HAL_ERROR;
+
   rx_complete = 0U;
-  HAL_StatusTypeDef status = HAL_SPI_Receive_IT(&hspi2, frame, BOOT_FRAME_LEN);
+  HAL_StatusTypeDef status = HAL_SPI_Receive_IT(&hspi2, frame, frame_len);
   if (status != HAL_OK)
     return status;
 
@@ -106,18 +110,22 @@ HAL_StatusTypeDef Boot_Spi_ReceiveFrame(uint8_t *frame, uint32_t timeout_ms)
   return HAL_OK;
 }
 
-HAL_StatusTypeDef Boot_Spi_SendFrame(const uint8_t *frame, uint32_t timeout_ms)
+HAL_StatusTypeDef Boot_Spi_SendFrame(const uint8_t *frame, uint16_t frame_len,
+                                     uint32_t timeout_ms)
 {
-  return HAL_SPI_Transmit(&hspi2, (uint8_t *)frame, BOOT_FRAME_LEN, timeout_ms);
+  return HAL_SPI_Transmit(&hspi2, (uint8_t *)frame, frame_len, timeout_ms);
 }
 
 /* Arm the response non-blocking: M_INT must go HIGH as soon as the response
    is loaded (matching the application's semantics), and the host's dummy
    read transaction clocks it out via the interrupt. */
-HAL_StatusTypeDef Boot_Spi_ArmResponse(const uint8_t *frame)
+HAL_StatusTypeDef Boot_Spi_ArmResponse(const uint8_t *frame, uint16_t frame_len)
 {
+  if (frame_len == 0U || frame_len > BOOT_MAX_FRAME_LEN)
+    return HAL_ERROR;
+
   tx_complete = 0U;
-  return HAL_SPI_Transmit_IT(&hspi2, (uint8_t *)frame, BOOT_FRAME_LEN);
+  return HAL_SPI_Transmit_IT(&hspi2, (uint8_t *)frame, frame_len);
 }
 
 /* Wait until the armed response has been clocked out by the host. */

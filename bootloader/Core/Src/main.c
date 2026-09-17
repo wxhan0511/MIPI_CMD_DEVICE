@@ -16,11 +16,13 @@
 
 #include "main.h"
 #include "boot_flag.h"
+#include "boot_extflash.h"
 #include "boot_flash.h"
 #include "boot_jump.h"
 #include "boot_log.h"
 #include "boot_protocol.h"
 #include "boot_spi.h"
+#include "boot_version.h"
 
 static void SystemClock_Config(void);
 static void Upgrade_Loop(void) __attribute__((noreturn));
@@ -41,16 +43,16 @@ int main(void)
     Boot_ClearUpgradeRequest(); /* Consumed; a failed upgrade just re-enters here */
     Boot_Log_Printf("upgrade flag detected -> upgrade mode");
   }
-  else if (Boot_AppIsValid())
+  else if (Boot_AppIsValid() && Boot_MetaVerify())
   {
-    Boot_Log_Printf("valid app @0x%08lX, reset=0x%08lX -> booting",
+    Boot_Log_Printf("valid app @0x%08lX, reset=0x%08lX, crc ok -> booting",
                     (uint32_t)BOOT_APP_ADDRESS,
                     *(__IO uint32_t *)(BOOT_APP_ADDRESS + 4U));
     Boot_JumpToApp(); /* Never returns */
   }
   else
   {
-    Boot_Log_Printf("no valid app (MSP=0x%08lX reset=0x%08lX) -> upgrade mode",
+    Boot_Log_Printf("no valid app or crc mismatch (MSP=0x%08lX reset=0x%08lX) -> upgrade mode",
                     *(__IO uint32_t *)BOOT_APP_ADDRESS,
                     *(__IO uint32_t *)(BOOT_APP_ADDRESS + 4U));
   }
@@ -68,10 +70,12 @@ int main(void)
  */
 static void Upgrade_Loop(void)
 {
-  uint8_t rx_frame[BOOT_FRAME_LEN];
-  uint8_t tx_frame[BOOT_FRAME_LEN];
+  static uint8_t rx_frame[BOOT_MAX_FRAME_LEN];
+  static uint8_t tx_frame[BOOT_MAX_FRAME_LEN];
+  uint16_t frame_len = BOOT_CONTROL_FRAME_LEN;
 
   Boot_Spi_Init();
+  Boot_ExtFlash_Init();
   Boot_Log_Printf("upgrade mode ready: SPI2 slave");
   Boot_Log_Printf("------------------------------------------------------------------------------------03\r\n");
 
@@ -79,9 +83,9 @@ static void Upgrade_Loop(void)
   {
     /* If the host never engages (no frame within ~10s) and a valid app is
        present, boot it instead of waiting forever in upgrade mode. */
-    if (Boot_Spi_ReceiveFrame(rx_frame, 10000U) != HAL_OK)
+    if (Boot_Spi_ReceiveFrame(rx_frame, frame_len, 10000U) != HAL_OK)
     {
-      if (Boot_AppIsValid())
+      if (Boot_AppIsValid() && Boot_MetaVerify())
       {
         Boot_Log_Printf("no host activity, booting valid app");
         Boot_Spi_DeInit();
@@ -96,7 +100,9 @@ static void Upgrade_Loop(void)
     Boot_Log_Printf("Boot_Spi_SignalBusy\r\n");
     Boot_Spi_SignalBusy();
     uint32_t busy_start = HAL_GetTick();
-    uint8_t jump = Boot_Protocol_Handle(rx_frame, tx_frame);
+    uint16_t next_frame_len = frame_len;
+    uint8_t jump = Boot_Protocol_Handle(rx_frame, tx_frame, frame_len,
+                                        &next_frame_len);
     Boot_Log_Printf("cmd 0x%02X -> status 0x%02X", rx_frame[1], tx_frame[2]);
     while (HAL_GetTick() - busy_start < 2U)
     {
@@ -104,10 +110,12 @@ static void Upgrade_Loop(void)
 
     /* Arm the response non-blocking and raise M_INT: the host sees the high
        level, then its dummy read transaction clocks the response out. */
-    Boot_Spi_ArmResponse(tx_frame);
+    Boot_Spi_ArmResponse(tx_frame, frame_len);
     Boot_Log_Printf("Boot_Spi_SignalReady\r\n");
     Boot_Spi_SignalReady();
     Boot_Spi_WaitResponseDone(5000U);
+
+    frame_len = next_frame_len;
 
     if (jump)
     {

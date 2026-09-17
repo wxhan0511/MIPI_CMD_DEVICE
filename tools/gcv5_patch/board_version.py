@@ -7,8 +7,9 @@ SPI 传输完全复用 hal_power 的生产实现 (HalPowerControl._spi_exchange6
 
 协议 (与 MIPI_Cmd_Device 仓库 bootloader/Core/Src/boot_protocol.c 完全一致):
 
-    帧长 64 字节: [0]=0xA0 帧头, [1]=命令, [2]=状态, [3..]=负载(小端), 余量补 0
-    两阶段单工: 主机发命令帧 -> 等 M_INT(处理完成) -> 主机敲时钟读 64B 应答帧
+控制帧长 64 字节; 升级数据帧协商后为 1024 字节: [0]=0xA0 帧头,
+[1]=命令, [2]=状态, [3..]=负载(小端), 余量补 0
+    两阶段单工: 主机发命令帧 -> 等 M_INT(处理完成) -> 主机按当前帧长读应答帧
 
 正常运行态 (App 固件):
     0x11 GET_SW_VERSION  应答 [3..6] = sw_version 4 字节 (major.minor.patch.build)
@@ -17,8 +18,9 @@ SPI 传输完全复用 hal_power 的生产实现 (HalPowerControl._spi_exchange6
 Bootloader 态:
     0x27/0x31 SYNC/GET_INFO  [3]=协议版本 [4]=app有效 [5..8]=u32 最大可刷字节数
     0x28 ERASE               [3..6]=u32 长度 (按扇区对齐覆盖)
-    0x29 WRITE               [3..6]=u32 offset [7]=len(<=56) [8..]=数据
-    0x2A READ                [3..6]=u32 offset [7..8]=u16 len(<=61) -> [3..]=数据
+    0x32 SET_FRAME           [3..4]=u16 frame length (64 or 1024)
+    0x29 WRITE               [3..6]=u32 offset [7..8]=u16 len(<=1015) [9..]=数据
+    0x2A READ                [3..6]=u32 offset [7..8]=u16 len(<=1021) -> [3..]=数据
     0x30 JUMP_APP            应答后设备自行跳转新固件
 """
 
@@ -35,8 +37,9 @@ from hal.hal_base import StatusCode
 # 与 bootloader/Core/Inc/main.h 的 BOOT_APP_ADDRESS / BOOT_APP_MAX_SIZE 同步
 PB_APP_ADDRESS = 0x08010000
 PB_FLASH_MAX = 0xF0000           # App 起点到 Flash 末尾 (含尾部 88B 版本块)
-PB_BLOCK_WRITE = 56              # WRITE 单帧最大数据长度
-PB_BLOCK_READ = 61               # READ 单帧最大数据长度
+PB_CONTROL_FRAME = 64
+PB_FAST_FRAME = 20480
+PB_FAST_WRITE = 20468
 PB_BIN_PATH = "/tmp/power_board_fw.bin"
 
 # 命令字 (App 态与 Bootloader 态共用 0x27, 见 boot_protocol.h 注释)
@@ -48,6 +51,7 @@ CMD_WRITE = 0x29
 CMD_READ = 0x2A
 CMD_JUMP_APP = 0x30
 CMD_GET_INFO = 0x31
+CMD_SET_FRAME = 0x32
 
 BOOT_STATUS_OK = 0x00
 
@@ -83,7 +87,9 @@ class PowerBoardUpdater:
         from hal.hal_power import HalPowerControl
 
         self._power = HalPowerControl()
-        self._frame = 64
+        self._frame = PB_CONTROL_FRAME
+        self._write_block = PB_CONTROL_FRAME - 8
+        self._read_block = PB_CONTROL_FRAME - 3
 
         self._state_lock = threading.Lock()
         self._thread = None
@@ -116,30 +122,48 @@ class PowerBoardUpdater:
     def _exchange(self, cmd: int, payload: bytes = b""):
         """两阶段单工交换: 直接走 HalPowerControl._spi_exchange64 (生产验证过的传输).
 
-        返回 (status, 64B 应答帧 list), 帧格式 [0]=0xA0 [1]=cmd [2]=status [3..]=负载.
+        返回 (status, 应答帧 list), 帧格式 [0]=0xA0 [1]=cmd [2]=status [3..]=负载.
         """
         print("send")
         status, rx = self._power._spi_exchange64(
-            [0xA0, cmd], list(payload), read_len=self._frame)
+            [0xA0, cmd], list(payload), read_len=PB_CONTROL_FRAME)
         print("receive")
         return status, list(rx)
 
     def _boot_cmd(self, cmd: int, payload: bytes = b"", slow: bool = False) -> list:
-        """Bootloader 命令: 校验应答帧头与状态码; slow=True 用于 ERASE 等长操作
-        (超过 _spi_exchange64 内置 5s 应答超时时, 等待 M_INT 后补读迟到的应答)."""
-        status, rx = self._exchange(cmd, b"\x00" + payload)
-        if status == StatusCode.TIMEOUT and slow:
+        """Bootloader 命令: 使用当前协商帧长完成两阶段 SPI 交换."""
+        frame = bytes([0xA0, cmd, 0x00]) + bytes(payload)
+        if len(frame) > self._frame:
+            raise PowerBoardUpdateError(f"命令帧超长: {len(frame)}")
+        frame += b"\x00" * (self._frame - len(frame))
+
+        io, spi = self._power.io_bus, self._power.spi_bus
+        ready = self._power.ready_line_num
+        with self._power._hw_lock:
             t0 = time.time()
-            while self._power.io_bus.get_value(self._power.ready_line_num) != 1:
-                if time.time() - t0 > 30.0:
-                    raise PowerBoardUpdateError(
-                        f"Bootloader 命令 0x{cmd:02X} 处理超时 (30s)")
-                time.sleep(0.05)
-            # 补读必须在硬件锁内完成, 防止与并发电源命令在总线上交错
-            with self._power._hw_lock:
-                rx = list(self._power.spi_bus.transfer([0x00] * self._frame))
+            while io.get_value(ready) != 1:
+                if time.time() - t0 > 10.0:
+                    raise PowerBoardUpdateError("电源板未就绪 (M_INT 等待超时)")
+                spi.transfer([0xBB] * self._frame)
+                time.sleep(0.001)
+
+            spi.transfer(list(frame))
+            t0 = time.time()
+            seen_low = False
+            while time.time() - t0 < (30.0 if slow else 15.0):
+                value = io.get_value(ready)
+                if value == 0:
+                    seen_low = True
+                elif seen_low and value == 1:
+                    break
+                time.sleep(0.001)
+            else:
+                raise PowerBoardUpdateError(
+                    f"Bootloader 命令 0x{cmd:02X} 处理超时")
+            rx = list(spi.transfer([0x00] * self._frame))
+
+        if len(rx) < 3 or rx[2] != BOOT_STATUS_OK:
             status = rx[2] if len(rx) > 2 else 0xFF
-        if status != BOOT_STATUS_OK:
             raise PowerBoardUpdateError(
                 f"Bootloader 命令 0x{cmd:02X} 失败 (status=0x{status:02X})")
         if len(rx) < 9 or rx[0] != 0xA0 or rx[1] != cmd:
@@ -166,6 +190,9 @@ class PowerBoardUpdater:
     def _enter_boot(self):
         """正常运行态 -> Bootloader 态: 发 0x27, 等 App 复位并重试 SYNC 握手."""
         logger.info("power_board_update: sending CMD_ENTER_BOOT")
+        self._frame = PB_CONTROL_FRAME
+        self._write_block = PB_CONTROL_FRAME - 8
+        self._read_block = PB_CONTROL_FRAME - 3
         self._exchange(CMD_ENTER_BOOT)
         time.sleep(2.0)  # App 延时 100ms 后复位, Bootloader 数百 ms 内就绪
 
@@ -179,6 +206,16 @@ class PowerBoardUpdater:
                 logger.info(
                     "power_board_update: bootloader ready, proto=v%s app_valid=%s max=%#x",
                     proto_ver, bool(app_valid), max_size)
+                try:
+                    self._boot_cmd(CMD_SET_FRAME,
+                                   struct.pack("<H", PB_FAST_FRAME))
+                except PowerBoardUpdateError:
+                    logger.info("power_board_update: using 64-byte compatibility frames")
+                else:
+                    self._frame = PB_FAST_FRAME
+                    self._write_block = PB_FAST_WRITE
+                    self._read_block = PB_FAST_FRAME - 3
+                    logger.info("power_board_update: negotiated %d-byte frames", self._frame)
                 return
             except PowerBoardUpdateError as e:
                 last_err = e
@@ -261,10 +298,15 @@ class PowerBoardUpdater:
         self._set_state(stage="write", percent=15, message="写入固件...")
         offset = 0
         while offset < len(data):
-            chunk = data[offset:offset + PB_BLOCK_WRITE]
+            chunk = data[offset:offset + self._write_block]
+            if self._frame > PB_CONTROL_FRAME:
+                write_payload = (struct.pack("<I", offset) +
+                                 struct.pack("<H", len(chunk)) + chunk)
+            else:
+                write_payload = (struct.pack("<I", offset) +
+                                 bytes([len(chunk)]) + chunk)
             self._boot_cmd(CMD_WRITE,
-                           struct.pack("<I", offset) +
-                           bytes([len(chunk)]) + chunk)
+                           write_payload)
             offset += len(chunk)
             self._set_state(percent=15 + int(55 * offset / len(data)),
                             message=f"写入固件 {offset}/{len(data)} 字节")
@@ -273,7 +315,7 @@ class PowerBoardUpdater:
         self._set_state(stage="verify", percent=72, message="回读校验...")
         offset = 0
         while offset < len(data):
-            n = min(PB_BLOCK_READ, len(data) - offset)
+            n = min(self._read_block, len(data) - offset)
             rx = self._boot_cmd(CMD_READ,
                                 struct.pack("<I", offset) + struct.pack("<H", n))
             if bytes(rx[3:3 + n]) != data[offset:offset + n]:

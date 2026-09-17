@@ -38,11 +38,12 @@ and the final `jumping to application` line.
 
 ## Host protocol
 
-Two-phase simplex per command; every frame is a fixed 64-byte record:
+Two-phase simplex per command. Control commands use a 64-byte record. The
+bootloader can negotiate a 1024-byte data record with `SET_FRAME` (0x32):
 
 1. Host clocks out a command frame (slave receives).
-2. Bootloader processes the command, then the host clocks in the 64-byte
-   response with a dummy read transaction.
+2. Bootloader processes the command, then the host clocks in a response of
+   the negotiated frame length with a dummy read transaction.
 
 Frame layout (both directions): `[0]=0xA0` head, `[1]=command`,
 `[2]=status`, `[3..]`=payload, unused bytes `0x00`.
@@ -51,13 +52,19 @@ Frame layout (both directions): `[0]=0xA0` head, `[1]=command`,
 | ----- | -------- | ---------------------------------------------- | --------------------------- |
 | 0x27  | SYNC     | none                                           | [3]=proto ver, [4]=app valid, [5..8]=max app size |
 | 0x28  | ERASE    | [3..6]=app size to erase (0 = whole slot)      | status                      |
-| 0x29  | WRITE    | [3..6]=offset (4-byte aligned), [7]=data length (<= 56), [8..]=data | status |
-| 0x2A  | READ     | [3..6]=offset, [7..8]=length (<= 61)           | data at [3..]               |
+| 0x29  | WRITE    | [3..6]=offset (4-byte aligned), [7..8]=data length (<= 1015), [9..]=data | status |
+| 0x2A  | READ     | [3..6]=offset, [7..8]=length (<= 1021)         | data at [3..]               |
 | 0x30  | JUMP_APP | none                                           | status, then device boots app |
 | 0x31  | GET_INFO | none                                           | same as SYNC                |
+| 0x32  | SET_FRAME | [3..4]=frame length (64 or 1024)              | status                      |
 
 Status codes: `0x00` OK, `0x01` generic error, `0x02` bad address/alignment,
 `0x03` flash operation failed, `0x04` bad length, `0x05` bad frame head.
+
+`SYNC` reports the maximum frame length in response bytes `[9..10]`. Hosts
+should send `SET_FRAME` while still using the 64-byte control frame, then use
+the negotiated size for `WRITE` and `READ`. If `SET_FRAME` is rejected, keep
+using 64-byte frames for compatibility.
 
 Note: `SYNC` uses the same byte (`0x27`) as the application's
 `CMD_ENTER_BOOT`, so the host can keep one constant for the whole flow.

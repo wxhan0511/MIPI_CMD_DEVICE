@@ -28,16 +28,18 @@ import os
 import struct
 import threading
 import time
+import zlib
 
 from core.logger import logger
 from hal.hal_base import HalBase, StatusCode
 
-# 与 bootloader/Core/Inc/main.h 的 BOOT_APP_ADDRESS / BOOT_APP_MAX_SIZE 同步
+# 与 bootloader/Core/Inc/main.h / boot_version.h 同步
 PB_APP_ADDRESS = 0x08010000
-PB_FLASH_MAX = 0xF0000           # App 起点到 Flash 末尾 (含尾部 88B 版本块)
+PB_FLASH_MAX = 0x80000           # App 槽 512 KB
+PB_META_OFFSET = 0x7FFF0         # 16 字节元数据块在 app 槽内的偏移 (512 KB - 16 B)
 PB_CONTROL_FRAME = 64
-PB_FAST_FRAME = 10240
-PB_FAST_WRITE = 10228
+PB_FAST_FRAME = 4096
+PB_FAST_WRITE = 4084  # 4096 - 4 偏移 - 2 长度 - 2 帧头 - 4 空余，按 4 对齐取 4084
 PB_BIN_PATH = "/tmp/power_board_fw.bin"
 
 # 命令字 (App 态与 Bootloader 态共用 0x27, 见 boot_protocol.h 注释)
@@ -50,6 +52,10 @@ CMD_READ = 0x2A
 CMD_JUMP_APP = 0x30
 CMD_GET_INFO = 0x31
 CMD_SET_FRAME = 0x32
+CMD_BACKUP = 0x33
+CMD_RESTORE = 0x34
+CMD_GET_BACKUP_INFO = 0x35
+CMD_VERIFY = 0x36
 
 BOOT_STATUS_OK = 0x00
 
@@ -101,6 +107,7 @@ class PowerBoardUpdater(HalBase):
             "version": None,
             "error": None,
             "bin_size": 0,
+            "crc": None,
         }
 
     # ------------------------------------------------------------------ #
@@ -138,7 +145,7 @@ class PowerBoardUpdater(HalBase):
             list(payload),
             frame_size=self._frame,
             read_len=self._frame,
-            timeout=30.0 if cmd == CMD_ERASE else 15.0,
+            timeout=60.0 if cmd in (CMD_ERASE, CMD_BACKUP, CMD_RESTORE) else 15.0,
             require_busy_edge=True,
         )
         if status == StatusCode.TIMEOUT:
@@ -153,6 +160,31 @@ class PowerBoardUpdater(HalBase):
             raise PowerBoardUpdateError(
                 f"Bootloader 应答帧头不符: got 0x{rx[0]:02X} 0x{rx[1]:02X}")
         return rx
+
+    def _verify_crc(self):
+        """校验 Flash CRC, 返回 (ok, computed, stored) 用于诊断。"""
+        status, rx = self._spi_exchange_frame(
+            [0xA0, CMD_VERIFY, 0x00], [],
+            frame_size=self._frame, read_len=self._frame,
+            timeout=15.0, require_busy_edge=True)
+        if len(rx) < 11:
+            return False, None, None
+        computed = struct.unpack("<I", bytes(rx[3:7]))[0]
+        stored = struct.unpack("<I", bytes(rx[7:11]))[0]
+        logger.info(
+            "power_board_update: VERIFY raw=%s status=0x%02X computed=0x%08X stored=0x%08X",
+            bytes(rx[0:12]).hex(), rx[2], computed, stored)
+        return rx[2] == BOOT_STATUS_OK, computed, stored
+
+    def _restore_cmd(self):
+        """从备份区还原, 返回 (ok, reason)。"""
+        status, rx = self._spi_exchange_frame(
+            [0xA0, CMD_RESTORE, 0x00], [],
+            frame_size=self._frame, read_len=self._frame,
+            timeout=60.0, require_busy_edge=True)
+        if len(rx) < 4:
+            return False, 0xFF
+        return rx[2] == BOOT_STATUS_OK, rx[3]
 
     # ------------------------------------------------------------------ #
     # 版本查询 (正常运行态)
@@ -210,7 +242,7 @@ class PowerBoardUpdater(HalBase):
     # 升级状态机 (后台线程)
     # ------------------------------------------------------------------ #
     def save_bin(self, stream, filename: str) -> dict:
-        """保存上传的 .bin 固件, 返回 {path, size}."""
+        """保存上传的 .bin 固件, 计算并回填 CRC, 返回 {path, size, crc}."""
         if self.get_state().get("running"):
             raise PowerBoardUpdateError("升级进行中, 禁止上传新固件")
         if not filename.lower().endswith(".bin"):
@@ -218,16 +250,21 @@ class PowerBoardUpdater(HalBase):
         data = stream.read()
         if not data:
             raise PowerBoardUpdateError("固件文件为空")
-        if len(data) > PB_FLASH_MAX:
+        if len(data) != PB_FLASH_MAX:
             raise PowerBoardUpdateError(
-                f"固件过大: {len(data)} 字节, 上限 {PB_FLASH_MAX} 字节 (960KB)")
+                f"固件大小应为 {PB_FLASH_MAX} 字节 (512KB), 实际 {len(data)} 字节")
+        # CRC 覆盖 app 数据区 (去掉尾部 16 字节元数据块), 回填到元数据块 [8..11]
+        crc = zlib.crc32(data[:PB_META_OFFSET]) & 0xFFFFFFFF
+        data = (data[:PB_META_OFFSET + 8] + struct.pack("<I", crc) +
+                data[PB_META_OFFSET + 12:])
         with open(PB_BIN_PATH, "wb") as f:
             f.write(data)
         self._bin_path = PB_BIN_PATH
-        self._set_state(bin_size=len(data))
-        logger.info("power_board_update: saved firmware %s (%d bytes)",
-                    filename, len(data))
-        return {"path": PB_BIN_PATH, "size": len(data)}
+        crc_hex = f"{crc:08X}"
+        self._set_state(bin_size=len(data), crc=crc_hex)
+        logger.info("power_board_update: saved firmware %s (%d bytes, crc=0x%s)",
+                    filename, len(data), crc_hex)
+        return {"path": PB_BIN_PATH, "size": len(data), "crc": crc_hex}
 
     def start_update(self, path: str = None):
         with self._state_lock:
@@ -248,11 +285,14 @@ class PowerBoardUpdater(HalBase):
     def _run_update(self, bin_path: str):
         try:
             version = self._update_flow(bin_path)
+            crc = self._state.get("crc")  # 文件 CRC (上传时算出, 确定正确)
+            crc_msg = f" (文件 CRC 0x{crc}, FLASH CRC 校验一致)" if crc else ""
             self._set_state(running=False, stage="done", percent=100, ok=True,
                             version=version,
-                            message=(f"电源板升级成功, 当前版本 v{version}"
-                                     if version else
-                                     "电源板升级成功 (新固件未上报版本号, 需要单片机端实现 0x11 命令)"))
+                            message=((f"电源板升级成功, 当前版本 v{version}{crc_msg}"
+                                      if version else
+                                      f"电源板升级成功{crc_msg} "
+                                      "(新固件未上报版本号, 需要单片机端实现 0x11 命令)")))
             logger.info("power_board_update: success, version=%s", version)
         except Exception as e:
             logger.exception("power_board_update: failed")
@@ -291,28 +331,99 @@ class PowerBoardUpdater(HalBase):
             self._boot_cmd(CMD_WRITE,
                            write_payload)
             offset += len(chunk)
-            self._set_state(percent=15 + int(55 * offset / len(data)),
+            self._set_state(percent=15 + int(60 * offset / len(data)),
                             message=f"写入固件 {offset}/{len(data)} 字节")
 
-        # 4. 回读校验
-        self._set_state(stage="verify", percent=72, message="回读校验...")
-        offset = 0
-        while offset < len(data):
-            n = min(self._read_block, len(data) - offset)
-            rx = self._boot_cmd(CMD_READ,
-                                struct.pack("<I", offset) + struct.pack("<H", n))
-            if bytes(rx[3:3 + n]) != data[offset:offset + n]:
-                raise PowerBoardUpdateError(f"回读校验失败 @ 偏移 0x{offset:X}")
-            offset += n
-            self._set_state(percent=72 + int(20 * offset / len(data)),
-                            message=f"回读校验 {offset}/{len(data)} 字节")
+        # 4. 校验 Flash CRC (与上传文件 CRC 比对)
+        self._set_state(stage="verify", percent=72, message="校验 Flash CRC...")
+        ok, computed, stored = self._verify_crc()
+        if not ok:
+            logger.error(
+                "power_board_update: CRC mismatch flash=0x%08X file=0x%08X",
+                computed or 0, stored or 0)
+            raise PowerBoardUpdateError(
+                f"Flash CRC 校验失败 (flash=0x{(computed or 0):08X}, "
+                f"文件=0x{(stored or 0):08X})")
+        self._set_state(flash_crc=f"{(stored or computed or 0):08X}")
+        logger.info("power_board_update: CRC match 0x%08X",
+                    stored or computed or 0)
 
-        # 5. 跳转新固件
+        # 5. 备份到外部 flash
+        self._set_state(stage="backup", percent=80, message="备份到外部 flash...")
+        self._boot_cmd(CMD_BACKUP)
+
+        # 6. 跳转新固件
         self._set_state(stage="jump", percent=94, message="跳转新固件...")
         self._boot_cmd(CMD_JUMP_APP)
 
         # 6. 等新固件起来后查询版本
         self._set_state(stage="version", percent=97, message="等待电源板重启...")
+        time.sleep(3.0)
+        version = None
+        for _ in range(10):
+            try:
+                version = self.read_running_version()
+                if version:
+                    break
+            except PowerBoardUpdateError:
+                pass
+            time.sleep(1.0)
+
+        self._set_state(percent=99)
+        return version
+
+    # ------------------------------------------------------------------ #
+    # 从备份区还原 (app 损坏时的网页回退入口)
+    # ------------------------------------------------------------------ #
+    def start_restore(self):
+        with self._state_lock:
+            if self._state.get("running"):
+                raise PowerBoardUpdateError("已有升级任务在进行中")
+            self._state.update({
+                "running": True, "stage": "restore", "percent": 0,
+                "message": "准备从备份区还原...", "ok": None,
+                "version": None, "error": None,
+            })
+            self._thread = threading.Thread(
+                target=self._run_restore, daemon=True)
+            self._thread.start()
+
+    def _run_restore(self):
+        try:
+            version = self._restore_flow()
+            self._set_state(running=False, stage="done", percent=100, ok=True,
+                            version=version,
+                            message=(f"已从备份区还原, 当前版本 v{version}"
+                                     if version else
+                                     "已从备份区还原 (新固件未上报版本号)"))
+            logger.info("power_board_update: restore success, version=%s", version)
+        except Exception as e:
+            logger.exception("power_board_update: restore failed")
+            self._set_state(running=False, stage="error", ok=False,
+                            error=str(e), message=f"还原失败: {e}")
+
+    def _restore_flow(self):
+        # 1. 进入 Bootloader
+        self._set_state(stage="enter_boot", percent=5,
+                        message="通知电源板进入 Bootloader...")
+        self._enter_boot()
+
+        # 2. 从备份区还原 (bootloader 校验 CRC 后自动跳转)
+        self._set_state(stage="restore", percent=30,
+                        message="从外部 flash 还原固件 (约 10~30 秒)...")
+        ok, reason = self._restore_cmd()
+        if not ok:
+            reason_text = {
+                1: "无可用备份 (请先成功升级一次生成备份)",
+                2: "内部 flash 擦除失败",
+                3: "外部 flash 读取失败",
+                4: "内部 flash 写入失败",
+                5: "还原后 CRC 校验失败",
+            }.get(reason, f"未知原因 ({reason})")
+            raise PowerBoardUpdateError(f"从备份区还原失败: {reason_text}")
+
+        # 3. 等新固件起来后查询版本
+        self._set_state(stage="version", percent=95, message="等待电源板重启...")
         time.sleep(3.0)
         version = None
         for _ in range(10):

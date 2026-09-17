@@ -42,25 +42,26 @@ extern SPI_HandleTypeDef hspi2;
 uint8_t id = 0x01;
 
 /**
- * @brief Firmware name stored in specific section
- * @note Used for firmware identification and version management
+ * @brief Software version [Major.Minor.Patch.Build]. Part of the 16-byte boot
+ *        metadata block; layout must match bootloader boot_version.h.
  */
-__attribute__((section(".fw_name"))) const char fw_name[40] = "MIPI CMD Board v0.0.1";
-
-/**
- * @brief Software version [Major.Minor.Patch.Build]
- */
-__attribute__((section(".fw_version"))) uint8_t sw_version[4] = {0, 0, 0, 1};
-
-/**
- * @brief Hardware name
- */
-__attribute__((section(".hw_name"))) const char hw_name[40] = "MIPI CMD Board";
+__attribute__((section(".fw_version"), used)) uint8_t sw_version[4] = {0, 0, 0, 1};
 
 /**
  * @brief Hardware version [Major.Minor.Patch.Build]
  */
-__attribute__((section(".hw_version"))) uint8_t hw_version[4] = {0, 0, 0, 1};
+__attribute__((section(".hw_version"), used)) uint8_t hw_version[4] = {0, 0, 0, 1};
+
+/**
+ * @brief Firmware CRC-32 over the app data area. Filled by the host before
+ *        flashing and verified by the bootloader at boot.
+ */
+__attribute__((section(".boot_crc"), used)) uint8_t boot_crc[4] = {0, 0, 0, 0};
+
+/**
+ * @brief Reserved metadata bytes (kept zero).
+ */
+__attribute__((section(".boot_reserved"), used)) uint8_t boot_reserved[4] = {0, 0, 0, 0};
 
 /**
  * @brief Magic number for firmware verification
@@ -154,13 +155,8 @@ static void bsp_print_version_info(void)
     MIPI_CMD_INFO("================================================\r\n");
     MIPI_CMD_INFO("MIPI CMD DEVICE Board System Information\r\n");
     MIPI_CMD_INFO("================================================\r\n");
-    /* Bounded %.*s: if the version sector is missing/erased on the chip, an
-       unbounded %s would scan 0xFF bytes to the end of flash and bus-fault
-       at 0x08100000. The precision caps the scan at the array size. */
-    MIPI_CMD_INFO("Firmware Name: %.*s\r\n", (int)sizeof(fw_name), fw_name);
     MIPI_CMD_INFO("Software Version: %d.%d.%d.%d\r\n",
                   sw_version[0], sw_version[1], sw_version[2], sw_version[3]);
-    MIPI_CMD_INFO("Hardware Name: %.*s\r\n", (int)sizeof(hw_name), hw_name);
     MIPI_CMD_INFO("Hardware Version: %d.%d.%d.%d\r\n",
                   hw_version[0], hw_version[1], hw_version[2], hw_version[3]);
 }
