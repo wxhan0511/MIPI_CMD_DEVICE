@@ -72,7 +72,6 @@ void widget_main_create(void)
 
 void widget_flush_timer_cb(const lv_timer_t *timer)
 {
-	taskENTER_CRITICAL();
 	const lcd_show_t *show_buf = timer->user_data;
 	if (open_en == 1)
 	{
@@ -111,18 +110,15 @@ void widget_flush_timer_cb(const lv_timer_t *timer)
 			ui_refresh_firmware_version(&fw_version_group, show_buf);
 		}
 	}
-	taskEXIT_CRITICAL();
 }
 
 void open_machine_widget_jump(const lv_timer_t *timer)
 {
-	taskENTER_CRITICAL();
 	printf("open machine jump\r\n");
 	open_en = 1;
 	lv_timer_delete(open_machine_task);
 	extern void ui_load_page_1();
 	ui_load_page_1();
-	taskEXIT_CRITICAL();
 }
 
 void lvgl_timer_task_entry(void *params)

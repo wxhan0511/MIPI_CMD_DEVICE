@@ -20,12 +20,8 @@
 #include "math.h"
 
 /* ==================== 2. Macros ==================== */
-// One complete sampling cycle:
-#define WAIT_ADC_1_IDLE           \
-    while (dev_vol.step_cnt != 6) \
-    {                             \
-        osDelay(10);              \
-    }
+#define NORMAL_REFRESH_POWER_COUNT 8U
+#define NORMAL_REFRESH_TIMEOUT_MS  1000U
 
 /* ==================== 3. Type definitions (structs, enums, aliases) ==================== */
 
@@ -42,6 +38,7 @@ extern uint8_t get_freq_flag;
 extern lcd_show_t lcd_show;
 
 osThreadId_t task_sample_handle;
+volatile uint8_t g_adc_sample_notify_enabled = 0U;
 const osThreadAttr_t task_sample_attributes = {
     .name = "task_sample_task",
     .stack_size = 4096,
@@ -67,9 +64,21 @@ SampleTask_S g_sample_task = {
 static uint8_t ads1256_ch_index = 0;
 static uint8_t d_trigger_ch_index = 0;
 
+typedef struct
+{
+    uint8_t power_id;
+    uint8_t waiting;
+    uint32_t voltage_start_seq;
+    uint32_t current_start_seq;
+    uint32_t start_tick;
+} normal_refresh_state_t;
+
+static normal_refresh_state_t normal_refresh_state = {0};
+
 /* ==================== 6. Static function declarations ==================== */
-static int find_sample_vol_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index);
-static int find_sample_cur_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index);
+static void process_adc_sample_notification(uint32_t timeout_ticks);
+static void normal_refresh_start(void);
+static void normal_refresh_process(void);
 static inline int get_VSN_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 0); }
 static inline int get_ELVSS_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 1); }
 static inline int get_ELVDD_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 2); }
@@ -138,33 +147,96 @@ const uint8_t sample_vol_map[15][2] = {
     {2, 6}, // power:13,AD_V_BL → ch_index, d_trigger_ch_index
     {2, 7}, // power:14,AD_V_V-ADJ → ch_index, d_trigger_ch_index
 };
-static int find_sample_vol_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
+static void normal_refresh_start(void)
 {
-    for (int j = 0; j < 15; j++)
-    {
-        if (sample_vol_map[j][0] == chip_index && sample_vol_map[j][1] == d_trigger_ch_index)
-        {
-            return j; // Matching index found
-        }
-    }
-    return -1; // Not found
+    const uint8_t power_id = normal_refresh_state.power_id;
+    const uint8_t voltage_channel = sample_vol_map[power_id][0];
+    const uint8_t voltage_mux = sample_vol_map[power_id][1];
+    const uint8_t current_channel = sample_cur_map[power_id][0];
+    const uint8_t current_mux = sample_cur_map[power_id][1];
+
+    /* Keep the ADC ISR from publishing a sample between recording the start
+     * sequence and changing the external analog MUX. */
+    HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+    normal_refresh_state.voltage_start_seq = sample_update_seq[voltage_channel];
+    normal_refresh_state.current_start_seq = sample_update_seq[current_channel];
+
+    if (voltage_channel == 0U && voltage_mux != 0xffU)
+        bsp_ads1256_ch0_select((AI0_INDEX)voltage_mux);
+    else if (voltage_channel == 1U && voltage_mux != 0xffU)
+        bsp_ads1256_ch1_select((AI1_INDEX)voltage_mux);
+    else if (voltage_channel == 2U && voltage_mux != 0xffU)
+        bsp_ads1256_ch2_select((AI2_INDEX)voltage_mux);
+
+    if (current_channel == 0U && current_mux != 0xffU)
+        bsp_ads1256_ch0_select((AI0_INDEX)current_mux);
+    else if (current_channel == 1U && current_mux != 0xffU)
+        bsp_ads1256_ch1_select((AI1_INDEX)current_mux);
+    else if (current_channel == 2U && current_mux != 0xffU)
+        bsp_ads1256_ch2_select((AI2_INDEX)current_mux);
+
+    HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+    normal_refresh_state.start_tick = HAL_GetTick();
+    normal_refresh_state.waiting = 1U;
 }
-static int find_sample_cur_map_index(uint8_t chip_index, uint8_t d_trigger_ch_index)
+
+static void normal_refresh_process(void)
 {
-    for (int j = 0; j < 11; j++)
+    if (normal_refresh_state.waiting == 0U)
     {
-        if (sample_cur_map[j][0] == chip_index && sample_cur_map[j][1] == d_trigger_ch_index)
-        {
-            return j; // Matching index found
-        }
+        normal_refresh_start();
+        return;
     }
-    return -1; // Not found
+
+    const uint8_t power_id = normal_refresh_state.power_id;
+    const uint8_t voltage_channel = sample_vol_map[power_id][0];
+    const uint8_t voltage_mux = sample_vol_map[power_id][1];
+    const uint8_t current_channel = sample_cur_map[power_id][0];
+    const uint8_t current_mux = sample_cur_map[power_id][1];
+
+    /* MUXed inputs need two published samples: the first can contain the
+     * conversion already in progress when the external MUX was changed. */
+    const uint32_t voltage_required_updates = voltage_mux != 0xffU ? 2U : 1U;
+    const uint32_t current_required_updates = current_mux != 0xffU ? 2U : 1U;
+    const bool voltage_ready =
+        (uint32_t)(sample_update_seq[voltage_channel] - normal_refresh_state.voltage_start_seq) >= voltage_required_updates &&
+        (voltage_mux == 0xffU || latest_sample_ch_sel[voltage_channel] == voltage_mux);
+    const bool current_ready =
+        (uint32_t)(sample_update_seq[current_channel] - normal_refresh_state.current_start_seq) >= current_required_updates &&
+        (current_mux == 0xffU || latest_sample_ch_sel[current_channel] == current_mux);
+
+    if (!voltage_ready || !current_ready)
+    {
+        if ((HAL_GetTick() - normal_refresh_state.start_tick) >= NORMAL_REFRESH_TIMEOUT_MS)
+            normal_refresh_state.waiting = 0U;
+        return;
+    }
+
+    /* Ensure the newest raw samples have been calibrated before displaying. */
+    sample_data_cali();
+
+    const bool power_enabled = power_enable_status[power_id]() != 0;
+    lcd_show.voltage[power_id] = power_enabled ? latest_sample_data[voltage_channel] : 0.0f;
+    lcd_show.current[power_id] = power_enabled ? latest_sample_data[current_channel] : 0.0f;
+
+    normal_refresh_state.power_id = (power_id + 1U) % NORMAL_REFRESH_POWER_COUNT;
+    normal_refresh_state.waiting = 0U;
+}
+
+static void process_adc_sample_notification(uint32_t timeout_ticks)
+{
+    const uint32_t flags = osThreadFlagsWait(ADC_SAMPLE_READY_FLAG, osFlagsWaitAny, timeout_ticks);
+    if ((flags & osFlagsError) == 0U && (flags & ADC_SAMPLE_READY_FLAG) != 0U)
+        sample_data_cali();
 }
 
 /* ==================== 7. Public function implementations ==================== */
 void task_sample_run(void *argument)
 {
     (void)argument;
+    g_adc_sample_notify_enabled = 1U;
+    sample_data_cali();
 
     uint32_t t0 = 0;
     uint32_t t_temp_start = 0;
@@ -182,61 +254,14 @@ void task_sample_run(void *argument)
 
     for (;;)
     {
+        process_adc_sample_notification(0U);
+        if (g_sample_task.cmd_type != NORMAL_LOOP_EVENT)
+            normal_refresh_state.waiting = 0U;
+
         switch (g_sample_task.cmd_type)
         {
         case NORMAL_LOOP_EVENT:
-            /* Non-blocking acquire: never queue on the mutex here. com_handle
-               suspends itself while holding it (waiting for the command case
-               to fill the response); queuing here would deadlock the whole
-               command path. Skip the display refresh if the mutex is busy. */
-            // if (task_sample_task_mutex_try_acquire() != osOK)
-            // {
-            //     osDelay(5);
-            //     break;
-            // }
-            for (uint8_t i = 0; i < 8; i++)
-            {
-                // M_SPI_DEBUG("chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
-                if (i <= 2 && latest_sample_ch_sel[i] == 0xff) //
-                {
-                    continue;
-                }
-                if (i > 2 && latest_sample_ch_sel[i] != 0xff) //
-                {
-                    continue;
-                }
-                int idx_vol = find_sample_vol_map_index(i, latest_sample_ch_sel[i]);
-                int idx_cur = find_sample_cur_map_index(i, latest_sample_ch_sel[i]);
-                // M_SPI_DEBUG("latest_sample_ch_sel[%d]: %d, idx_vol: %d, idx_cur: %d\n", i, latest_sample_ch_sel[i], idx_vol, idx_cur);
-
-                if (idx_vol != -1)
-                {
-                    bool enable = (idx_vol < 8) ? power_enable_status[idx_vol]() : 1;
-                    if (enable)
-                    {
-                        lcd_show.voltage[idx_vol] = latest_sample_data[i];
-                        // M_SPI_DEBUG("idx_vol: %d, voltage: %f\n", idx_vol, latest_sample_data[i]);
-                    }
-                    else
-                        lcd_show.voltage[idx_vol] = 0; // Not enabled
-                }
-                if (idx_cur != -1)
-                {
-                    bool enable = (idx_cur < 8) ? power_enable_status[idx_cur]() : 1;
-                    if (enable)
-                    {
-                        lcd_show.current[idx_cur] = latest_sample_data[i];
-                    }
-                    else
-                        lcd_show.current[idx_cur] = 0; // Not enabled
-                }
-                if (idx_vol == -1 && idx_cur == -1)
-                {
-                    // M_SPI_DEBUG("no idx found for chip_index: %d, d_trigger_ch_index: %d\n", i, latest_sample_ch_sel[sample_vol_map[i][0]]);
-                    continue;
-                }
-            }
-            // task_sample_task_mutex_release();
+            normal_refresh_process();
             osDelay(5);
             break;
         case GET_ID:
@@ -272,6 +297,7 @@ void task_sample_run(void *argument)
             {
                 lim_idx = g_sample_task.set_power_data_frame.power_id - 4;
                 lcd_show.threshold[lim_idx] = float_bytes.f;
+                // printf("lcd_show.threshold[%d]:%f", lim_idx, lcd_show.threshold[lim_idx]);
             }
             if (11 < g_sample_task.set_power_data_frame.power_id && g_sample_task.set_power_data_frame.power_id < 16)
             {
@@ -945,8 +971,6 @@ void task_sample_run(void *argument)
 
 void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
 {
-    printf("sample_id:%d\r\n", sample_id);
-    printf("%d\r\n", type);
     if (type == 0) // Voltage
     {
         ads1256_ch_index = sample_vol_map[sample_id][0];
@@ -957,6 +981,10 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
         ads1256_ch_index = sample_cur_map[sample_id][0];
         d_trigger_ch_index = sample_cur_map[sample_id][1];
     }
+    const uint32_t start_seq = sample_update_seq[ads1256_ch_index];
+    const uint32_t required_updates =
+        (ads1256_ch_index < 3U && d_trigger_ch_index != 0xffU) ? 2U : 1U;
+
     HAL_NVIC_DisableIRQ(EXTI2_IRQn); // Temporarily mask the sampling interrupt while switching the sampling channel
     if (ads1256_ch_index == 0 && d_trigger_ch_index != 0xff)
         bsp_ads1256_ch0_select(d_trigger_ch_index);
@@ -965,24 +993,20 @@ void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type)
     else if (ads1256_ch_index == 2 && d_trigger_ch_index != 0xff)
         bsp_ads1256_ch2_select(d_trigger_ch_index);
     HAL_NVIC_EnableIRQ(EXTI2_IRQn);
-    if (ads1256_ch_index < 3 && d_trigger_ch_index != 0xff)
+
+    const uint32_t t0 = HAL_GetTick();
+    while ((uint32_t)(sample_update_seq[ads1256_ch_index] - start_seq) < required_updates ||
+           (d_trigger_ch_index != 0xffU && latest_sample_ch_sel[ads1256_ch_index] != d_trigger_ch_index))
     {
-        uint32_t t0 = HAL_GetTick();
-        while (latest_sample_ch_sel[ads1256_ch_index] != d_trigger_ch_index)
+        if ((HAL_GetTick() - t0) >= 2000U)
         {
-            if ((HAL_GetTick() - t0) >= 2000U) // Wait at most 2 s
-            {
-                g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
-                M_SPI_INFO("SINGLE_VOL_GET timeout\r\n");
-                break;
-            }
-            osDelay(1);
+            g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
+            M_SPI_INFO("ADC sample update timeout\r\n");
+            return;
         }
+        process_adc_sample_notification(1U);
     }
-    for (uint8_t i = 0; i < 8; i++)
-        wait_adc_one_round(200); // One sampling round takes 140 ms
-    printf("ads1256_ch_index:%d\r\n", ads1256_ch_index);
-    printf("%d\r\n", d_trigger_ch_index);
+    process_adc_sample_notification(0U);
 }
 void task_sample_suspend(void)
 {

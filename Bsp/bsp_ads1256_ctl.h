@@ -83,9 +83,20 @@ extern "C"
 #define RAW_DATA_INDEX_QUEUE_SIZE 256
 #define ADC_DEBUG 1
 
+/* ADC sample trace for jump analysis. Set to 0 after capturing the log. */
+#ifndef ADC_SAMPLE_TRACE_ENABLE
+#define ADC_SAMPLE_TRACE_ENABLE 0
+#endif
+
+/* Mark a sample as a jump when both limits below are exceeded. */
+#define ADC_SAMPLE_TRACE_MIN_RAW_DELTA (0.0001f)
+#define ADC_SAMPLE_TRACE_JUMP_PERCENT (10.0f)
+
 #define AVG_CNT 1
 
 #define ADC_RATIO (0.596)
+
+#define ADC_SAMPLE_READY_FLAG (1UL << 0)
 
 #define SINGLE_VOL_CHANGE_GEAR 0
     /* Exported functions prototypes ---------------------------------------------*/
@@ -94,6 +105,8 @@ extern "C"
     uint8_t raw_data_queue_get_index(uint16_t index);
     void sample_data_cali();
     extern volatile uint8_t latest_sample_ch_sel[8];
+    extern volatile uint32_t sample_update_seq[8];
+    extern volatile uint32_t adc_sample_update_seq;
     int wait_adc_one_round(uint32_t timeout_ms);
 #ifdef __cplusplus
 }

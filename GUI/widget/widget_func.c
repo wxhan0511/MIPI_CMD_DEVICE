@@ -633,21 +633,27 @@ void ui_refresh_sample_data(const sample_data_label_group_t *label_group, const 
     static char temp_str[100];
     for (int i = 0; i < 6; i++)
     {
-        if (isnan(lcd_protocol->voltage[i]))
+        const float voltage = lcd_protocol->voltage[i];
+
+        if (isnan(voltage))
         {
-            sprintf(temp_str, "not sel");
+            snprintf(temp_str, sizeof(temp_str), "not sel");
         }
-        if (lcd_protocol->voltage[i] == 0)
+        else if (voltage == 0.0f)
         {
-            sprintf(temp_str, "--");
+            snprintf(temp_str, sizeof(temp_str), "--");
         }
-        else if (fabs(lcd_protocol->voltage[i]) >= 1000)
+        else if (fabsf(voltage) >= 1.0f)
         {
-            sprintf(temp_str, "%.3f V", lcd_protocol->voltage[i] / 1000);
+            snprintf(temp_str, sizeof(temp_str), "%.3f V", (double)voltage);
         }
-        else if (fabs(lcd_protocol->voltage[i]) >= 1)
+        else if (fabsf(voltage) >= 0.001f)
         {
-            sprintf(temp_str, "%d mV", (uint32_t)lcd_protocol->voltage[i]);
+            snprintf(temp_str, sizeof(temp_str), "%.3f mV", (double)voltage * 1000.0);
+        }
+        else
+        {
+            snprintf(temp_str, sizeof(temp_str), "%.3f uV", (double)voltage * 1000000.0);
         }
         ui_label_set_text(label_group->label_power_vol[i], temp_str);
     }
@@ -687,21 +693,27 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
     static char temp_str[100];
     for (int i = 6; i < 8; i++)
     {
-        if (isnan(lcd_protocol->voltage[i]))
+        const float voltage = lcd_protocol->voltage[i];
+
+        if (isnan(voltage))
         {
-            sprintf(temp_str, "not sel");
+            snprintf(temp_str, sizeof(temp_str), "not sel");
         }
-        if (lcd_protocol->voltage[i] == 0)
+        else if (voltage == 0.0f)
         {
-            sprintf(temp_str, "--");
+            snprintf(temp_str, sizeof(temp_str), "0.000");
         }
-        else if (fabs(lcd_protocol->voltage[i]) >= 1000)
+        else if (fabsf(voltage) >= 1.0f)
         {
-            sprintf(temp_str, "%.3f V", lcd_protocol->voltage[i] / 1000);
+            snprintf(temp_str, sizeof(temp_str), "%.3f V", (double)voltage);
         }
-        else if (fabs(lcd_protocol->voltage[i]) >= 1)
+        else if (fabsf(voltage) >= 0.001f)
         {
-            sprintf(temp_str, "%d mV", (uint32_t)lcd_protocol->voltage[i]);
+            snprintf(temp_str, sizeof(temp_str), "%.3f mV", (double)voltage * 1000.0);
+        }
+        else
+        {
+            snprintf(temp_str, sizeof(temp_str), "%.3f uV", (double)voltage * 1000000.0);
         }
         ui_label_set_text(label_group->label_power_vol[i - 6], temp_str);
         // if(i == 0)

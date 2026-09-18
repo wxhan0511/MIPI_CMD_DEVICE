@@ -321,84 +321,81 @@ uint8_t bsp_ads1256_get_sample_channel(const ads1256_dev_t *handle)
 {
     return handle->channel_en;
 }
+
+BSP_STATUS bsp_ads1256_start_scan(ads1256_dev_t *handle)
+{
+    if (handle == NULL || handle->channel_en == 0U)
+        return BSP_ERROR;
+
+    uint8_t first_channel = handle->work_channel;
+    if (first_channel >= 8U || (handle->channel_en & (1U << first_channel)) == 0U)
+    {
+        first_channel = 0U;
+        while ((handle->channel_en & (1U << first_channel)) == 0U)
+            first_channel++;
+    }
+
+    if (bsp_ads1256_set_single_channel(handle, first_channel) != BSP_OK)
+        return BSP_ERROR;
+
+    handle->work_channel = first_channel;
+    handle->last_channel = first_channel;
+    handle->step_cnt = 0U;
+    bsp_ads1256_sync_wakeup(handle);
+    __HAL_GPIO_EXTI_CLEAR_IT(handle->drdy_pin);
+    return BSP_OK;
+}
 /**
- * @brief ADS1256 sampling state machine handler, performing channel selection, sync, data read, channel switch, data averaging, etc. in sequence
+ * @brief Read the completed channel and immediately start the next conversion
  * @param handle ADS1256 device handle
  */
 void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
 {
+    if (handle == NULL || handle->channel_en == 0U)
+        return;
 
-    if (handle->step_cnt == 0)
+    const uint8_t current_channel = handle->work_channel;
+    if (current_channel >= 8U)
+        return;
+
+    uint8_t sample_index = handle->sample_cnt[current_channel];
+    if (sample_index >= AVG_CNT)
+        sample_index = 0U;
+
+    if (bsp_ads1256_read_data(handle, &handle->data_buffer[current_channel][sample_index]) == BSP_OK)
     {
-        // 1. Channel selection
-        bsp_ads1256_set_single_channel(handle, handle->work_channel);
-        bsp_delay_us(5);
+        sample_index++;
+        handle->sample_cnt[current_channel] = sample_index;
+        if (sample_index >= AVG_CNT)
+        {
+            double sum = 0.0;
+            for (uint8_t i = 0; i < AVG_CNT; i++)
+                sum += handle->data_buffer[current_channel][i];
+
+            handle->data_buffer_avg[current_channel] = sum / AVG_CNT;
+            handle->sample_cnt[current_channel] = 0U;
+            const double raw_data = handle->data_buffer_avg[current_channel] * ADC_RATIO * 0.000001;
+
+            /* A zero averaged code is an invalid conversion frame during
+             * ADS1256 mux settling. Do not publish it as a real rail value;
+             * otherwise VCC can be overwritten with 0 mV intermittently. */
+            if (raw_data != 0.0)
+                raw_data_queue_push(raw_data, current_channel);
+        }
     }
-    else if (handle->step_cnt == 1)
+
+    uint8_t next_channel = current_channel;
+    do
     {
-        // 2. Sync and wakeup
+        next_channel = (next_channel + 1U) & 0x07U;
+    } while ((handle->channel_en & (1U << next_channel)) == 0U);
+
+    handle->last_channel = current_channel;
+    if (bsp_ads1256_set_single_channel(handle, next_channel) == BSP_OK)
+    {
+        handle->work_channel = next_channel;
         bsp_ads1256_sync_wakeup(handle);
     }
-    else if (handle->step_cnt == 2)
-    {
-        // 3. Read data
-
-        bsp_ads1256_read_data(
-            handle, &handle->data_buffer[handle->work_channel][handle->sample_cnt[handle->work_channel]]);
-    }
-    else if (handle->step_cnt == 3)
-    {
-        // 4. Select the next channel
-        handle->last_channel = handle->work_channel;
-        handle->work_channel += 1;
-        while (1)
-        {
-            // Advance until an enabled channel is found (bit set in channel_en);
-            // wrap around to 0 after the last channel
-            if ((handle->channel_en >> handle->work_channel & 0x01) == 1 && handle->work_channel != 8)
-            {
-                break;
-            }
-            handle->work_channel += 1;
-            if (handle->work_channel == 8)
-            {
-                handle->work_channel = 0;
-            }
-        }
-    }
-    else if (handle->step_cnt == 4)
-    {
-        // 5. Finish sampling
-        // Update the sampling average
-        handle->sample_cnt[handle->last_channel] += 1;
-        if (handle->sample_cnt[handle->last_channel] == AVG_CNT)
-        {
-            double sum = 0;
-            for (uint8_t i = 0; i < AVG_CNT; i++)
-            {
-                sum += handle->data_buffer[handle->last_channel][i];
-            }
-
-            handle->data_buffer_avg[handle->last_channel] = sum / AVG_CNT;
-            handle->sample_cnt[handle->last_channel] = 0;
-        }
-    }
-    else if (handle->step_cnt == 5)
-    {
-        {
-            const double raw_data = handle->data_buffer_avg[handle->last_channel] * ADC_RATIO * 0.000001;
-            if (raw_data != 0.0)
-            {
-                raw_data_queue_push(raw_data, handle->last_channel); // push data and index(corresponding channel) to ring queue
-            }
-        }
-    }
-    else if (handle->step_cnt == 6)
-    {
-        handle->step_cnt = 0;
-        return;
-    }
-    handle->step_cnt += 1;
 }
 
 /**

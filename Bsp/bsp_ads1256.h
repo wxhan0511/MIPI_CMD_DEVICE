@@ -151,6 +151,8 @@ BSP_STATUS bsp_ads1256_read_id(const ads1256_dev_t *handle,uint8_t *id);
 
 void bsp_ads1256_irq_enable(const ads1256_dev_t *handle);
 
+BSP_STATUS bsp_ads1256_start_scan(ads1256_dev_t *handle);
+
 void bsp_ads1256_irq_handle_voltage(ads1256_dev_t *handle);
 
 void bsp_ads1256_irq_handle_current(ads1256_dev_t *handle);

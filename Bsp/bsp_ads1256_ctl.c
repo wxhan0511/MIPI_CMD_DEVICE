@@ -34,8 +34,18 @@ volatile double raw_data = 0;
 volatile float latest_sample_data[8] = {0};
 static volatile uint8_t latest_sample_index[8] = {0};
 static double cali_data = 0;
+volatile uint32_t sample_update_seq[8] = {0};
+volatile uint32_t adc_sample_update_seq = 0;
+static uint32_t calibrated_sample_seq[8] = {0};
+#if ADC_SAMPLE_TRACE_ENABLE
+static float trace_last_raw_data[8] = {0};
+static float trace_last_cali_data[8] = {0};
+static uint8_t trace_sample_valid[8] = {0};
+#endif
 extern R_D_MODE r_d_mode;
 extern ads1256_dev_t dev_vol;
+extern osThreadId_t task_sample_handle;
+extern volatile uint8_t g_adc_sample_notify_enabled;
 
 static __IO double cali_r_value[7][3] = {
     {0.000000621013436, 1.269563854760952, 128545.457705873996019}, // 10M
@@ -49,31 +59,26 @@ static __IO double cali_r_value[7][3] = {
 /* Private function prototypes -----------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
-/* One round takes about 140 ms */
+/* Wait for one new ADC result. At 50 SPS this normally takes at most 20 ms. */
 int wait_adc_one_round(uint32_t timeout_ms)
 {
     uint32_t t0 = HAL_GetTick();
+    const uint32_t start_seq = adc_sample_update_seq;
 
-    // 1) First wait for step_cnt to leave the "previous round end state (6)" to avoid a stale state
-    while (dev_vol.step_cnt == 6)
+    while (adc_sample_update_seq == start_seq)
     {
         if ((HAL_GetTick() - t0) >= timeout_ms)
             return -1;
         bsp_delay_ms(1);
     }
 
-    // 2) Then wait for it to return to 6, which means one full round is complete
-    while (dev_vol.step_cnt != 6)
-    {
-        if ((HAL_GetTick() - t0) >= timeout_ms)
-            return -1;
-        bsp_delay_ms(1);
-    }
-
+    sample_data_cali();
     return 0;
 }
 void raw_data_queue_push(float value, uint8_t index)
 {
+    if (index >= 8U)
+        return;
 
     raw_data_queue[raw_data_queue_head] = value;       // raw data
     raw_data_index_queue[raw_data_queue_head] = index; // channel index
@@ -86,8 +91,11 @@ void raw_data_queue_push(float value, uint8_t index)
                                                                      : 0xff; // latest sample channel sel for  8 channel
 
     raw_data_queue_head = (raw_data_queue_head + 1) % RAW_DATA_QUEUE_SIZE;
+    sample_update_seq[index]++;
+    adc_sample_update_seq++;
 
-    sample_data_cali();
+    if (g_adc_sample_notify_enabled != 0U && task_sample_handle != NULL)
+        (void)osThreadFlagsSet(task_sample_handle, ADC_SAMPLE_READY_FLAG);
 }
 
 double bsp_adc_r_convert(const TEST_R_D_RES_LEVEL gear, const double input, const uint8_t cali_en)
@@ -133,9 +141,17 @@ void sample_data_cali()
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        sel_cali_param(i, latest_sample_ch_sel[i], &offset, &gain);
+        const uint32_t target_seq = sample_update_seq[i];
+        if (target_seq == calibrated_sample_seq[i])
+            continue;
 
-        if (r_d_mode == R_MODE && i == 2 && latest_sample_ch_sel[i] == 0)
+        const uint32_t update_count = target_seq - calibrated_sample_seq[i];
+        const float raw_sample = latest_sample_raw_data[i];
+        const uint8_t sample_ch_sel = latest_sample_ch_sel[i];
+
+        sel_cali_param(i, sample_ch_sel, &offset, &gain);
+
+        if (r_d_mode == R_MODE && i == 2 && sample_ch_sel == 0)
         {
             // R=VoRt/(0.5-Vo)  mv
             // OHM_NULL = 0,
@@ -146,9 +162,9 @@ void sample_data_cali()
             // OHM_1_K,
             // OHM_100_OHM,
             // OHM_4_point_7_K,
-            const double raw_data = latest_sample_raw_data[i] * 1000000.0;
+            const double raw_data = raw_sample * 1000000.0;
             cali_data = bsp_adc_r_convert(dev_vol.sample_res_gear_rd, (raw_data - 1660) / 1000000, dev_vol.res_cali_en);
-            printf("raw data: %f, cali data: %f ohm, gear: %d, cali_en: %d\r\n", latest_sample_raw_data[i], cali_data, dev_vol.sample_res_gear_rd, dev_vol.res_cali_en);
+            printf("raw data: %f, cali data: %f ohm, gear: %d, cali_en: %d\r\n", raw_sample, cali_data, dev_vol.sample_res_gear_rd, dev_vol.res_cali_en);
             if (cali_data > 10 && cali_data <= 100 && dev_cur.sample_res_gear_rd != OHM_100_OHM)
             {
                 printf("change gear 100 ohm\r\n");
@@ -198,9 +214,43 @@ void sample_data_cali()
         }
         else
         {
-            IV_data = latest_sample_raw_data[i] * gain + offset;
+            IV_data = raw_sample * gain + offset;
             latest_sample_data[i] = IV_data;
         }
+
+#if ADC_SAMPLE_TRACE_ENABLE
+        {
+            const float calibrated_sample = latest_sample_data[i];
+            const float raw_delta = raw_sample - trace_last_raw_data[i];
+            const float cali_delta = calibrated_sample - trace_last_cali_data[i];
+            const float raw_delta_abs = raw_delta < 0.0f ? -raw_delta : raw_delta;
+            const float last_raw_abs = trace_last_raw_data[i] < 0.0f ? -trace_last_raw_data[i] : trace_last_raw_data[i];
+            const bool is_jump = trace_sample_valid[i] != 0U &&
+                                 raw_delta_abs >= ADC_SAMPLE_TRACE_MIN_RAW_DELTA &&
+                                 (last_raw_abs < ADC_SAMPLE_TRACE_MIN_RAW_DELTA ||
+                                  raw_delta_abs * 100.0f >= last_raw_abs * ADC_SAMPLE_TRACE_JUMP_PERCENT);
+            const double adc_code_value = raw_sample / (ADC_RATIO * 0.000001);
+            const int32_t adc_code = (int32_t)(adc_code_value + (adc_code_value >= 0.0 ? 0.5 : -0.5));
+
+            printf("[ADC%s] t=%lu seq=%lu(+%lu) ch=%u mux=%u code=%ld raw=%.9f cal=%.6f d_raw=%+.9f d_cal=%+.6f\r\n",
+                   is_jump ? " JUMP" : (trace_sample_valid[i] != 0U ? "" : " INIT"),
+                   (unsigned long)HAL_GetTick(),
+                   (unsigned long)target_seq,
+                   (unsigned long)update_count,
+                   (unsigned int)i,
+                   (unsigned int)sample_ch_sel,
+                   (long)adc_code,
+                   (double)raw_sample,
+                   (double)calibrated_sample,
+                   (double)raw_delta,
+                   (double)cali_delta);
+
+            trace_last_raw_data[i] = raw_sample;
+            trace_last_cali_data[i] = calibrated_sample;
+            trace_sample_valid[i] = 1U;
+        }
+#endif
+        calibrated_sample_seq[i] = target_seq;
     }
 }
 /**

@@ -192,7 +192,10 @@ static HAL_StatusTypeDef bsp_init_adc_system(void)
     /* Set sampling gear */
     bsp_select_sample_gear(dev_vol.sample_res_gear);
 #endif
-    HAL_NVIC_SetPriority(EXTI2_IRQn, 2, 0);
+    if (bsp_ads1256_start_scan(&dev_vol) != BSP_OK)
+        return HAL_ERROR;
+
+    HAL_NVIC_SetPriority(EXTI2_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(EXTI2_IRQn); // ADC_DRDY_1 PA2
     MIPI_CMD_INFO("------------- bsp init ads1256 finish -------------\r\n");
     return HAL_OK;
@@ -379,7 +382,7 @@ void cali_zero(void)
                 }
             }
             for (uint8_t i = 0; i < 8; i++)
-                wait_adc_one_round(200);     // One sampling round takes about 140 ms
+                wait_adc_one_round(200);     // Wait for eight fresh ADC results
             HAL_NVIC_DisableIRQ(EXTI2_IRQn); // Disable the sampling IRQ while updating calibration values
             sel_cali_param(ads1256_ch_index, d_trigger_ch_index, &offset, &gain);
             offset = -latest_sample_raw_data[ads1256_ch_index] * gain;

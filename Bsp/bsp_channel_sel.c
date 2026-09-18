@@ -173,7 +173,6 @@ void bsp_ads1256_ch0_select(const AI0_INDEX ai0_index)
         bsp_d_trigger_set_channel(&d_4, 1, truth_table[ai0_index][0]); // A2
                                                                        // EN always high
         ch0_flag = ai0_index;
-        printf("selected: A0=%d, A1=%d, A2=%d\r\n", truth_table[ai0_index][2], truth_table[ai0_index][1], truth_table[ai0_index][0]);
     }
 }
 // ANCHOR -  ADS1256 AI1 mux-selected sampling channel
