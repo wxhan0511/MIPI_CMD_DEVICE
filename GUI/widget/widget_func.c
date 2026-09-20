@@ -86,6 +86,7 @@ const int y_line_4 = 10 + label_height * 4;
 const int x_line_5 = 5;
 const int y_line_5 = 10 + label_height * 5;
 extern osMutexId_t show_mutexHandle;
+static char network_ipv4_text[16] = "0.0.0.0";
 
 lv_obj_t *page0 = NULL;
 lv_obj_t *page1 = NULL;
@@ -633,6 +634,8 @@ void ui_refresh_firmware_version(const fw_version_label_group_t *version_group, 
     sprintf(temp_str, "v %x.%x.%x.%x", version_data->version[5] >> 24 & 0xff,
             version_data->version[5] >> 16 & 0xff, version_data->version[5] >> 8 & 0xff, version_data->version[5] & 0xff);
     ui_label_set_text(version_group->label_main_hw_num, temp_str);
+
+    ui_label_set_text(version_group->label_lubancat_ip, version_data->ipv4);
 }
 
 void ui_main_protocol_init(lcd_show_t *lcd_protocol)
@@ -783,6 +786,38 @@ void ui_set_protocol(lcd_show_t *lcd_show, char *protocol, char *pclk, char *hs,
     if (state != NULL)
         lcd_show->state = state;
 
+    osMutexRelease(show_mutexHandle);
+}
+
+void ui_set_network_info(lcd_show_t *lcd_show, uint8_t network_state,
+                         const uint8_t ipv4[4])
+{
+    if (lcd_show == NULL || ipv4 == NULL)
+        return;
+
+    if (osMutexAcquire(show_mutexHandle, 20U) != osOK)
+        return;
+
+    switch (network_state)
+    {
+    case 1U:
+        snprintf(network_ipv4_text, sizeof(network_ipv4_text), "Switching...");
+        break;
+    case 2U:
+        snprintf(network_ipv4_text, sizeof(network_ipv4_text), "%u.%u.%u.%u",
+                 (unsigned int)ipv4[0], (unsigned int)ipv4[1],
+                 (unsigned int)ipv4[2], (unsigned int)ipv4[3]);
+        break;
+    case 3U:
+        snprintf(network_ipv4_text, sizeof(network_ipv4_text), "WiFi failed");
+        break;
+    case 0U:
+    default:
+        snprintf(network_ipv4_text, sizeof(network_ipv4_text), "0.0.0.0");
+        break;
+    }
+
+    lcd_show->ipv4 = network_ipv4_text;
     osMutexRelease(show_mutexHandle);
 }
 

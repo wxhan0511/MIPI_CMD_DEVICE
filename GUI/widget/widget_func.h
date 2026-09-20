@@ -100,6 +100,9 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
 
 void ui_set_protocol(lcd_show_t *lcd_show, char *protocol, char *pclk, char *hs, char *lp, char *state);
 
+void ui_set_network_info(lcd_show_t *lcd_show, uint8_t network_state,
+                         const uint8_t ipv4[4]);
+
 void ui_set_sample_voltage(lcd_show_t *lcd_show, const double *voltage);
 
 void ui_set_sample_current(lcd_show_t *lcd_show, const double *current);

@@ -67,6 +67,15 @@ static uint8_t d_trigger_ch_index = 0;
 
 typedef struct
 {
+    volatile uint8_t pending;
+    volatile uint8_t type;
+    volatile uint32_t sequence;
+} panel_event_state_t;
+
+static panel_event_state_t panel_event_state = {0};
+
+typedef struct
+{
     uint8_t power_id;
     uint8_t waiting;
     uint32_t voltage_start_seq;
@@ -274,6 +283,65 @@ void task_sample_run(void *argument)
             normal_refresh_process();
             osDelay(5);
             break;
+        case SET_NETWORK_INFO:
+        {
+            const uint8_t network_state = meter_rx_buf[2];
+            const uint8_t ipv4[4] = {
+                meter_rx_buf[4], meter_rx_buf[5],
+                meter_rx_buf[6], meter_rx_buf[7]};
+
+            if (network_state <= NETWORK_STATE_FAILED)
+            {
+                ui_set_network_info(&lcd_show, network_state, ipv4);
+                meter_tx_buf[2] = POWER_CMD_STATUS_SUCCESS;
+            }
+            else
+            {
+                meter_tx_buf[2] = POWER_CMD_STATUS_FAILED;
+            }
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        }
+        case GET_PANEL_EVENT:
+        {
+            uint8_t event_type;
+            uint32_t event_sequence;
+
+            taskENTER_CRITICAL();
+            event_type = panel_event_state.pending ? panel_event_state.type : PANEL_EVENT_NONE;
+            event_sequence = panel_event_state.sequence;
+            taskEXIT_CRITICAL();
+
+            meter_tx_buf[2] = POWER_CMD_STATUS_SUCCESS;
+            meter_tx_buf[3] = event_type;
+            memcpy(&meter_tx_buf[4], &event_sequence, sizeof(event_sequence));
+            meter_tx_buf[8] = 0x57U; /* Network-panel protocol capability marker */
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        }
+        case ACK_PANEL_EVENT:
+        {
+            uint32_t acknowledged_sequence = 0U;
+            uint8_t acknowledged = 0U;
+            memcpy(&acknowledged_sequence, &meter_rx_buf[2], sizeof(acknowledged_sequence));
+
+            taskENTER_CRITICAL();
+            if (panel_event_state.pending &&
+                panel_event_state.sequence == acknowledged_sequence)
+            {
+                panel_event_state.pending = 0U;
+                panel_event_state.type = PANEL_EVENT_NONE;
+                acknowledged = 1U;
+            }
+            taskEXIT_CRITICAL();
+
+            meter_tx_buf[2] = acknowledged ? POWER_CMD_STATUS_SUCCESS : POWER_CMD_STATUS_FAILED;
+            task_com_resume();
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            break;
+        }
         case GET_ID:
             meter_rx_buf[2] = id; // 1,2,3,4:bit1~4
             task_com_resume();
@@ -1046,6 +1114,23 @@ osStatus_t task_sample_task_mutex_try_acquire(void)
 void task_sample_task_mutex_release(void)
 {
     osMutexRelease(sample_mutex);
+}
+
+void task_sample_panel_event_post(panel_event_type_t event_type)
+{
+    if (event_type == PANEL_EVENT_NONE)
+        return;
+
+    taskENTER_CRITICAL();
+    if (!panel_event_state.pending)
+    {
+        panel_event_state.sequence++;
+        if (panel_event_state.sequence == 0U)
+            panel_event_state.sequence = 1U;
+        panel_event_state.type = (uint8_t)event_type;
+        panel_event_state.pending = 1U;
+    }
+    taskEXIT_CRITICAL();
 }
 void task_sample_init(void)
 {

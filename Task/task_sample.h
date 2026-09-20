@@ -52,8 +52,25 @@ typedef enum
     enable_lim = 0x25,
     self_test = 0x26,
     CMD_ENTER_BOOT = 0x27, /* Hand control to the bootloader for firmware upgrade */
+    SET_NETWORK_INFO = 0x28,
+    GET_PANEL_EVENT = 0x29,
+    ACK_PANEL_EVENT = 0x2A,
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
+
+typedef enum
+{
+    PANEL_EVENT_NONE = 0,
+    PANEL_EVENT_NEXT_WIFI = 1
+} panel_event_type_t;
+
+typedef enum
+{
+    NETWORK_STATE_OFFLINE = 0,
+    NETWORK_STATE_CONNECTING = 1,
+    NETWORK_STATE_CONNECTED = 2,
+    NETWORK_STATE_FAILED = 3
+} network_state_t;
 
 typedef struct
 {
@@ -128,6 +145,7 @@ void task_sample_run(void *argument);
 void task_sample_suspend(void);
 void task_sample_resume(void);
 void task_sample_task_mutex_acquire(void);
+void task_sample_panel_event_post(panel_event_type_t event_type);
 osStatus_t task_sample_task_mutex_try_acquire(void);
 void task_sample_task_mutex_release(void);
 void meter_wait_v_c_ready(uint8_t sample_id, uint8_t type);
