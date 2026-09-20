@@ -36,6 +36,7 @@ osMutexId_t show_mutexHandle;
 osStaticMutexDef_t show_mutex_control_block;
 const osMutexAttr_t show_mutex_attributes = {
     .name = "show_mutex",
+    .attr_bits = osMutexPrioInherit,
     .cb_mem = &show_mutex_control_block,
     .cb_size = sizeof(show_mutex_control_block),
 };
@@ -99,44 +100,35 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     osDelay(10);
-    lv_tick_inc(10); // Advance the LVGL internal timebase by 10 ms
 #if 1
     if (!HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin))
     {
       // Safe to acquire the mutex outside the critical section
-      if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
+      if (osMutexAcquire(show_mutexHandle, 100U) == osOK)
       {
+        lv_obj_t *target_page = NULL;
         if (current_page == PAGE_0)
         {
-          lv_screen_load_anim(page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-          printf("Current page is PAGE_0\r\n");
+          target_page = page1;
         }
         else if (current_page == PAGE_1)
         {
-          lv_screen_load_anim(page3, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-          printf("Current page is PAGE_1\r\n");
+          target_page = page3;
         }
         else if (current_page == PAGE_2)
         {
-          lv_screen_load_anim(page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
-          printf("Current page is PAGE_2\r\n");
+          target_page = page2;
         }
-        printf("wait acquire show_mutex\r\n");
-
         lv_display_t *disp = lv_display_get_default();
-        if (disp)
+        if (disp && target_page)
         {
           lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_0); // 90 / 270 as needed
           lcd_write_cmd_8bit(0x36);                             // Send command
           lcd_write_data_8bit(0x28);                            // Keep portrait logic, BGR color order
-          if (current_page == PAGE_0)
-            lv_obj_set_size(page1, 320, 240); // Update the page size to match the new orientation
-          if (current_page == PAGE_1)
-            lv_obj_set_size(page3, 320, 240); // Update the page size to match the new orientation
-          if (current_page == PAGE_2)
-            lv_obj_set_size(page2, 320, 240); // Update the page size to match the new orientation
-          lv_obj_invalidate(lv_screen_active());
-          lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
+          lv_obj_set_size(target_page, 320, 240);
+          lv_screen_load_anim(target_page, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+          lv_obj_invalidate(target_page);
+          lv_refr_now(disp);
         }
         osMutexRelease(show_mutexHandle);
         key_flag_1 = 1;
@@ -158,7 +150,7 @@ void StartDefaultTask(void *argument)
 #endif
 
       osDelay(10);
-      if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
+      if (osMutexAcquire(show_mutexHandle, 100U) == osOK)
       {
         if (current_page == 0)
           page0_flag = 1;
@@ -166,36 +158,29 @@ void StartDefaultTask(void *argument)
           current_page = current_page - 1;
         page0_flag = 0;
 
+        lv_obj_t *target_page = NULL;
         if (current_page == PAGE_0)
         {
-          lv_screen_load_anim(rotate_page1, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+          target_page = rotate_page1;
         }
         else if (current_page == PAGE_1)
         {
-          lv_screen_load_anim(rotate_page3, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+          target_page = rotate_page3;
         }
         else if (current_page == PAGE_2)
         {
-          lv_screen_load_anim(rotate_page2, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false);
+          target_page = rotate_page2;
         }
-        printf("wait acquire show_mutex\r\n");
-        // Safe to acquire the mutex outside the critical section
-
         lv_display_t *disp = lv_display_get_default();
-        if (disp)
+        if (disp && target_page)
         {
-          if (disp)
-            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // 90 / 270 as needed
+          lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // 90 / 270 as needed
           lcd_write_cmd_8bit(0x36);                                // Send command
           lcd_write_data_8bit(0x48);                               // 0x48 = 0x40 + 0x08 -> MX=1, BGR=1, MV=0, MY=0: enable X mirroring (horizontal flip) and set the color order to BGR
-          if (current_page == PAGE_0)
-            lv_obj_set_size(rotate_page1, 240, 320); // Update the page size to match the new orientation
-          if (current_page == PAGE_1)
-            lv_obj_set_size(rotate_page3, 240, 320); // Update the page size to match the new orientation
-          if (current_page == PAGE_2)
-            lv_obj_set_size(rotate_page2, 240, 320); // Update the page size to match the new orientation
-          lv_obj_invalidate(lv_screen_active());
-          lv_display_send_event(disp, LV_EVENT_REFR_REQUEST, NULL);
+          lv_obj_set_size(target_page, 240, 320);
+          lv_screen_load_anim(target_page, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+          lv_obj_invalidate(target_page);
+          lv_refr_now(disp);
         }
         osMutexRelease(show_mutexHandle);
 

@@ -153,6 +153,15 @@ SECTIONS
 
   _siccmram = LOADADDR(.ccmram);
 
+  /* LVGL's built-in heap is CPU-only data and can reside in CCMRAM. */
+  .lvgl_heap (NOLOAD) :
+  {
+    . = ALIGN(8);
+    *(.lvgl_heap)
+    *(.lvgl_heap*)
+    . = ALIGN(8);
+  } >CCMRAM
+
   /* CCM-RAM section
   *
   * IMPORTANT NOTE!

@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "bsp.h"
 #include "cmsis_os2.h"
@@ -62,6 +63,13 @@ static lv_point_t line_v_points[] = {
     {0, 0},
     {319, 0},
 };
+
+/* lv_line points are absolute coordinates and are not scaled by
+ * lv_obj_set_size().  Keep the endpoints equal to the real table bounds. */
+static const lv_point_precise_t table_h_landscape_points[] = {{0, 0}, {309, 0}};
+static const lv_point_precise_t table_h_portrait_points[] = {{0, 0}, {234, 0}};
+static const lv_point_precise_t table_v_main_points[] = {{0, 0}, {0, 140}};
+static const lv_point_precise_t table_v_page3_points[] = {{0, 0}, {0, 60}};
 
 const int label_height = 20;
 const int x_line_0 = 5;
@@ -132,6 +140,15 @@ void ui_label_init(lv_obj_t *label, const int32_t pos_x, const int32_t pos_y, co
 
 void ui_label_set_text(lv_obj_t *label, const char *text)
 {
+    if (label == NULL || text == NULL)
+        return;
+
+    /* lv_label_set_text() frees and allocates the text buffer even when the
+     * new string is identical.  Avoid continuous heap churn on a static UI. */
+    const char *old_text = lv_label_get_text(label);
+    if (old_text != NULL && strcmp(old_text, text) == 0)
+        return;
+
     lv_label_set_text(label, text);
 }
 
@@ -311,18 +328,18 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
     for (int i = 0; i < 7; i++)
     {
         line_v[i] = lv_line_create(page);
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
+        lv_line_set_points(line_v[i], table_h_landscape_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 310, 4);
+        lv_obj_set_size(line_v[i], 310, 2);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
         label_power_name[i] = lv_label_create(page);
         ui_label_init(label_power_name[i], x_name, 92 + 20 * i, 70, label_height, power_name[i]);
     }
     line_v[7] = lv_line_create(page);
-    lv_line_set_points(line_v[7], (lv_point_precise_t *)line_v_points, 2);
+    lv_line_set_points(line_v[7], table_h_landscape_points, 2);
     lv_obj_set_pos(line_v[7], 5, 90 + 20 * 7);
-    lv_obj_set_size(line_v[7], 310, 4);
+    lv_obj_set_size(line_v[7], 310, 2);
     lv_obj_set_style_line_color(line_v[7], lv_color_hex(0x000000), LV_PART_MAIN);
 
     // Header labels
@@ -337,21 +354,21 @@ void ui_main_sample_data_group_init(lv_obj_t *page, sample_data_label_group_t *l
 
     // Vertical separator lines
     line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[0], table_v_main_points, 2);
     lv_obj_set_pos(line_h[0], x_col1, 90);
-    lv_obj_set_size(line_h[0], 4, 160);
+    lv_obj_set_size(line_h[0], 2, 141);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[1], table_v_main_points, 2);
     lv_obj_set_pos(line_h[1], x_col2, 90);
-    lv_obj_set_size(line_h[1], 4, 160);
+    lv_obj_set_size(line_h[1], 2, 141);
     lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[2] = lv_line_create(page);
-    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[2], table_v_main_points, 2);
     lv_obj_set_pos(line_h[2], x_col3, 90);
-    lv_obj_set_size(line_h[2], 4, 160);
+    lv_obj_set_size(line_h[2], 2, 141);
     lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
 
     // 6 data rows
@@ -383,18 +400,18 @@ void ui_main_sample_data_group_rotate_init(lv_obj_t *page, sample_data_label_gro
     for (int i = 0; i < 7; i++)
     {
         line_v[i] = lv_line_create(page);
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
+        lv_line_set_points(line_v[i], table_h_portrait_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 240, 4);
+        lv_obj_set_size(line_v[i], 235, 2);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
         label_power_name[i] = lv_label_create(page);
         ui_label_init(label_power_name[i], x_name, 92 + 20 * i, 62, label_height, power_name[i]);
     }
     line_v[7] = lv_line_create(page);
-    lv_line_set_points(line_v[7], (lv_point_precise_t *)line_v_points, 2);
+    lv_line_set_points(line_v[7], table_h_portrait_points, 2);
     lv_obj_set_pos(line_v[7], 5, 90 + 20 * 7);
-    lv_obj_set_size(line_v[7], 240, 4);
+    lv_obj_set_size(line_v[7], 235, 2);
     lv_obj_set_style_line_color(line_v[7], lv_color_hex(0x000000), LV_PART_MAIN);
 
     lv_obj_t *vol_name_label = lv_label_create(page);
@@ -407,21 +424,21 @@ void ui_main_sample_data_group_rotate_init(lv_obj_t *page, sample_data_label_gro
     ui_label_init(lim_name_label, x_col3 + 2, 92, 50, label_height, " Lim");
 
     line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[0], table_v_main_points, 2);
     lv_obj_set_pos(line_h[0], x_col1, 90);
-    lv_obj_set_size(line_h[0], 4, 160);
+    lv_obj_set_size(line_h[0], 2, 141);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[1], table_v_main_points, 2);
     lv_obj_set_pos(line_h[1], x_col2, 90);
-    lv_obj_set_size(line_h[1], 4, 160);
+    lv_obj_set_size(line_h[1], 2, 141);
     lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[2] = lv_line_create(page);
-    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[2], table_v_main_points, 2);
     lv_obj_set_pos(line_h[2], x_col3, 90);
-    lv_obj_set_size(line_h[2], 4, 160);
+    lv_obj_set_size(line_h[2], 2, 141);
     lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
 
     for (int i = 0; i < 6; i++)
@@ -451,18 +468,18 @@ void ui_page3_sample_data_group_init(lv_obj_t *page, sample_data_page3_label_gro
     for (int i = 0; i < 3; i++)
     {
         line_v[i] = lv_line_create(page);
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
+        lv_line_set_points(line_v[i], table_h_landscape_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 310, 4);
+        lv_obj_set_size(line_v[i], 310, 2);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
         label_power_name_page3[i] = lv_label_create(page);
         ui_label_init(label_power_name_page3[i], x_name, 92 + 20 * i, 70, label_height, power_name_page3[i]);
     }
     line_v[3] = lv_line_create(page);
-    lv_line_set_points(line_v[3], (lv_point_precise_t *)line_v_points, 2);
+    lv_line_set_points(line_v[3], table_h_landscape_points, 2);
     lv_obj_set_pos(line_v[3], 5, 90 + 20 * 3);
-    lv_obj_set_size(line_v[3], 310, 4);
+    lv_obj_set_size(line_v[3], 310, 2);
     lv_obj_set_style_line_color(line_v[3], lv_color_hex(0x000000), LV_PART_MAIN);
 
     lv_obj_t *vol_name_label = lv_label_create(page);
@@ -475,21 +492,21 @@ void ui_page3_sample_data_group_init(lv_obj_t *page, sample_data_page3_label_gro
     ui_label_init(lim_name_label, x_col3 + 5, 92, 70, label_height, " Lim");
 
     line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[0], table_v_page3_points, 2);
     lv_obj_set_pos(line_h[0], x_col1, 90);
-    lv_obj_set_size(line_h[0], 4, 80);
+    lv_obj_set_size(line_h[0], 2, 61);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[1], table_v_page3_points, 2);
     lv_obj_set_pos(line_h[1], x_col2, 90);
-    lv_obj_set_size(line_h[1], 4, 80);
+    lv_obj_set_size(line_h[1], 2, 61);
     lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[2] = lv_line_create(page);
-    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[2], table_v_page3_points, 2);
     lv_obj_set_pos(line_h[2], x_col3, 90);
-    lv_obj_set_size(line_h[2], 4, 80);
+    lv_obj_set_size(line_h[2], 2, 61);
     lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
 
     for (int i = 0; i < 2; i++)
@@ -525,18 +542,18 @@ void ui_page3_sample_data_group_rotate_init(lv_obj_t *page, sample_data_page3_la
     for (int i = 0; i < 3; i++)
     {
         line_v[i] = lv_line_create(page);
-        lv_line_set_points(line_v[i], (lv_point_precise_t *)line_v_points, 2);
+        lv_line_set_points(line_v[i], table_h_portrait_points, 2);
         lv_obj_set_pos(line_v[i], 5, 90 + 20 * i);
-        lv_obj_set_size(line_v[i], 240, 4);
+        lv_obj_set_size(line_v[i], 235, 2);
         lv_obj_set_style_line_color(line_v[i], lv_color_hex(0x000000), LV_PART_MAIN);
 
         label_power_name_page3[i] = lv_label_create(page);
         ui_label_init(label_power_name_page3[i], x_name, 92 + 20 * i, 62, label_height, power_name_page3[i]);
     }
     line_v[3] = lv_line_create(page);
-    lv_line_set_points(line_v[3], (lv_point_precise_t *)line_v_points, 2);
+    lv_line_set_points(line_v[3], table_h_portrait_points, 2);
     lv_obj_set_pos(line_v[3], 5, 90 + 20 * 3);
-    lv_obj_set_size(line_v[3], 240, 4);
+    lv_obj_set_size(line_v[3], 235, 2);
     lv_obj_set_style_line_color(line_v[3], lv_color_hex(0x000000), LV_PART_MAIN);
 
     lv_obj_t *vol_name_label = lv_label_create(page);
@@ -549,21 +566,21 @@ void ui_page3_sample_data_group_rotate_init(lv_obj_t *page, sample_data_page3_la
     ui_label_init(lim_name_label, x_col3 + 2, 92, 50, label_height, " Lim");
 
     line_h[0] = lv_line_create(page);
-    lv_line_set_points(line_h[0], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[0], table_v_page3_points, 2);
     lv_obj_set_pos(line_h[0], x_col1, 90);
-    lv_obj_set_size(line_h[0], 4, 80);
+    lv_obj_set_size(line_h[0], 2, 61);
     lv_obj_set_style_line_color(line_h[0], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[1] = lv_line_create(page);
-    lv_line_set_points(line_h[1], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[1], table_v_page3_points, 2);
     lv_obj_set_pos(line_h[1], x_col2, 90);
-    lv_obj_set_size(line_h[1], 4, 80);
+    lv_obj_set_size(line_h[1], 2, 61);
     lv_obj_set_style_line_color(line_h[1], lv_color_hex(0x000000), LV_PART_MAIN);
 
     line_h[2] = lv_line_create(page);
-    lv_line_set_points(line_h[2], (lv_point_precise_t *)line_h_points, 2);
+    lv_line_set_points(line_h[2], table_v_page3_points, 2);
     lv_obj_set_pos(line_h[2], x_col3, 90);
-    lv_obj_set_size(line_h[2], 4, 80);
+    lv_obj_set_size(line_h[2], 2, 61);
     lv_obj_set_style_line_color(line_h[2], lv_color_hex(0x000000), LV_PART_MAIN);
 
     for (int i = 0; i < 2; i++)
@@ -752,7 +769,9 @@ void ui_refresh_sample_data_page3(const sample_data_page3_label_group_t *label_g
 
 void ui_set_protocol(lcd_show_t *lcd_show, char *protocol, char *pclk, char *hs, char *lp, char *state)
 {
-    osMutexAcquire(show_mutexHandle, 0);
+    if (osMutexAcquire(show_mutexHandle, 20U) != osOK)
+        return;
+
     if (protocol != NULL)
         lcd_show->protocol = protocol;
     if (pclk != NULL)
@@ -769,7 +788,9 @@ void ui_set_protocol(lcd_show_t *lcd_show, char *protocol, char *pclk, char *hs,
 
 void ui_set_sample_voltage(lcd_show_t *lcd_show, const double *voltage)
 {
-    osMutexAcquire(show_mutexHandle, 0);
+    if (osMutexAcquire(show_mutexHandle, 20U) != osOK)
+        return;
+
     memcpy(lcd_show->voltage, voltage, sizeof(double) * 6);
 
     osMutexRelease(show_mutexHandle);
@@ -777,7 +798,9 @@ void ui_set_sample_voltage(lcd_show_t *lcd_show, const double *voltage)
 
 void ui_set_sample_current(lcd_show_t *lcd_show, const double *current)
 {
-    osMutexAcquire(show_mutexHandle, 0);
+    if (osMutexAcquire(show_mutexHandle, 20U) != osOK)
+        return;
+
     memcpy(lcd_show->current, current, sizeof(double) * 6);
 
     osMutexRelease(show_mutexHandle);
@@ -785,7 +808,9 @@ void ui_set_sample_current(lcd_show_t *lcd_show, const double *current)
 
 void ui_set_sample_threshold(lcd_show_t *lcd_show, const double *threshold)
 {
-    osMutexAcquire(show_mutexHandle, 0);
+    if (osMutexAcquire(show_mutexHandle, 20U) != osOK)
+        return;
+
     memcpy(lcd_show->threshold, threshold, sizeof(double) * 8);
 
     osMutexRelease(show_mutexHandle);

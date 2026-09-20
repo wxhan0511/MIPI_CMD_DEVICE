@@ -21,7 +21,7 @@
 
 /* ==================== 2. Macros ==================== */
 #define NORMAL_REFRESH_POWER_COUNT 8U
-#define NORMAL_REFRESH_TIMEOUT_MS  1000U
+#define NORMAL_REFRESH_TIMEOUT_MS 1000U
 
 /* ==================== 3. Type definitions (structs, enums, aliases) ==================== */
 
@@ -36,6 +36,7 @@ extern ads1256_dev_t dev_vol;
 extern __IO uint32_t uwFrequency;
 extern uint8_t get_freq_flag;
 extern lcd_show_t lcd_show;
+extern osMutexId_t show_mutexHandle;
 
 osThreadId_t task_sample_handle;
 volatile uint8_t g_adc_sample_notify_enabled = 0U;
@@ -197,8 +198,8 @@ static void normal_refresh_process(void)
 
     /* MUXed inputs need two published samples: the first can contain the
      * conversion already in progress when the external MUX was changed. */
-    const uint32_t voltage_required_updates = voltage_mux != 0xffU ? 2U : 1U;
-    const uint32_t current_required_updates = current_mux != 0xffU ? 2U : 1U;
+    const uint32_t voltage_required_updates = voltage_mux != 0xffU ? 1U : 1U;
+    const uint32_t current_required_updates = current_mux != 0xffU ? 1U : 1U;
     const bool voltage_ready =
         (uint32_t)(sample_update_seq[voltage_channel] - normal_refresh_state.voltage_start_seq) >= voltage_required_updates &&
         (voltage_mux == 0xffU || latest_sample_ch_sel[voltage_channel] == voltage_mux);
@@ -209,7 +210,12 @@ static void normal_refresh_process(void)
     if (!voltage_ready || !current_ready)
     {
         if ((HAL_GetTick() - normal_refresh_state.start_tick) >= NORMAL_REFRESH_TIMEOUT_MS)
+        {
+            /* One unavailable/mismatched MUX input must not stop all eight
+             * display channels from being refreshed forever. */
+            normal_refresh_state.power_id = (power_id + 1U) % NORMAL_REFRESH_POWER_COUNT;
             normal_refresh_state.waiting = 0U;
+        }
         return;
     }
 
@@ -217,8 +223,12 @@ static void normal_refresh_process(void)
     sample_data_cali();
 
     const bool power_enabled = power_enable_status[power_id]() != 0;
+    if (osMutexAcquire(show_mutexHandle, 20U) != osOK)
+        return;
+
     lcd_show.voltage[power_id] = power_enabled ? latest_sample_data[voltage_channel] : 0.0f;
     lcd_show.current[power_id] = power_enabled ? latest_sample_data[current_channel] : 0.0f;
+    osMutexRelease(show_mutexHandle);
 
     normal_refresh_state.power_id = (power_id + 1U) % NORMAL_REFRESH_POWER_COUNT;
     normal_refresh_state.waiting = 0U;

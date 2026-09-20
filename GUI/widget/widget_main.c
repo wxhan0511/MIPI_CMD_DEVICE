@@ -12,17 +12,24 @@
 #include "widget_func.h"
 
 extern osMutexId_t show_mutexHandle;
+extern lv_obj_t *page1;
+extern lv_obj_t *page2;
+extern lv_obj_t *page3;
+extern lv_obj_t *rotate_page1;
+extern lv_obj_t *rotate_page3;
 
 osThreadId_t widget_main_flush_task_handle;
 const osThreadAttr_t widget_main_flush_task_attributes = {
 	.name = "widget_main_flush_task_handle",
-	.stack_size = 1024 * 4,
+	.stack_size = 1024 * 8,
 	.priority = (osPriority_t)osPriorityNormal,
 };
 
 open_machine_group_t open_machine_group;
 lcd_protocol_label_group_t lcd_protocol_group;
+lcd_protocol_label_group_t lcd_protocol_group_rotate;
 lcd_protocol_label_group_t lcd_protocol_group_page3;
+lcd_protocol_label_group_t lcd_protocol_group_page3_rotate;
 sample_data_label_group_t sample_data_group;
 sample_data_label_group_t sample_data_group_roate;
 sample_data_page3_label_group_t sample_data_group_page3;
@@ -36,6 +43,8 @@ __IO uint8_t open_en = 0;
 
 lv_timer_t *open_machine_task;
 static lv_timer_t *update_data_task;
+
+#define SHOW_MUTEX_TIMEOUT_TICKS 100U
 
 extern lv_obj_t *act_scr;
 lcd_show_t lcd_show = {
@@ -53,9 +62,9 @@ void widget_main_create(void)
 {
 	ui_open_machine(&open_machine_group);
 	ui_main_init(&lcd_show, &lcd_protocol_group, &sample_data_group);
-	ui_main_rotate_init(&lcd_show, &lcd_protocol_group, &sample_data_group_roate);
+	ui_main_rotate_init(&lcd_show, &lcd_protocol_group_rotate, &sample_data_group_roate);
 	ui_page3_init(&lcd_show_page3, &lcd_protocol_group_page3, &sample_data_group_page3);
-	ui_page3_rotate_init(&lcd_show_page3, &lcd_protocol_group_page3, &sample_data_group_page3_roate);
+	ui_page3_rotate_init(&lcd_show_page3, &lcd_protocol_group_page3_rotate, &sample_data_group_page3_roate);
 	ui_sub_init(&fw_version_group);
 	// lcd_show.version[0] = {0xff,0xff,0xff,0xff};
 	uint32_t boot_version = 0;
@@ -75,38 +84,29 @@ void widget_flush_timer_cb(const lv_timer_t *timer)
 	const lcd_show_t *show_buf = timer->user_data;
 	if (open_en == 1)
 	{
-		if (current_page == 0)
+		lv_obj_t *active_screen = lv_screen_active();
+		if (active_screen == page1)
 		{
-			// printf("flush page 0\r\n");
-			// printf("show_buf protocol: %s\r\n", show_buf->protocol);
-			// for (int i = 0; i < 9; i++)
-			// {
-			// 	printf("show_buf voltage[%d]: %f\r\n", i, show_buf->voltage[i]);
-			// }
-			// Refresh protocol
 			ui_refresh_protocol(&lcd_protocol_group, show_buf);
-
-			// Refresh sampled data
 			ui_refresh_sample_data(&sample_data_group, show_buf);
+		}
+		else if (active_screen == rotate_page1)
+		{
+			ui_refresh_protocol(&lcd_protocol_group_rotate, show_buf);
 			ui_refresh_sample_data(&sample_data_group_roate, show_buf);
 		}
-		else if (current_page == 2)
+		else if (active_screen == page3)
 		{
-			// printf("flush page 2\r\n");
-			// printf("show_buf protocol: %s\r\n", show_buf->protocol);
-			// for (int i = 0; i < 9; i++)
-			// {
-			// 	printf("show_buf voltage[%d]: %f\r\n", i, show_buf->voltage[i]);
-			// }
-			// Refresh protocol
 			ui_refresh_protocol(&lcd_protocol_group_page3, show_buf);
-			// Refresh sampled data
 			ui_refresh_sample_data_page3(&sample_data_group_page3, show_buf);
+		}
+		else if (active_screen == rotate_page3)
+		{
+			ui_refresh_protocol(&lcd_protocol_group_page3_rotate, show_buf);
 			ui_refresh_sample_data_page3(&sample_data_group_page3_roate, show_buf);
 		}
-		else if (current_page == 1)
+		else if (active_screen == page2)
 		{
-			// printf("flush page 1\r\n");
 			ui_refresh_firmware_version(&fw_version_group, show_buf);
 		}
 	}
@@ -138,12 +138,27 @@ void lvgl_timer_task_entry(void *params)
 	update_data_task = lv_timer_create((lv_timer_cb_t)widget_flush_timer_cb, 100, &lcd_show);
 	lv_timer_enable(true);
 	lv_timer_ready(update_data_task);
+	uint32_t last_tick = HAL_GetTick();
 	while (1)
 	{
-		if (osMutexAcquire(show_mutexHandle, osWaitForever) == osOK)
+		static uint32_t mutex_timeout_count = 0;
+		const uint32_t now = HAL_GetTick();
+		lv_tick_inc(now - last_tick);
+		last_tick = now;
+		if (osMutexAcquire(show_mutexHandle, SHOW_MUTEX_TIMEOUT_TICKS) == osOK)
 		{
 			lv_timer_handler();
 			osMutexRelease(show_mutexHandle);
+		}
+		else
+		{
+			/* Do not let the LVGL task wait forever if another task loses the lock. */
+			mutex_timeout_count++;
+			if (mutex_timeout_count == 1U || (mutex_timeout_count % 100U) == 0U)
+			{
+				printf("LVGL show_mutex timeout, count=%lu\r\n",
+				       (unsigned long)mutex_timeout_count);
+			}
 		}
 		osDelay(10);
 	}

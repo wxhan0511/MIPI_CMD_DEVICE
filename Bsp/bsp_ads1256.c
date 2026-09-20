@@ -207,8 +207,7 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
     data[0] = 0x04;
     data[1] = 0x08;
     data[2] = 0x00;
-    data[3] = 0x63; // 50sps
-    // data[3] = 0x82;//500sps
+    data[3] = 0x82; // 100 SPS
     data[4] = 0x00;
     handle->write_reg(handle, 0x00, data, 5);
     handle->read_reg(handle, REG_STATUS, &data[0], 5);

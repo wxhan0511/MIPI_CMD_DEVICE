@@ -101,7 +101,8 @@ int _write(int fd, char* ptr, int len) {
             return -1;
         }
         retarget_lock();
-        hstatus = HAL_UART_Transmit(gHuart, (uint8_t *) ptr, len, HAL_MAX_DELAY);
+        /* Debug output must never be able to stop an RTOS task forever. */
+        hstatus = HAL_UART_Transmit(gHuart, (uint8_t *) ptr, len, 100U);
         retarget_unlock();
         if (hstatus == HAL_OK) {
             return len;

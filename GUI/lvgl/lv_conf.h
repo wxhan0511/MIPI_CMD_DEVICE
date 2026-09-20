@@ -46,7 +46,12 @@
 //ANCHOR - LVGL object memory management (LVGL Heap)
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /*Size of the memory available for `lv_malloc()` in bytes (>= 2kB)*/
-    #define LV_MEM_SIZE (48 * 1024U)          /*[bytes]*/
+    /*
+     * Keep the LVGL heap in CCMRAM.  The normal 128 KB SRAM is already close
+     * to full, while the STM32F407 still has a separate 64 KB CPU-only CCMRAM.
+     * Leave 4 KB spare in CCMRAM for future small objects/debug data.
+     */
+    #define LV_MEM_SIZE (60 * 1024U)          /*[bytes]*/
 
     /*Size of the memory expand for `lv_malloc()` in bytes*/
     #define LV_MEM_POOL_EXPAND_SIZE 0
@@ -244,8 +249,9 @@
 #define LV_USE_ASSERT_OBJ           0   /*Check the object's type and existence (e.g. not deleted). (Slow)*/
 
 /*Add a custom handler when assert happens e.g. to restart the MCU*/
-#define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
-#define LV_ASSERT_HANDLER while(1);   /*Halt by default*/
+#define LV_ASSERT_HANDLER_INCLUDE "stm32f4xx.h"
+/* A failed LVGL assertion must not leave a field device frozen forever. */
+#define LV_ASSERT_HANDLER do { NVIC_SystemReset(); } while(0);
 
 /*-------------
  * Debug
@@ -349,7 +355,7 @@
 #define LV_ATTRIBUTE_LARGE_CONST
 
 /*Compiler prefix for a big array declaration in RAM*/
-#define LV_ATTRIBUTE_LARGE_RAM_ARRAY
+#define LV_ATTRIBUTE_LARGE_RAM_ARRAY __attribute__((section(".lvgl_heap"), aligned(8)))
 
 /*Place performance critical functions into a faster memory (e.g RAM)*/
 #define LV_ATTRIBUTE_FAST_MEM
