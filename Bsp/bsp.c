@@ -82,7 +82,8 @@ void bsp_init()
     printf("\r\n==================================================\r\n");
     printf(" all rly set ma.\r\n");
     printf("==================================================\r\n\r\n");
-    bsp_rly_gear_set_all(GEAR_mA);
+    bsp_delay_ms(2000);
+    // 此处需延时2s, 等模块加载好后, 再进行继电器吸合, 否则突然增大电流会导致鲁班猫pmic进保护 bsp_rly_gear_set_all(GEAR_mA);
     printf("\r\n==================================================\r\n");
     printf(" calibration loading...\r\n");
     printf("==================================================\r\n\r\n");
@@ -106,6 +107,9 @@ void bsp_init()
     enableTim2PWMOutput();  // step2
 
     bsp_lim_rst_set(1);
+    // TODO:
+    bsp_power_all_enable();
+    printf("bsp_power_all_enable\r\n");
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();
@@ -118,16 +122,17 @@ void bsp_led_pwm_init(uint8_t pulse)
 {
     HAL_TIM_IC_DeInit(&htim1);
     HAL_TIM_PWM_DeInit(&htim1);
-    uint16_t arr = 1050; // Period; duty cycle resolution: 1 / 1050 = 0.0952% (better than 0.1%)
-    uint16_t psc = 15;   // Prescaler
+    uint16_t arr = 1680;
+    uint16_t psc = 1;
+    uint16_t compare = (uint16_t)(((uint32_t)pulse * arr + 525U) / 1050U);
     // Recommended duty cycle: 1% (50% is especially bright)
     uint16_t pulses_num = 11000;
-    printf("pulse value: %d\r\n", pulse);
-    TIM1_PWM_Init(arr, psc, pulse); // arr,psc,pulse f=168MHz/(arr+1)*(psc+1)    Max usable 28MHz: TIM1_PWM_Init(2,3), compare value set to 1, __HAL_TIM_SET_COMPARE(&htim1, LED_PWM_IN_CHANNEL, 1);;
-    printf("TIM1 PWM Init with ARR=%d, PSC=%d, Pulse=%d, freq = %lu Hz\r\n", arr, psc, pulse, 168000000 / ((arr + 1) * (psc + 1)));
+    printf("pulse value: %d, compare value: %d\r\n", pulse, compare);
+    TIM1_PWM_Init(arr, psc, compare);
+    printf("TIM1 PWM Init with ARR=%d, PSC=%d, Compare=%d, freq = %lu Hz\r\n", arr, psc, compare, 168000000UL / ((uint32_t)arr * psc));
     // TIM1_Generate_N_Pulses(pulses_num); // Not enabled
     printf("generate %d pulses\r\n", pulses_num);
-    // Recommended 10 kHz, duty cycle resolution 0.1%
+    // 100 kHz, duty cycle resolution 1 / 1680 = 0.0595%
 }
 void bsp_blasi_pwm_init(uint8_t pulse)
 {

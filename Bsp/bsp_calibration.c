@@ -304,14 +304,14 @@ HAL_StatusTypeDef power_set_defaults(void)
     cal->da_data.elvss_ref_gain = 0.2f;
     cal->da_data.elvss_ref_offset = 0.0f;
 
-    cal->vcc_ref_last = 1000;
-    cal->iovcc_ref_last = 1000;
-    cal->vsp_ref_last = 1000;
-    cal->vsn_ref_last = 1000;
-    cal->avdd_ref_last = 1000;
-    cal->vdd_ref_last = 1000;
-    cal->elvdd_ref_last = 1000;
-    cal->elvss_ref_last = 1000;
+    cal->vcc_ref_last = 200;
+    cal->iovcc_ref_last = 200;
+    cal->vsp_ref_last = 200;
+    cal->vsn_ref_last = 200;
+    cal->avdd_ref_last = 200;
+    cal->vdd_ref_last = 200;
+    cal->elvdd_ref_last = 200;
+    cal->elvss_ref_last = 200;
     cal->v_level_shift_last = 1800;
     cal->ref_freq_last = 980;
     cal->vadj_p_last = 10000;

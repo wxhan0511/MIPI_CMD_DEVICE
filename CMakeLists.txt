@@ -17,6 +17,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 project(RA_PowerEX C CXX ASM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 #Uncomment for hardware floating point
 #add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
@@ -76,11 +77,31 @@ add_link_options(-T ${LINKER_SCRIPT})
 
 add_executable(build.elf ${SOURCES} ${LINKER_SCRIPT})
 
-set(HEX_FILE ${PROJECT_BINARY_DIR}/build.hex)
+set(FW_VERSION "0.0.0.1")
+set(RAW_BIN_FILE ${PROJECT_BINARY_DIR}/build.raw.bin)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/build.bin)
+set(HEX_FILE ${PROJECT_BINARY_DIR}/build.hex)
+set(FACTORY_BIN_FILE ${PROJECT_BINARY_DIR}/factory.bin)
+set(FACTORY_HEX_FILE ${PROJECT_BINARY_DIR}/factory.hex)
+set(RELEASE_APP_BIN ${PROJECT_BINARY_DIR}/GC5_MIPI_CMD_DEVICE_Firmware_V${FW_VERSION}.bin)
+set(RELEASE_APP_HEX ${PROJECT_BINARY_DIR}/GC5_MIPI_CMD_DEVICE_Firmware_V${FW_VERSION}.hex)
+set(RELEASE_FACTORY_BIN ${PROJECT_BINARY_DIR}/GC5_MIPI_CMD_DEVICE_Factory_V${FW_VERSION}.bin)
+set(RELEASE_FACTORY_HEX ${PROJECT_BINARY_DIR}/GC5_MIPI_CMD_DEVICE_Factory_V${FW_VERSION}.hex)
+set(BOOTLOADER_SOURCE_DIR ${CMAKE_SOURCE_DIR}/bootloader)
+set(BOOTLOADER_BUILD_DIR ${BOOTLOADER_SOURCE_DIR}/build)
+set(BOOTLOADER_BIN ${BOOTLOADER_BUILD_DIR}/boot.bin)
 
 add_custom_command(TARGET build.elf POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:build.elf> ${HEX_FILE}
-        COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:build.elf> ${BIN_FILE}
-        COMMENT "Building ${HEX_FILE}
-Building ${BIN_FILE}")
+        COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:build.elf> ${RAW_BIN_FILE}
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/finalize_firmware.py
+                --app-raw ${RAW_BIN_FILE}
+                --boot-bin ${BOOTLOADER_BIN}
+                --app-out ${BIN_FILE}
+                --factory-out ${FACTORY_BIN_FILE}
+        COMMAND ${CMAKE_OBJCOPY} -I binary -O ihex --change-addresses 0x08010000 ${BIN_FILE} ${HEX_FILE}
+        COMMAND ${CMAKE_OBJCOPY} -I binary -O ihex --change-addresses 0x08000000 ${FACTORY_BIN_FILE} ${FACTORY_HEX_FILE}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BIN_FILE} ${RELEASE_APP_BIN}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${HEX_FILE} ${RELEASE_APP_HEX}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${FACTORY_BIN_FILE} ${RELEASE_FACTORY_BIN}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${FACTORY_HEX_FILE} ${RELEASE_FACTORY_HEX}
+        COMMENT "Finalizing application CRC and building application/factory images")

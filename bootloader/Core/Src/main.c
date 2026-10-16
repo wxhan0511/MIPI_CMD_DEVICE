@@ -83,7 +83,7 @@ static void Upgrade_Loop(void)
   {
     /* If the host never engages (no frame within ~10s) and a valid app is
        present, boot it instead of waiting forever in upgrade mode. */
-    if (Boot_Spi_ReceiveFrame(rx_frame, frame_len, 10000U) != HAL_OK)
+    if (Boot_Spi_ReceiveFrame(rx_frame, frame_len, 5000U) != HAL_OK)
     {
       if (Boot_AppIsValid() && Boot_MetaVerify())
       {
