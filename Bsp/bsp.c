@@ -83,6 +83,7 @@ void bsp_init()
     printf(" all rly set ma.\r\n");
     printf("==================================================\r\n\r\n");
     bsp_delay_ms(2000);
+    bsp_rly_gear_set_all(GEAR_mA);
     // 此处需延时2s, 等模块加载好后, 再进行继电器吸合, 否则突然增大电流会导致鲁班猫pmic进保护 bsp_rly_gear_set_all(GEAR_mA);
     printf("\r\n==================================================\r\n");
     printf(" calibration loading...\r\n");
