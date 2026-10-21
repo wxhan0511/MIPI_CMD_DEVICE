@@ -107,9 +107,6 @@ void bsp_init()
     enableTim2PWMOutput();  // step2
 
     bsp_lim_rst_set(1);
-    // TODO:
-    bsp_power_all_enable();
-    printf("bsp_power_all_enable\r\n");
     /*-------------PWM END----------------*/
     /*-------------CCP START----------------*/
     // bsp_CCP_Init();
