@@ -55,6 +55,7 @@ typedef enum
     SET_NETWORK_INFO = 0x28,
     GET_PANEL_EVENT = 0x29,
     ACK_PANEL_EVENT = 0x2A,
+    SET_POWER_EN_SEQUENCE = 0x2B,
     NORMAL_LOOP_EVENT = 0xFF
 } vol_cur_control_cmd_type;
 

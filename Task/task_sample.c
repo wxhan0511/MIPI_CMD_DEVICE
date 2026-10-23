@@ -18,6 +18,7 @@
 #include "bsp_mcp4728_ctl.h"
 #include "boot_flag.h"
 #include "math.h"
+#include "bsp_power_en_sequence.h"
 
 /* ==================== 2. Macros ==================== */
 #define NORMAL_REFRESH_POWER_COUNT 8U
@@ -89,8 +90,8 @@ static normal_refresh_state_t normal_refresh_state = {0};
 static void process_adc_sample_notification(uint32_t timeout_ticks);
 static void normal_refresh_start(void);
 static void normal_refresh_process(void);
-static inline int get_VSN_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 0); }
-static inline int get_ELVSS_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 1); }
+static inline int get_VSN_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 1); }
+static inline int get_ELVSS_status(void) { return !bsp_d_trigger_get_channel_state(&d_3, 0); }
 static inline int get_ELVDD_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 2); }
 static inline int get_VDD_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 3); }
 static inline int get_AVDD_status(void) { return bsp_d_trigger_get_channel_state(&d_3, 4); }
@@ -415,25 +416,38 @@ void task_sample_run(void *argument)
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        case SET_POWER_EN_SEQUENCE:
+        {
+            power_en_seq_report_t report;
+            power_en_seq_result_t result = bsp_power_en_sequence_execute(
+                meter_rx_buf, SPI2_SLAVE_RX_LEN, &report);
+            meter_tx_buf[2] = result == POWER_EN_SEQ_OK ? 0 : 1;
+            meter_tx_buf[3] = (uint8_t)result;
+            meter_tx_buf[4] = report.executed_count;
+            meter_tx_buf[5] = report.final_user_mask;
+            meter_tx_buf[6] = report.final_state_valid;
+            memcpy(&meter_tx_buf[7], &report.max_lateness_us, 4);
+            if (report.final_state_valid) {
+                for (uint8_t n = 0; n < 8; ++n)
+                    g_sample_task.power_switch[n] = (report.final_user_mask >> n) & 1U;
+            }
+            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            task_com_resume();
+            break;
+        }
         case ALL_POWER_EN:
+        {
             memcpy(g_sample_task.power_switch, &meter_rx_buf[2], 8);
-            for (uint8_t i = 0; i < 8; i++)
-            {
-                M_SPI_DEBUG("power_switch[%d]: %d\r\n", i, g_sample_task.power_switch[i]);
-            }
-
+            uint8_t mask = 0;
             for (uint8_t n = 0; n < 8; n++)
-            {
-                uint8_t power_id = power_order[n];
-
                 if (g_sample_task.power_switch[n] == 0x01)
-                    bsp_power_single_enable(power_id);
-                else
-                    bsp_power_single_disable(power_id);
-            }
+                    mask |= 1U << n;
+            meter_tx_buf[2] = bsp_d_trigger_write_byte(&d_3,
+                bsp_power_en_user_to_latch(mask)) ? 0 : 1;
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        }
         case SINGLE_POWER_EN:
             if (meter_rx_buf[2] >= 20U) /* power_order has 20 entries */
             {

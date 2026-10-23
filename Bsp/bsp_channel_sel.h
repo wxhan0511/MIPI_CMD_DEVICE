@@ -154,8 +154,8 @@ extern volatile uint8_t ch2_flag;
 #define VCC_ENABLE_POWEREN_P_1() bsp_d_trigger_set_channel(&d_3, 7, 1);
 #define VCC_DISABLE_POWEREN_P_1() bsp_d_trigger_set_channel(&d_3, 7, 0);
 
-#define VSN_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 0)
-#define ELVSS_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 1)
+#define VSN_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 1)
+#define ELVSS_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 0)
 #define ELVDD_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 2)
 #define VDD_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 3)
 #define AVDD_ENABLE_STATUS bsp_d_trigger_get_channel_state(&d_3, 4)

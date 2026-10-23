@@ -1,0 +1,117 @@
+--- a/core/lua_api_catalog.py
++++ b/core/lua_api_catalog.py
+@@ -281,6 +281,14 @@
+                 "example": "power.set_en_all(1,1,1,1,1,0,1,1)",
+             },
+             {
++                "sig": "power.set_en_sequence(events)",
++                "desc": "一次下发电源 EN 时序，由 MCU 定时执行；同一行的八路状态通过同一个锁存边沿更新。",
++                "params": "events: 1～8 行 Lua 数组，每行为 {at_us, VCC, IOVCC, VSP, VSN, AVDD, VDD, ELVDD, ELVSS}。at_us 为相对序列起点的整数微秒；第一行必须为 0，后续严格递增且相邻至少 50 μs，最后时间不超过 1000000 μs。八路状态均为 0 关 / 1 开，每行必须指定完整状态。",
++                "returns": "状态码：0=OK，1=FAIL，2=TIMEOUT；参数非法抛出异常。等待整个时序完成后返回。",
++                "example": "local s = power.set_en_sequence({\n    {0,   1,1,0,0,0,0,0,0},\n    {50,  1,1,1,0,0,0,0,0},\n    {100, 1,1,1,1,0,0,0,0},\n})\nassert(s == 0, 'EN sequence failed')",
++                "note": "需支持 A0 2B 的固件。50 μs 是最小可设置间隔，1 μs 是参数分辨率，实际边沿误差需实测。完成后保持最后状态；失败可能已执行部分事件，不自动回滚。power.last_en_sequence 可查看 result、executed_count、final_mask、state_valid、max_lateness_us。状态码必须用 == 0 判断，Lua 中 0 为真。电压、限流值及档位请分别配置。",
++            },
++            {
+                 "sig": "power.set_all_voltage(v0, v1, v2, v3, v4, v5, v6, v7)",
+                 "desc": "一次设置全部 8 路输出电压（mV），顺序同 set_en_all。",
+                 "params": "必须正好 8 个数值，个数不对直接返回 FAIL",
+@@ -325,7 +333,7 @@
+                 "params": "num: 通道索引 0-7 或名字",
+                 "returns": "两个值：status, en（0/1）",
+                 "example": 'local s, en = power.get_en("VCC")',
+-                "note": "读的是本地缓存状态，不是硬件回读。",
++                "note": "读的是本地缓存状态，不是硬件回读。EN 时序通信异常导致状态未知时返回 FAIL, nil；有有效最终状态时按实际已执行的最后状态更新缓存。",
+             },
+             {
+                 "sig": "power.get_current_limit(num)",
+@@ -345,9 +353,10 @@
+             {
+                 "sig": "power.select_lim_gear(idx, gear)",
+                 "desc": "选择指定通道的限流档位。",
+-                "params": "idx: 通道索引 0-7 或名字；gear: 档位（整数）",
++                "params": "idx: 通道索引 0-7 或名字；gear: 只传整数 0 或 1，0=μA（微安）档，1=mA（毫安）档。",
+                 "returns": "状态码；失败时抛出异常",
+-                "example": "power.select_lim_gear(0, 1)",
++                "example": "assert(power.select_lim_gear('VCC', 0) == 0) -- VCC 切换到 μA 档\nassert(power.select_lim_gear('IOVCC', 1) == 0) -- IOVCC 切换到 mA 档",
++                "note": "通道顺序：0=VCC, 1=IOVCC, 2=VSP, 3=VSN, 4=AVDD, 5=VDD, 6=ELVDD, 7=ELVSS。gear 是硬件档位编号，不是限流数值；限流阈值另用 power.set_current_limit(num, ma) 设置，该接口参数单位仍为 mA，不因选择 μA 档而改为 μA。此命令仅切换指定通道档位，不切换电源 EN。",
+             },
+             {
+                 "sig": "power.set_debug(enabled)",
+--- a/protocol/lua_api.json
++++ b/protocol/lua_api.json
+@@ -281,6 +281,14 @@
+           "example": "power.set_en_all(1,1,1,1,1,0,1,1)"
+         },
+         {
++          "sig": "power.set_en_sequence(events)",
++          "desc": "一次下发电源 EN 时序，由 MCU 定时执行；同一行的八路状态通过同一个锁存边沿更新。",
++          "params": "events: 1～8 行 Lua 数组，每行为 {at_us, VCC, IOVCC, VSP, VSN, AVDD, VDD, ELVDD, ELVSS}。at_us 为相对序列起点的整数微秒；第一行必须为 0，后续严格递增且相邻至少 50 μs，最后时间不超过 1000000 μs。八路状态均为 0 关 / 1 开，每行必须指定完整状态。",
++          "returns": "状态码：0=OK，1=FAIL，2=TIMEOUT；参数非法抛出异常。等待整个时序完成后返回。",
++          "example": "local s = power.set_en_sequence({\n    {0,   1,1,0,0,0,0,0,0},\n    {50,  1,1,1,0,0,0,0,0},\n    {100, 1,1,1,1,0,0,0,0},\n})\nassert(s == 0, 'EN sequence failed')",
++          "note": "需支持 A0 2B 的固件。50 μs 是最小可设置间隔，1 μs 是参数分辨率，实际边沿误差需实测。完成后保持最后状态；失败可能已执行部分事件，不自动回滚。power.last_en_sequence 可查看 result、executed_count、final_mask、state_valid、max_lateness_us。状态码必须用 == 0 判断，Lua 中 0 为真。电压、限流值及档位请分别配置。"
++        },
++        {
+           "sig": "power.set_all_voltage(v0, v1, v2, v3, v4, v5, v6, v7)",
+           "desc": "一次设置全部 8 路输出电压（mV），顺序同 set_en_all。",
+           "params": "必须正好 8 个数值，个数不对直接返回 FAIL",
+@@ -325,7 +333,7 @@
+           "params": "num: 通道索引 0-7 或名字",
+           "returns": "两个值：status, en（0/1）",
+           "example": "local s, en = power.get_en(\"VCC\")",
+-          "note": "读的是本地缓存状态，不是硬件回读。"
++          "note": "读的是本地缓存状态，不是硬件回读。EN 时序通信异常导致状态未知时返回 FAIL, nil；有有效最终状态时按实际已执行的最后状态更新缓存。"
+         },
+         {
+           "sig": "power.get_current_limit(num)",
+@@ -345,9 +353,10 @@
+         {
+           "sig": "power.select_lim_gear(idx, gear)",
+           "desc": "选择指定通道的限流档位。",
+-          "params": "idx: 通道索引 0-7 或名字；gear: 档位（整数）",
++          "params": "idx: 通道索引 0-7 或名字；gear: 只传整数 0 或 1，0=μA（微安）档，1=mA（毫安）档。",
+           "returns": "状态码；失败时抛出异常",
+-          "example": "power.select_lim_gear(0, 1)"
++          "example": "assert(power.select_lim_gear('VCC', 0) == 0) -- VCC 切换到 μA 档\nassert(power.select_lim_gear('IOVCC', 1) == 0) -- IOVCC 切换到 mA 档",
++          "note": "通道顺序：0=VCC, 1=IOVCC, 2=VSP, 3=VSN, 4=AVDD, 5=VDD, 6=ELVDD, 7=ELVSS。gear 是硬件档位编号，不是限流数值；限流阈值另用 power.set_current_limit(num, ma) 设置，该接口参数单位仍为 mA，不因选择 μA 档而改为 μA。此命令仅切换指定通道档位，不切换电源 EN。"
+         },
+         {
+           "sig": "power.set_debug(enabled)",
+--- a/client/lua_api.json
++++ b/client/lua_api.json
+@@ -281,6 +281,14 @@
+           "example": "power.set_en_all(1,1,1,1,1,0,1,1)"
+         },
+         {
++          "sig": "power.set_en_sequence(events)",
++          "desc": "一次下发电源 EN 时序，由 MCU 定时执行；同一行的八路状态通过同一个锁存边沿更新。",
++          "params": "events: 1～8 行 Lua 数组，每行为 {at_us, VCC, IOVCC, VSP, VSN, AVDD, VDD, ELVDD, ELVSS}。at_us 为相对序列起点的整数微秒；第一行必须为 0，后续严格递增且相邻至少 50 μs，最后时间不超过 1000000 μs。八路状态均为 0 关 / 1 开，每行必须指定完整状态。",
++          "returns": "状态码：0=OK，1=FAIL，2=TIMEOUT；参数非法抛出异常。等待整个时序完成后返回。",
++          "example": "local s = power.set_en_sequence({\n    {0,   1,1,0,0,0,0,0,0},\n    {50,  1,1,1,0,0,0,0,0},\n    {100, 1,1,1,1,0,0,0,0},\n})\nassert(s == 0, 'EN sequence failed')",
++          "note": "需支持 A0 2B 的固件。50 μs 是最小可设置间隔，1 μs 是参数分辨率，实际边沿误差需实测。完成后保持最后状态；失败可能已执行部分事件，不自动回滚。power.last_en_sequence 可查看 result、executed_count、final_mask、state_valid、max_lateness_us。状态码必须用 == 0 判断，Lua 中 0 为真。电压、限流值及档位请分别配置。"
++        },
++        {
+           "sig": "power.set_all_voltage(v0, v1, v2, v3, v4, v5, v6, v7)",
+           "desc": "一次设置全部 8 路输出电压（mV），顺序同 set_en_all。",
+           "params": "必须正好 8 个数值，个数不对直接返回 FAIL",
+@@ -325,7 +333,7 @@
+           "params": "num: 通道索引 0-7 或名字",
+           "returns": "两个值：status, en（0/1）",
+           "example": "local s, en = power.get_en(\"VCC\")",
+-          "note": "读的是本地缓存状态，不是硬件回读。"
++          "note": "读的是本地缓存状态，不是硬件回读。EN 时序通信异常导致状态未知时返回 FAIL, nil；有有效最终状态时按实际已执行的最后状态更新缓存。"
+         },
+         {
+           "sig": "power.get_current_limit(num)",
+@@ -345,9 +353,10 @@
+         {
+           "sig": "power.select_lim_gear(idx, gear)",
+           "desc": "选择指定通道的限流档位。",
+-          "params": "idx: 通道索引 0-7 或名字；gear: 档位（整数）",
++          "params": "idx: 通道索引 0-7 或名字；gear: 只传整数 0 或 1，0=μA（微安）档，1=mA（毫安）档。",
+           "returns": "状态码；失败时抛出异常",
+-          "example": "power.select_lim_gear(0, 1)"
++          "example": "assert(power.select_lim_gear('VCC', 0) == 0) -- VCC 切换到 μA 档\nassert(power.select_lim_gear('IOVCC', 1) == 0) -- IOVCC 切换到 mA 档",
++          "note": "通道顺序：0=VCC, 1=IOVCC, 2=VSP, 3=VSN, 4=AVDD, 5=VDD, 6=ELVDD, 7=ELVSS。gear 是硬件档位编号，不是限流数值；限流阈值另用 power.set_current_limit(num, ma) 设置，该接口参数单位仍为 mA，不因选择 μA 档而改为 μA。此命令仅切换指定通道档位，不切换电源 EN。"
+         },
+         {
+           "sig": "power.set_debug(enabled)",

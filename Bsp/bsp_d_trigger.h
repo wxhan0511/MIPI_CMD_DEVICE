@@ -31,6 +31,13 @@ void bsp_all_d_trigger_init();
 void bsp_d_trigger_set(uint8_t state);
 void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, uint8_t enable);
 uint8_t bsp_d_trigger_get_channel_state(const d_trigger_t *cfg, const uint8_t channel);
+/* Owned access is only valid while the calling task holds the bus mutex.
+ * Its timer ISR may use owned access; it must never acquire an RTOS mutex. */
+int bsp_d_trigger_bus_acquire(uint32_t timeout_ticks);
+void bsp_d_trigger_bus_release(void);
+uint8_t bsp_d_trigger_read_byte_owned(const d_trigger_t *cfg);
+void bsp_d_trigger_write_byte_owned(const d_trigger_t *cfg, uint8_t value);
+int bsp_d_trigger_write_byte(const d_trigger_t *cfg, uint8_t value);
 
 void test_d_trigger();
 void bsp_close_64pin_channel();

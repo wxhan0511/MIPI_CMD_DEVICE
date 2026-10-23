@@ -1,0 +1,134 @@
+--- a/hal/hal_power.py
++++ b/hal/hal_power.py
+@@ -1,6 +1,7 @@
+ import struct
+ from hal.hal_base import HalBase, StatusCode
+ import time
++import math
+ # 电源控制器 SPI 通信协议头定义 (根据协议表)
+ PROTOCOL_HEADERS = {
+     "GET_ID":           [0xA0, 0x10],  # 获取 ID
+@@ -19,6 +20,7 @@
+     "READ_AD_DATA": [0xA0, 0x23],#读取AD值
+     "WRITE_CALI_DATA": [0xA0, 0x24],#将校准值写入电源板
+     "ENABLE_LIM":[0xA0,0x25],# 电源限流使能
++    "SET_POWER_EN_SEQUENCE": [0xA0, 0x2B],  # 电源 EN 时序控制
+ }
+ class HalPowerControl(HalBase):
+     _instance = None
+@@ -150,6 +152,82 @@
+         else:
+             self._log(f"set_en_all failed, status={status}")
+         return status
++    def set_en_sequence(self, events):
++        """Execute 1..8 full-state EN events, >=50 us apart, on the MCU."""
++        payload, count = self._encode_en_sequence(events)
++        header = PROTOCOL_HEADERS["SET_POWER_EN_SEQUENCE"]
++        with self._hw_lock:
++            self.last_en_sequence = None
++            try:
++                status, response = self._spi_exchange64(header, payload)
++            except Exception:
++                self.power_en[:] = [None] * 8
++                raise
++            if (len(response) < 11 or list(response[:2]) != header or
++                    response[3] > 7 or response[4] > count or response[6] not in (0, 1)):
++                self.power_en[:] = [None] * 8
++                return StatusCode.TIMEOUT if status == StatusCode.TIMEOUT else StatusCode.FAIL
++            detail, executed, mask, valid = response[3:7]
++            self.last_en_sequence = {
++                'result': detail, 'executed_count': executed,
++                'final_mask': mask, 'state_valid': bool(valid),
++                'max_lateness_us': struct.unpack('<I', bytes(response[7:11]))[0],
++            }
++            if valid:
++                self.power_en[:] = [(mask >> i) & 1 for i in range(8)]
++            elif status == StatusCode.TIMEOUT:
++                self.power_en[:] = [None] * 8
++            if status == StatusCode.OK and detail == 0 and executed == count and valid:
++                return StatusCode.OK
++            return StatusCode.TIMEOUT if status == StatusCode.TIMEOUT else StatusCode.FAIL
++
++    @staticmethod
++    def _en_sequence_array(value):
++        if isinstance(value, (list, tuple)):
++            return list(value)
++        if type(value).__name__ == '_LuaTable':
++            keys = list(value.keys())
++            if set(keys) != set(range(1, len(keys) + 1)):
++                raise ValueError('Sequence tables must be dense 1-based arrays')
++            return [value[i] for i in range(1, len(keys) + 1)]
++        raise ValueError('Expected a list or Lua array')
++
++    @classmethod
++    def _normalize_en_sequence(cls, events):
++        rows = cls._en_sequence_array(events)
++        if not 1 <= len(rows) <= 8:
++            raise ValueError('Expected 1..8 EN events')
++        result = []
++        previous = None
++        for row in rows:
++            row = cls._en_sequence_array(row)
++            if len(row) != 9:
++                raise ValueError('Each event requires time_us followed by 8 EN states')
++            t = row[0]
++            if (isinstance(t, bool) or not isinstance(t, (int, float)) or
++                    not math.isfinite(t) or int(t) != t or not 0 <= t <= 1000000):
++                raise ValueError('time_us must be an integer in 0..1000000')
++            t = int(t)
++            if previous is None and t != 0:
++                raise ValueError('First event must be at 0 us')
++            if previous is not None and t - previous < 50:
++                raise ValueError('Events must increase by at least 50 us')
++            states = row[1:]
++            if any(not isinstance(v, (int, float, bool)) or v not in (0, 1) for v in states):
++                raise ValueError('EN states must be 0 or 1')
++            result.append([t] + [int(v) for v in states])
++            previous = t
++        return result
++
++    @classmethod
++    def _encode_en_sequence(cls, events):
++        rows = cls._normalize_en_sequence(events)
++        payload = bytearray([1, len(rows)])
++        for row in rows:
++            mask = sum(v << i for i, v in enumerate(row[1:]))
++            payload.extend(struct.pack('<IB', row[0], mask))
++        return list(payload), len(rows)
++
+     def set_all_voltage(self, *v_list):
+         if(len(v_list) != 8):
+             self._log(f"set_all_voltage expected 8 values, got {len(v_list)}")
+@@ -195,7 +273,9 @@
+     def get_en(self, num):
+         self._log(f"get_power_en {num}")
+         idx = self._resolve_index(num,"set_vol_en_name")
+-        return StatusCode.OK, self.power_en[idx]
++        with self._hw_lock:
++            value = self.power_en[idx]
++            return (StatusCode.FAIL if value is None else StatusCode.OK), value
+     def select_lim_gear(self, idx ,gear):
+         gear_idx = self._coerce_int(gear)
+         idx = self._resolve_index(idx , "set_vol_en_name")
+--- a/core/dispatchers/power.py
++++ b/core/dispatchers/power.py
+@@ -20,6 +20,19 @@
+     return power
+ class PowerCommandsMixin:
+     """电源通道控制命令 (硬件串行化见 HalBase._hw_lock)."""
++    @command("power.set_en_sequence", roles=ROLES_USER, lock=None,
++             description="MCU-timed 8-rail EN sequence, minimum interval 50 us")
++    def _power_set_en_sequence(self, params, context):
++        power = _require_power(self.hal)
++        try:
++            with power._hw_lock:
++                status = power.set_en_sequence(params.get("events"))
++                report = power.last_en_sequence
++        except (ValueError, TypeError) as exc:
++            raise CommandError(str(exc), status=400)
++        return {"success": status == StatusCode.OK, "status": int(status),
++                "sequence": report}
++
+     @command("power.set_en", schema=PowerSetEnSchema, roles=ROLES_USER, lock=None,
+                 description="设置指定通道的电源开关（硬件串行化见 HalBase._hw_lock）")
+     def _power_set_en(self, params: Dict[str, Any], context: Dict[str, Any]) -> Any:

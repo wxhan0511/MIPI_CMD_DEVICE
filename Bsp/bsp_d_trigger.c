@@ -201,7 +201,8 @@ static int8_t bsp_d_trigger_get_index(const d_trigger_t *cfg)
  */
 void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, const uint8_t enable)
 {
-    if (cfg == NULL || channel >= D_TRIGGER_CHANNEL_NUM)
+    int8_t idx = bsp_d_trigger_get_index(cfg);
+    if (idx < 0 || channel >= D_TRIGGER_CHANNEL_NUM)
     {
         return;
     }
@@ -211,7 +212,6 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
     }
 
     /* 1) Update the software cache first */
-    int8_t idx = bsp_d_trigger_get_index(cfg);
     if (idx >= 0)
     {
         if (enable)
@@ -219,22 +219,62 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         else
             s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
     }
-    /* 2) Replay all 8 data pins from the cache, so changing one channel does not lose the state of the others */
-    uint8_t shadow = s_d_trigger_shadow[idx];
-    for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; i++)
-    {
-        GPIO_PinState st = ((shadow >> i) & 0x01U) ? GPIO_PIN_SET : GPIO_PIN_RESET;
-        HAL_GPIO_WritePin(cfg->d_group[i], cfg->d_pin[i], st);
-    }
-
-    HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_SET);
-
-    bsp_delay_us(20);
-
-    HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_RESET);
-    bsp_delay_us(20);
+    bsp_d_trigger_write_byte_owned(cfg, s_d_trigger_shadow[idx]);
 
     osMutexRelease(s_d_trigger_mutex);
+}
+
+int bsp_d_trigger_bus_acquire(uint32_t timeout_ticks)
+{
+    return s_d_trigger_mutex != NULL &&
+           osMutexAcquire(s_d_trigger_mutex, timeout_ticks) == osOK;
+}
+
+void bsp_d_trigger_bus_release(void)
+{
+    osMutexRelease(s_d_trigger_mutex);
+}
+
+uint8_t bsp_d_trigger_read_byte_owned(const d_trigger_t *cfg)
+{
+    int8_t idx = bsp_d_trigger_get_index(cfg);
+    return idx >= 0 ? s_d_trigger_shadow[idx] : 0;
+}
+
+void bsp_d_trigger_write_byte_owned(const d_trigger_t *cfg, uint8_t value)
+{
+    int8_t idx = bsp_d_trigger_get_index(cfg);
+    if (idx < 0)
+        return;
+
+    /* Shared parallel bus: D0..3=PA11..8, D4..7=PC9..6.
+     * BSRR modifies only our pins. Outputs change on the common CP rising edge. */
+    uint32_t a = 0, c = 0;
+    for (uint8_t i = 0; i < 4; ++i) {
+        if (value & (1U << i)) a |= 1U << (11U - i);
+        if (value & (1U << (i + 4U))) c |= 1U << (9U - i);
+    }
+    GPIOA->BSRR = a | ((0x0F00U & ~a) << 16);
+    GPIOC->BSRR = c | ((0x03C0U & ~c) << 16);
+    __DSB();
+    bsp_delay_us(1); /* 74HC574 data setup */
+    cfg->d_clk_group->BSRR = cfg->d_clk_pin;
+    __DSB();
+    bsp_delay_us(1); /* clock high and data hold */
+    cfg->d_clk_group->BSRR = (uint32_t)cfg->d_clk_pin << 16;
+    __DSB();
+    bsp_delay_us(1); /* minimum clock low */
+    s_d_trigger_shadow[idx] = value;
+}
+
+int bsp_d_trigger_write_byte(const d_trigger_t *cfg, uint8_t value)
+{
+    if (bsp_d_trigger_get_index(cfg) < 0 ||
+        !bsp_d_trigger_bus_acquire(osWaitForever))
+        return 0;
+    bsp_d_trigger_write_byte_owned(cfg, value);
+    bsp_d_trigger_bus_release();
+    return 1;
 }
 
 uint8_t bsp_d_trigger_get_channel_state(const d_trigger_t *cfg, const uint8_t channel)
