@@ -35,7 +35,11 @@ and driver execution variation must be measured on hardware.
 - `bsp_d_trigger_write_byte_owned()`: two BSRR data writes, 1 us setup,
   1 us CP high, 1 us CP low; updates the existing shadow state.
 - `bsp_d_trigger_write_byte()`: mutex-protected immediate full-byte write.
-  `ALL_POWER_EN` now uses this operation.
+  This is separate from the legacy `ALL_POWER_EN` command.
+- Compatibility recovery: `ALL_POWER_EN` uses the original eight single-channel
+  operations again. Single-channel writes retain HAL GPIO calls and 20 us high /
+  20 us low delays while the reported board regression is investigated. Only
+  the owned full-byte sequence path uses the new 1 us timing.
 - ISR masks interrupts only across the short latch transaction and scheduling
   update. Other latch users wait on the existing mutex for up to the sequence
   duration. Do not use the owned interface without bus ownership.

@@ -427,7 +427,8 @@ void task_sample_run(void *argument)
             meter_tx_buf[5] = report.final_user_mask;
             meter_tx_buf[6] = report.final_state_valid;
             memcpy(&meter_tx_buf[7], &report.max_lateness_us, 4);
-            if (report.final_state_valid) {
+            if (report.final_state_valid)
+            {
                 for (uint8_t n = 0; n < 8; ++n)
                     g_sample_task.power_switch[n] = (report.final_user_mask >> n) & 1U;
             }
@@ -438,14 +439,18 @@ void task_sample_run(void *argument)
         case ALL_POWER_EN:
         {
             memcpy(g_sample_task.power_switch, &meter_rx_buf[2], 8);
-            uint8_t mask = 0;
+            /* Preserve the legacy A0 14 behavior. Timed full-byte updates are
+             * provided separately by SET_POWER_EN_SEQUENCE. */
             for (uint8_t n = 0; n < 8; n++)
+            {
                 if (g_sample_task.power_switch[n] == 0x01)
-                    mask |= 1U << n;
-            meter_tx_buf[2] = bsp_d_trigger_write_byte(&d_3,
-                bsp_power_en_user_to_latch(mask)) ? 0 : 1;
-            task_com_resume();
+                    bsp_power_single_enable(power_order[n]);
+                else
+                    bsp_power_single_disable(power_order[n]);
+            }
+            meter_tx_buf[2] = POWER_CMD_STATUS_SUCCESS;
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
+            task_com_resume();
             break;
         }
         case SINGLE_POWER_EN:

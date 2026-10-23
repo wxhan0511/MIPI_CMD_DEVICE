@@ -219,7 +219,17 @@ void bsp_d_trigger_set_channel(const d_trigger_t *cfg, const uint8_t channel, co
         else
             s_d_trigger_shadow[idx] &= (uint8_t)~(1U << channel);
     }
-    bsp_d_trigger_write_byte_owned(cfg, s_d_trigger_shadow[idx]);
+    /* Keep the established single-channel path independent of the sequencer.
+     * Its shorter pulse timing is reserved for the owned full-byte interface. */
+    uint8_t shadow = s_d_trigger_shadow[idx];
+    for (uint8_t i = 0; i < D_TRIGGER_CHANNEL_NUM; ++i) {
+        HAL_GPIO_WritePin(cfg->d_group[i], cfg->d_pin[i],
+            ((shadow >> i) & 1U) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    }
+    HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_SET);
+    bsp_delay_us(20);
+    HAL_GPIO_WritePin(cfg->d_clk_group, cfg->d_clk_pin, GPIO_PIN_RESET);
+    bsp_delay_us(20);
 
     osMutexRelease(s_d_trigger_mutex);
 }
