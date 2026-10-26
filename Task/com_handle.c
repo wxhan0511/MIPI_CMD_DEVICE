@@ -38,30 +38,29 @@ BSP_STATUS com_handle_spi(const uint8_t *rx, uint8_t *tx)
     {
         const uint8_t request_cmd = rx[1];
 
-        printf("COM enter: cmd=0x%02X\r\n", request_cmd);
+        // printf("COM enter: cmd=0x%02X\r\n", request_cmd);
         task_sample_task_mutex_acquire(); // Acquire the sample task mutex to stop the communication task; it resumes after the sample task finishes processing the command
         {
             // Process the received data
             g_sample_task.frame_header = rx[0];
             g_sample_task.cmd_type = request_cmd;
-            printf("rx g_sample_task.cmd_type:%x\r\n", g_sample_task.cmd_type);
+            // printf("rx g_sample_task.cmd_type:%x\r\n", g_sample_task.cmd_type);
             g_sample_task.cmd_status = POWER_CMD_STATUS_SUCCESS;
             // Process the command --------------------
-            printf("COM: waiting for sample task\r\n");
+            // printf("COM: waiting for sample task\r\n");
             task_com_suspend();
-            printf("COM: sample task completed\r\n");
-            // Prepare the data to send
+            // printf("COM: sample task completed\r\n");
+            //  Prepare the data to send
             meter_tx_buf[0] = rx[0];
             meter_tx_buf[1] = request_cmd;
-            printf("response cmd_type:%x\r\n", request_cmd);
-            // Send the data to the host
+            // printf("response cmd_type:%x\r\n", request_cmd);
+            //  Send the data to the host
             meter_com_flag = 0;
             spi2_enter_boot_pending = (request_cmd == CMD_ENTER_BOOT) ? 1U : 0U;
             HAL_StatusTypeDef status =
                 SPI2_Slave_Send_IT(meter_tx_buf, SPI2_SLAVE_TX_LEN);
 
-            printf("SPI TX start: status=%d state=%d error=0x%08lX\r\n",
-                   status, hspi2.State, hspi2.ErrorCode);
+            // printf("SPI TX start: status=%d state=%d error=0x%08lX\r\n",status, hspi2.State, hspi2.ErrorCode);
 
             if (status == HAL_OK)
             {

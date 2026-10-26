@@ -574,14 +574,6 @@ void task_sample_run(void *argument)
             dev_vol.sample_res_gear_rd = OHM_100_OHM;
             dev_vol.channel_en = 0b00000100; // Enable channel 2 only
             bsp_ads1256_ch2_select(0);       // Select sub-channel 0 of channel 2 first
-            bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
-            bsp_rd_select_mode(R_MODE);
-            bsp_rd_select_pin(pin_p, pin_n, 1);
-            t_temp_start = HAL_GetTick();
-            M_SPI_DEBUG("t_temp_start: %lu\r\n", t_temp_start);
-
-            M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
-            wait_adc_one_round(1000);
             t0 = HAL_GetTick();
             while (latest_sample_ch_sel[2] != 0) // Wait until the sub-channel of ADS1256 channel 2 switches to 0 and the latest sample data is ready
             {
@@ -594,13 +586,35 @@ void task_sample_run(void *argument)
                 }
                 osDelay(1);
             }
-            wait_adc_one_round(100); // Wait at least 6 rounds; gear switching starts from gear 6
+
+            bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
+            bsp_rd_select_mode(R_MODE);
+            bsp_rd_select_pin(pin_p, pin_n, 1);
+            bsp_delay_ms(100);
+            t_temp_start = HAL_GetTick();
+            M_SPI_DEBUG("t_temp_start: %lu\r\n", t_temp_start);
+
+            M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
             wait_adc_one_round(100);
+            bsp_delay_ms(100);
             wait_adc_one_round(100);
+            bsp_delay_ms(100);
             wait_adc_one_round(100);
+            bsp_delay_ms(100);
             wait_adc_one_round(100);
+            bsp_delay_ms(100);
             wait_adc_one_round(100);
+            bsp_delay_ms(100);
             wait_adc_one_round(100);
+            bsp_delay_ms(100);
+            wait_adc_one_round(100);
+            bsp_delay_ms(100);
+            wait_adc_one_round(100);
+            bsp_delay_ms(100);
+            wait_adc_one_round(100);
+            bsp_delay_ms(1000);
+            wait_adc_one_round(100);
+
             memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
             t_temp_end = HAL_GetTick();
             M_SPI_DEBUG("t_temp_end: %lu\r\n", t_temp_end);

@@ -19,7 +19,7 @@
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
-
+#define RES_EXCITATION_V 0.3 // 电阻模式实测激励电压，单位 V
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -105,25 +105,25 @@ double bsp_adc_r_convert(const TEST_R_D_RES_LEVEL gear, const double input, cons
     switch (gear)
     {
     case OHM_10_M:
-        output = input * 10000 * 1000 / (0.5 - input);
+        output = input * 10000 * 1000 / (RES_EXCITATION_V - input);
         break;
     case OHM_1_M:
-        output = input * 1000 * 1000 / (0.5 - input);
+        output = input * 1000 * 1000 / (RES_EXCITATION_V - input);
         break;
     case OHM_100_K:
-        output = input * 100 * 1000 / (0.5 - input);
+        output = input * 100 * 1000 / (RES_EXCITATION_V - input);
         break;
     case OHM_10_K:
-        output = input * 10 * 1000 / (0.5 - input);
+        output = input * 10 * 1000 / (RES_EXCITATION_V - input);
         break;
     case OHM_1_K:
-        output = input * 1000 / (0.5 - input);
+        output = input * 1000 / (RES_EXCITATION_V - input);
         break;
     case OHM_100_OHM:
-        output = input * 91 / (0.5 - input);
+        output = input * 91 / (RES_EXCITATION_V - input);
         break;
     case OHM_4_point_7_K:
-        output = input / (0.5 - input);
+        output = input / (RES_EXCITATION_V - input);
         break;
     default:;
     }
@@ -163,48 +163,44 @@ void sample_data_cali()
             // OHM_100_OHM,
             // OHM_4_point_7_K,
             const double raw_data = raw_sample * 1000000.0;
-            cali_data = bsp_adc_r_convert(dev_vol.sample_res_gear_rd, (raw_data - 1660) / 1000000, dev_vol.res_cali_en);
+            // 1.660 mV,用途是补偿测阻通路的零点偏移
+            // cali_data = bsp_adc_r_convert(dev_vol.sample_res_gear_rd, (raw_data - 1660) / 1000000, dev_vol.res_cali_en);
+            cali_data = bsp_adc_r_convert(dev_vol.sample_res_gear_rd, (raw_data - 1660) / 1000000, 0);
             printf("raw data: %f, cali data: %f ohm, gear: %d, cali_en: %d\r\n", raw_sample, cali_data, dev_vol.sample_res_gear_rd, dev_vol.res_cali_en);
-            if (cali_data > 10 && cali_data <= 100 && dev_cur.sample_res_gear_rd != OHM_100_OHM)
+            if (cali_data > 10 && cali_data <= 100 && dev_vol.sample_res_gear_rd != OHM_100_OHM)
             {
                 printf("change gear 100 ohm\r\n");
                 bsp_rd_select_r_level(OHM_100_OHM);
-                dev_cur.sample_res_gear_rd = OHM_100_OHM;
             }
-            else if (cali_data > 100 && cali_data <= 1000 && dev_cur.sample_res_gear_rd != OHM_1_K)
+            else if (cali_data > 100 && cali_data <= 1000 && dev_vol.sample_res_gear_rd != OHM_1_K)
             {
                 printf("change gear 1000 ohm\r\n");
                 bsp_rd_select_r_level(OHM_1_K);
-                dev_cur.sample_res_gear_rd = OHM_1_K;
             }
-            else if (cali_data > 1000 && cali_data <= 10000 && dev_cur.sample_res_gear_rd != OHM_10_K)
+            else if (cali_data > 1000 && cali_data <= 10000 && dev_vol.sample_res_gear_rd != OHM_10_K)
             {
                 printf("change gear 10000 ohm\r\n");
                 bsp_rd_select_r_level(OHM_10_K);
-                dev_cur.sample_res_gear_rd = OHM_10_K;
             }
-            else if (cali_data > 10 * 1000 && cali_data <= 100 * 1000 && dev_cur.sample_res_gear_rd != OHM_100_K)
+            else if (cali_data > 10 * 1000 && cali_data <= 100 * 1000 && dev_vol.sample_res_gear_rd != OHM_100_K)
             {
                 printf("change gear 100000 ohm\r\n");
                 bsp_rd_select_r_level(OHM_100_K);
-                dev_cur.sample_res_gear_rd = OHM_100_K;
             }
-            else if (cali_data > 100 * 1000 && cali_data <= 1000 * 1000 && dev_cur.sample_res_gear_rd != OHM_1_M)
+            else if (cali_data > 100 * 1000 && cali_data <= 1000 * 1000 && dev_vol.sample_res_gear_rd != OHM_1_M)
             {
                 printf("change gear 1000000 ohm\r\n");
                 bsp_rd_select_r_level(OHM_1_M);
-                dev_cur.sample_res_gear_rd = OHM_1_M;
             }
-            else if (cali_data > 1000 * 1000 && cali_data <= 10000 * 1000 && dev_cur.sample_res_gear_rd != OHM_10_M)
+            else if (cali_data > 1000 * 1000 && dev_vol.sample_res_gear_rd != OHM_10_M)
             {
                 printf("change gear 10000000 ohm\r\n");
                 bsp_rd_select_r_level(OHM_10_M);
-                dev_cur.sample_res_gear_rd = OHM_10_M;
             }
             else if (cali_data < 0)
             {
-                dev_cur.sample_res_gear_rd += 1;
-                bsp_rd_select_r_level(dev_cur.sample_res_gear_rd);
+                dev_vol.sample_res_gear_rd += 1;
+                bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
             }
             else
             {
