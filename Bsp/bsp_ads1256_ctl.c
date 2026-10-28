@@ -13,13 +13,25 @@
 #include "bsp_ads1256.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "bsp_channel_sel.h"
 #include "calibration_utils.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
-#define RES_EXCITATION_V 0.3 // 电阻模式实测激励电压，单位 V
+/* Legacy conversion coordinate, NOT the physical excitation voltage.
+ * Paired with the reference instrument's EEPROM coefficients below.
+ * Do not change V without refitting. */
+#define RES_EXCITATION_V 0.5
+#define RD_SETTLE_MS 120U
+#define RD_RESISTANCE_TIME_MS 1000U
+#define RD_DIODE_TIME_MS 500U
+#define RD_TIMEOUT_MS 2500U
+/* Temporary scope/ADC diagnostic: one GET_RESISTANCE holds its pins for 10 s.
+ * Set to 0 to restore normal resistance acquisition. Diode is unaffected. */
+#define RD_FIXED_10M_DIAGNOSTIC 0
+#define RD_DIAGNOSTIC_MS 10000U
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -37,6 +49,7 @@ static double cali_data = 0;
 volatile uint32_t sample_update_seq[8] = {0};
 volatile uint32_t adc_sample_update_seq = 0;
 static uint32_t calibrated_sample_seq[8] = {0};
+static uint8_t rd_measure_active = 0U;
 #if ADC_SAMPLE_TRACE_ENABLE
 static float trace_last_raw_data[8] = {0};
 static float trace_last_cali_data[8] = {0};
@@ -48,13 +61,15 @@ extern osThreadId_t task_sample_handle;
 extern volatile uint8_t g_adc_sample_notify_enabled;
 
 static __IO double cali_r_value[7][3] = {
-    {0.000000621013436, 1.269563854760952, 128545.457705873996019}, // 10M
-    {0.000002878590314, 1.612767830900360, 16471.438778921728954},  // 1M
-    {0.000029345393638, 1.610968251555477, 1883.541990776575403},   // 100K
-    {0.000213147484506, 1.838968199598394, 30.062618869735161},     // 10K
-    {0.002992970571149, 1.597308304947589, 15.483768962910290},     // 1K
-    {0.036816118668450, 1.779873763228085, -2.619710236117498},     // 91
-    {0, 0, 0},                                                      // 1
+    /* RDREF EEPROM capture, 2026-10-26; flag=0x8F, read_status=0.
+     * Reference UID: 32303836 30345105 003A004C. Keep double precision. */
+    {6.274250255595802e-07, 1.2589245023812747, 136358.5973519478}, // 10M
+    {2.8042908213941092e-06, 1.6413799835431107, 14809.926608166192}, // 1M
+    {2.9220855105576999e-05, 1.5918204657145729, 1975.0893950806058}, // 100K
+    {0.00020244407732554568, 1.847439851373391, 29.657266917341076}, // 10K
+    {0.0030143603007261807, 1.5615864357168867, 17.923538423852278}, // 1K
+    {0.035958432343360935, 1.7784477806803523, -2.7183547154907899}, // 91
+    {0, 0, 0}, // Unused diode path; reference NaN coefficients intentionally not imported
 };
 /* Private function prototypes -----------------------------------------------*/
 
@@ -100,8 +115,12 @@ void raw_data_queue_push(float value, uint8_t index)
 
 double bsp_adc_r_convert(const TEST_R_D_RES_LEVEL gear, const double input, const uint8_t cali_en)
 {
-    printf("bsp_adc_r_convert: gear %d, input %f, cali_en %d\r\n", gear, input, cali_en);
+    if (rd_measure_active == 0U)
+        printf("bsp_adc_r_convert: gear %d, input %f, cali_en %d\r\n", gear, input, cali_en);
     double output = 0;
+    if (gear < OHM_10_M || gear > OHM_100_OHM || !isfinite(input) ||
+        input < 0.0 || input >= RES_EXCITATION_V)
+        return NAN;
     switch (gear)
     {
     case OHM_10_M:
@@ -127,7 +146,8 @@ double bsp_adc_r_convert(const TEST_R_D_RES_LEVEL gear, const double input, cons
         break;
     default:;
     }
-    printf("raw resistance: %f ohm\r\n", output);
+    if (rd_measure_active == 0U)
+        printf("raw resistance: %f ohm\r\n", output);
     if (cali_en == 1)
     {
         output = output * output * cali_r_value[gear - 1][0] + output * cali_r_value[gear - 1][1] + cali_r_value[gear - 1][2];
@@ -137,11 +157,184 @@ double bsp_adc_r_convert(const TEST_R_D_RES_LEVEL gear, const double input, cons
     // output  = output * output * 0.00009 + output*0.853 + 5.7802;
     return output;
 }
+static TEST_R_D_RES_LEVEL rd_target_gear(double resistance)
+{
+    if (resistance <= 100.0) return OHM_100_OHM;
+    if (resistance <= 1000.0) return OHM_1_K;
+    if (resistance <= 10000.0) return OHM_10_K;
+    if (resistance <= 100000.0) return OHM_100_K;
+    if (resistance <= 1000000.0) return OHM_1_M;
+    return OHM_10_M;
+}
+
+int bsp_rd_measure(uint8_t pin_p, uint8_t pin_n, bool diode, float *result)
+{
+    if (result == NULL) return -2;
+    *result = NAN;
+    if (pin_p < 1U || pin_p > 64U || pin_n < 1U || pin_n > 64U || pin_p == pin_n)
+        return -2;
+
+    const uint8_t saved_channels = dev_vol.channel_en;
+    const bool diagnostic = RD_FIXED_10M_DIAGNOSTIC && !diode;
+    const uint32_t duration = diode ? RD_DIODE_TIME_MS : RD_RESISTANCE_TIME_MS;
+    int status = -1;
+    rd_measure_active = 1U;
+    dev_vol.channel_en = 0x04U;
+    bsp_close_64pin_channel();
+    bsp_ads1256_ch2_select(0);
+    bsp_rd_select_r_level(diode ? OHM_4_point_7_K :
+                          (diagnostic ? OHM_10_M : OHM_100_OHM));
+    bsp_rd_select_mode(diode ? D_MODE : R_MODE);
+    bsp_rd_select_pin(pin_p, pin_n, 1);
+
+    const uint32_t started = HAL_GetTick();
+    uint32_t changed_at = started;
+    uint32_t seq = sample_update_seq[2];
+    uint8_t settling = 1U;
+    uint32_t range_samples = 0U;
+    float range_min = 0.0f;
+    float range_max = 0.0f;
+    if (diagnostic)
+    {
+        /* Observe from connection onward, including startup. Do not use the
+         * normal settling/ranging/calibration code in this diagnostic. */
+        uint32_t count = 0U;
+        uint32_t missed = 0U;
+        float minimum = 0.0f, maximum = 0.0f;
+        printf("RD10M BEGIN pins=%u,%u duration=%lu ms unit=V\r\n",
+               pin_p, pin_n, (unsigned long)RD_DIAGNOSTIC_MS);
+        printf("RD10M,t_ms,seq,delta,raw_V\r\n");
+        while ((HAL_GetTick() - started) < RD_DIAGNOSTIC_MS)
+        {
+            osDelay(1);
+            uint32_t next_seq;
+            uint8_t mux;
+            float voltage;
+            taskENTER_CRITICAL();
+            next_seq = sample_update_seq[2];
+            mux = latest_sample_ch_sel[2];
+            voltage = latest_sample_raw_data[2];
+            taskEXIT_CRITICAL();
+            if (next_seq == seq) continue;
+            const uint32_t delta = next_seq - seq;
+            seq = next_seq;
+            if (mux != 0U || !isfinite(voltage)) continue;
+            missed += delta - 1U;
+            if (count == 0U) minimum = maximum = voltage;
+            if (voltage < minimum) minimum = voltage;
+            if (voltage > maximum) maximum = voltage;
+            count++;
+            printf("RD10M,%lu,%lu,%lu,%.9f\r\n",
+                   (unsigned long)(HAL_GetTick() - started),
+                   (unsigned long)seq, (unsigned long)delta, (double)voltage);
+        }
+        printf("RD10M END samples=%lu missed=%lu min=%.9f max=%.9f span=%.9f V\r\n",
+               (unsigned long)count, (unsigned long)missed,
+               (double)minimum, (double)maximum, (double)(maximum - minimum));
+        /* Diagnostic has no resistance result. Never label volts as ohms. */
+        status = -2;
+        goto rd_cleanup;
+    }
+    while ((HAL_GetTick() - started) < RD_TIMEOUT_MS)
+    {
+        osDelay(1);
+        if (settling != 0U)
+        {
+            if ((HAL_GetTick() - changed_at) < RD_SETTLE_MS) continue;
+            /* Discard frames published during settling; require a later frame. */
+            seq = sample_update_seq[2];
+            settling = 0U;
+            continue;
+        }
+
+        float voltage;
+        uint8_t mux;
+        uint32_t next_seq;
+        taskENTER_CRITICAL();
+        next_seq = sample_update_seq[2];
+        voltage = latest_sample_raw_data[2];
+        mux = latest_sample_ch_sel[2];
+        taskEXIT_CRITICAL();
+        if (next_seq == seq) continue;
+        const uint32_t seq_delta = next_seq - seq;
+        seq = next_seq;
+        if (mux != 0U || !isfinite(voltage)) continue;
+
+        const TEST_R_D_RES_LEVEL gear = dev_vol.sample_res_gear_rd;
+        if (range_samples == 0U)
+            range_min = range_max = voltage;
+        if (voltage < range_min) range_min = voltage;
+        if (voltage > range_max) range_max = voltage;
+        range_samples++;
+        /* Limit UART traffic; min/max still include every consumed sample. */
+        if (range_samples <= 4U || range_samples % 16U == 0U)
+            printf("RD sample: t=%lu seq=%lu delta=%lu gear=%u raw=%.9f\r\n",
+                   (unsigned long)(HAL_GetTick() - started),
+                   (unsigned long)seq, (unsigned long)seq_delta, gear, (double)voltage);
+        const double value = diode ? voltage :
+            bsp_adc_r_convert(gear, (double)voltage - 0.001660, dev_vol.res_cali_en);
+        if (!isfinite(value) || value < 0.0)
+        {
+            /* Invalid voltage is not permission to enter the diode range. */
+            continue;
+        }
+
+        if (!diode && dev_vol.res_cali_en != 0U)
+        {
+            const TEST_R_D_RES_LEVEL target = rd_target_gear(value);
+            if (target != gear)
+            {
+                bsp_rd_select_r_level(target);
+                changed_at = HAL_GetTick();
+                settling = 1U;
+                range_samples = 0U;
+                continue;
+            }
+        }
+
+        /* Match the reference's timed readout. A non-ohmic DUT need not
+         * converge to a constant voltage. Still require a fresh, valid sample
+         * after the last range's settling interval; never return stale data. */
+        if ((HAL_GetTick() - started) >= duration)
+        {
+            *result = (float)value;
+            latest_sample_data[2] = *result;
+            printf("RD result: pins=%u,%u gear=%u raw=%.9f value=%.6f cali=%u elapsed=%lu ms\r\n",
+                   pin_p, pin_n, gear, (double)voltage, value,
+                   diode ? 0U : dev_vol.res_cali_en,
+                   (unsigned long)(HAL_GetTick() - started));
+            printf("RD range: samples=%lu min=%.9f max=%.9f span=%.9f V\r\n",
+                   (unsigned long)range_samples, (double)range_min,
+                   (double)range_max, (double)(range_max - range_min));
+            status = 0;
+            break;
+        }
+    }
+
+rd_cleanup:
+    bsp_close_64pin_channel();
+    bsp_close_rd_select_channel();
+    bsp_rd_select_mode(R_D_MODE_NULL);
+    calibrated_sample_seq[2] = sample_update_seq[2];
+    rd_measure_active = 0U;
+    dev_vol.channel_en = saved_channels;
+    if (status != 0 && !diagnostic)
+        printf("RD acquisition timeout/no valid settled-range sample: pins=%u,%u gear=%u\r\n",
+               pin_p, pin_n, dev_vol.sample_res_gear_rd);
+    return status;
+}
+
 void sample_data_cali()
 {
     for (uint8_t i = 0; i < 8; i++)
     {
         const uint32_t target_seq = sample_update_seq[i];
+        /* The command owns CH2 conversion and ranging until acquisition ends. */
+        if (i == 2U && rd_measure_active != 0U)
+        {
+            calibrated_sample_seq[i] = target_seq;
+            continue;
+        }
         if (target_seq == calibrated_sample_seq[i])
             continue;
 

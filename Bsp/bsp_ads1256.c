@@ -207,7 +207,7 @@ void bsp_ads1256_init(const ads1256_dev_t *handle)
     data[0] = 0x04;
     data[1] = 0x08;
     data[2] = 0x00;
-    data[3] = 0x82; // 100 SPS
+    data[3] = 0x63; // 50 SPS: reference-device rate; fixed-10M interference comparison
     data[4] = 0x00;
     handle->write_reg(handle, 0x00, data, 5);
     handle->read_reg(handle, REG_STATUS, &data[0], 5);
@@ -390,6 +390,11 @@ void bsp_ads1256_irq_handle(ads1256_dev_t *handle)
     } while ((handle->channel_en & (1U << next_channel)) == 0U);
 
     handle->last_channel = current_channel;
+    /* RDATA does not stop continuous conversions. When only one channel is
+     * enabled, leave its MUX/filter running instead of restarting every DRDY.
+     * A changed enable mask still takes the normal channel-switch path. */
+    if (next_channel == current_channel)
+        return;
     if (bsp_ads1256_set_single_channel(handle, next_channel) == BSP_OK)
     {
         handle->work_channel = next_channel;

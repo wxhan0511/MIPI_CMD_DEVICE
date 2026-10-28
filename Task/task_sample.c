@@ -569,101 +569,20 @@ void task_sample_run(void *argument)
             break;
         // Gear, timing, and algorithm must stay consistent with the 4.0 sampling board
         case GET_RESISTANCE:
-            pin_p = meter_rx_buf[2];
-            pin_n = meter_rx_buf[3];
-            dev_vol.sample_res_gear_rd = OHM_100_OHM;
-            dev_vol.channel_en = 0b00000100; // Enable channel 2 only
-            bsp_ads1256_ch2_select(0);       // Select sub-channel 0 of channel 2 first
-            t0 = HAL_GetTick();
-            while (latest_sample_ch_sel[2] != 0) // Wait until the sub-channel of ADS1256 channel 2 switches to 0 and the latest sample data is ready
-            {
-                if ((HAL_GetTick() - t0) >= 5000U)
-                {
-                    // Can be changed to a timeout status according to the project's status definitions
-                    g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
-                    M_SPI_INFO("GET_RESISTANCE timeout\r\n");
-                    break;
-                }
-                osDelay(1);
-            }
-
-            bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
-            bsp_rd_select_mode(R_MODE);
-            bsp_rd_select_pin(pin_p, pin_n, 1);
-            bsp_delay_ms(100);
-            t_temp_start = HAL_GetTick();
-            M_SPI_DEBUG("t_temp_start: %lu\r\n", t_temp_start);
-
-            M_SPI_DEBUG("GET_RESISTANCE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(100);
-            wait_adc_one_round(100);
-            bsp_delay_ms(1000);
-            wait_adc_one_round(100);
-
-            memcpy(&meter_tx_buf[3], (const void *)&latest_sample_data[2], sizeof(float));
-            t_temp_end = HAL_GetTick();
-            M_SPI_DEBUG("t_temp_end: %lu\r\n", t_temp_end);
-            M_SPI_DEBUG("resistance measurement time: %lu ms\r\n", t_temp_end - t_temp_start);
-            M_SPI_DEBUG("GET RESISTANCE: %f\r\n", latest_sample_data[2]);
-            M_SPI_DEBUG("latest_sample_raw_data: %f\r\n", latest_sample_raw_data[2]);
-            M_SPI_DEBUG("pin_p: %d, pin_n: %d, resistance: %f m\r\n", pin_p, pin_n, latest_sample_data[2] / 1000000);
-            M_SPI_DEBUG("final sample_res_gear_rd: %d\r\n", dev_vol.sample_res_gear_rd);
-            bsp_rd_select_mode(R_D_MODE_NULL);
-            bsp_rd_select_pin(pin_p, pin_n, 0);
-            dev_vol.channel_en = 0b11111111; // Enable all channels
-            task_com_resume();
-            g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
-            break;
         case GET_DIODE:
-            pin_p = meter_rx_buf[2];
-            pin_n = meter_rx_buf[3];
-            dev_vol.sample_res_gear_rd = OHM_4_point_7_K;
-            bsp_rd_select_r_level(dev_vol.sample_res_gear_rd);
-            dev_vol.channel_en = 0b00000100; // Enable channel 2 only
-            bsp_rd_select_mode(D_MODE);
-            bsp_ads1256_ch2_select(0);
-            bsp_rd_select_pin(pin_p, pin_n, 1);
-
-            M_SPI_DEBUG("GET_DIODE: pin_p %d, pin_n %d, r_level %d\r\n", pin_p, pin_n, dev_vol.sample_res_gear_rd);
-
-            M_SPI_DEBUG("Waiting for ADS1256 channel 2 sub channel 0 data ready...\r\n");
-            wait_adc_one_round(1000);
-            t0 = HAL_GetTick();
-            while (latest_sample_ch_sel[2] != 0) // Wait until the ADS1256 channel 2 data is ready
-            {
-                if ((HAL_GetTick() - t0) >= 1000U) // Wait at most 1 s
-                {
-                    // Can be changed to a timeout status according to the project's status definitions
-                    g_sample_task.cmd_status = POWER_CMD_STATUS_TIMEOUT;
-                    M_SPI_INFO("GET_DIODE timeout\r\n");
-                    break;
-                }
-                osDelay(1);
-            }
-            wait_adc_one_round(1000);
-            memcpy(&meter_tx_buf[3], (const void *)&latest_sample_raw_data[2], sizeof(float));
-
-            M_SPI_DEBUG("pin_p: %d, pin_n: %d, vol: %f\r\n", pin_p, pin_n, latest_sample_raw_data[2]);
-            bsp_rd_select_pin(pin_p, pin_n, 0);
-            dev_vol.channel_en = 0b11111111; // Enable all channels
+        {
+            const bool diode = g_sample_task.cmd_type == GET_DIODE;
+            float result = NAN;
+            const int status = bsp_rd_measure(meter_rx_buf[2], meter_rx_buf[3], diode, &result);
+            if (status != 0)
+                g_sample_task.cmd_status = status == -2 ? POWER_CMD_STATUS_FAILED : POWER_CMD_STATUS_TIMEOUT;
+            meter_tx_buf[2] = g_sample_task.cmd_status;
+            /* Keep the current API: ohms for resistance, volts for diode. */
+            memcpy(&meter_tx_buf[3], &result, sizeof(result));
             task_com_resume();
             g_sample_task.cmd_type = NORMAL_LOOP_EVENT;
             break;
+        }
         case SET_FREQUENCY:
 
             break;

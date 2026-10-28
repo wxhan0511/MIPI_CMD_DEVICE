@@ -108,6 +108,8 @@ extern "C"
     extern volatile uint32_t sample_update_seq[8];
     extern volatile uint32_t adc_sample_update_seq;
     int wait_adc_one_round(uint32_t timeout_ms);
+    /* Legacy-compatible R/D acquisition. Result: ohms for R, volts for D. */
+    int bsp_rd_measure(uint8_t pin_p, uint8_t pin_n, bool diode, float *result);
 #ifdef __cplusplus
 }
 #endif

@@ -252,10 +252,8 @@ void bsp_rd_select_pin(uint16_t pin_p, uint16_t pin_n, uint8_t en)
     // Note: only disable EN here, do not touch A0/A1/A2, otherwise the channel cannot be opened
     if (en == 0)
     {
-        if (_pin_p_group == 0)
-            bsp_d_trigger_set_channel(&d_6, _pin_p_group, 0);
-        if (_pin_n_group == 1)
-            bsp_d_trigger_set_channel(&d_7, _pin_n_group, 0);
+        bsp_d_trigger_set_channel(&d_6, _pin_p_group, 0);
+        bsp_d_trigger_set_channel(&d_7, _pin_n_group, 0);
         return;
     }
 
